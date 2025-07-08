@@ -1,3 +1,5 @@
+// filename: packages/server/src/app.ts
+// Version: 1.3.0 (Mount clientsRouter for Admin module)
 import express from 'express';
 import type { Request, Response } from 'express';
 import cors from 'cors';
@@ -6,6 +8,9 @@ import cookieParser from 'cookie-parser';
 import { errorHandler } from './middleware/error.middleware.js';
 import authRouter from './api/auth/auth.routes.js';
 import tenantsRouter from './api/tenants/tenants.routes.js';
+import parametersRouter from './api/parameters/parameters.routes.js';
+import tasksRouter from './api/tasks/tasks.routes.js';
+import clientsRouter from './api/clients/clients.routes.js';
 
 // --- Instancia de la App ---
 const app = express();
@@ -29,6 +34,9 @@ app.get('/api/health', (_req: Request, res: Response) => {
 // Montamos los enrutadores de cada módulo
 app.use('/api/auth', authRouter);
 app.use('/api/tenants', tenantsRouter);
+app.use('/api/parameters', parametersRouter);
+app.use('/api/tasks', tasksRouter);
+app.use('/api/clients', clientsRouter);
 
 
 // --- Gestor de Errores ---
