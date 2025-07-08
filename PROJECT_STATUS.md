@@ -1,72 +1,56 @@
 # Estado del Proyecto: Pool-Control Professional
 
-_Última actualización: 8 de julio de 2025, 19:00 CEST_
+_Última actualización: 8 de julio de 2025, 23:12 CEST_
 
 ---
 
 ## 1. Resumen Ejecutivo
 
-El proyecto ha superado con éxito las fases de configuración e inicialización. La estructura del monorepo está establecida, la base de datos ha sido creada y migrada, y todas las herramientas de desarrollo (`pnpm`, `TypeScript`, `Prisma`) están operativas. Se han construido las utilidades base para la seguridad (contraseñas, JWTs) y la estabilidad del servidor (configuración, gestor de errores).
+El proyecto ha completado exitosamente toda su fase de fundación. La infraestructura del backend (API, base de datos, autenticación) y la del frontend (React, enrutador, gestión de estado) están 100% operativas y conectadas. La aplicación ahora soporta un ciclo de login completo.
 
-El proyecto se encuentra en un estado saludable y sin bloqueos, listo para abandonar la fase de infraestructura y comenzar el desarrollo de la lógica de negocio y las funcionalidades de la API, empezando por el módulo de autenticación.
-
----
-
-## 2. Contexto de la Sesión Actual
-
-Durante esta sesión, se ha completado la configuración del entorno de desarrollo, superando varios desafíos de tipado relacionados con la configuración estricta de TypeScript y ES Modules. Adicionalmente, se ha establecido la base de la documentación del proyecto, creando los siguientes artefactos:
-
-- `README.md`: La guía conceptual y funcional del producto.
-- `DEVELOPMENT_PLAN.md`: La hoja de ruta técnica detallada para la implementación.
-- `PROJECT_STATUS.md`: Este mismo documento, para el seguimiento del progreso.
+Con la base ya construida, el proyecto entra oficialmente en la **FASE 3: Desarrollo por Módulos**. El foco se desplaza de la infraestructura al desarrollo de las funcionalidades específicas para cada rol, comenzando por el `SUPER_ADMIN`.
 
 ---
 
-## 3. Hitos Completados y Entregables
+## 2. Hitos Completados y Entregables
 
 ### ✅ Fase 0: Configuración del Monorepo
 
-Se ha establecido una base de proyecto robusta y escalable. La gestión del monorepo con `pnpm` workspaces está plenamente funcional. Se ha implementado una configuración de TypeScript "maestra" que impone reglas de código estrictas y modernas, garantizando la calidad y consistencia en todos los paquetes.
+- **Entregable:** Estructura de proyecto robusta con `pnpm` workspaces y configuración de TypeScript consistente.
 
-### ✅ Fase 1: Fundación del Backend (Parcial)
+### ✅ Fase 1: Fundación del Backend y Base de Datos
 
-Se ha construido el esqueleto del servidor, dejando una base sólida para el desarrollo de la API.
+- **Entregable:** Una API de backend completamente funcional con Express.js, conectada a una base de datos PostgreSQL mediante Prisma. Incluye un sistema de autenticación por JWT/cookies y un gestor de errores global.
 
-- **Base de Datos:** El esquema completo ha sido definido en `schema.prisma` y sincronizado con la base de datos PostgreSQL mediante una migración inicial.
-- **Configuración y Seguridad:** Se ha implementado un sistema seguro para la gestión de variables de entorno y se han creado las utilidades criptográficas esenciales para el manejo de contraseñas (`bcryptjs`) y la gestión de sesiones (`jsonwebtoken`).
-- **Estabilidad:** Se ha desarrollado un middleware global de gestión de errores que asegura que cualquier fallo en la aplicación será manejado de forma controlada, evitando caídas del servidor y proporcionando respuestas de error consistentes.
+### ✅ Fase 2: Fundación del Frontend y Conexión
 
----
-
-## 4. Decisiones Arquitectónicas Clave Tomadas
-
-- **Monorepo con PNPM:** Se ha seleccionado `pnpm` por su eficiencia en la gestión de dependencias y su excelente soporte para workspaces, ideal para un proyecto con un frontend y un backend desacoplados pero desarrollados en conjunto.
-- **TypeScript Estricto con ES Modules:** Se ha optado por una configuración de TypeScript moderna y estricta (`strict: true`, `NodeNext`, `verbatimModuleSyntax`) para el backend. Esto maximiza la seguridad de tipos y nos alinea con el estándar actual de desarrollo en Node.js, aunque ha requerido ajustes precisos en la configuración (ver siguiente punto).
-- **Gestión de `JWT_EXPIRES_IN`:** Debido a conflictos de tipado irresolubles con el toolchain, se ha tomado la decisión de definir la duración de los tokens en el archivo `.env` como un número entero que representa segundos (ej. `604800`), en lugar de un string humanamente legible (ej. `"7d"`). Esto garantiza la compatibilidad de tipos sin sacrificar la funcionalidad.
-- **Estrategia de Documentación:** Se ha decidido separar la documentación funcional de la técnica. `README.md` describe QUÉ hace el producto, mientras que un futuro `SETUP_GUIDE.md` describirá CÓMO instalarlo.
+- **Entregable:** Una aplicación de React (`create-vite-app`) funcional. Se ha configurado el enrutamiento (`react-router-dom`), la gestión de estado de autenticación (`React Context`), la estilización con Mantine UI y la conexión con el backend a través de un cliente de API (`axios`). Se ha construido y validado el flujo de login completo.
 
 ---
 
-## 5. Próximo Paso Inmediato: `13. packages/server/src/api/auth/auth.service.ts`
+## 3. Decisiones Arquitectónicas Clave Tomadas
 
-La siguiente tarea es crítica, ya que representa la primera pieza de lógica de negocio real de la aplicación.
+- **Monorepo con PNPM:** Selección de `pnpm` por su eficiencia en la gestión de dependencias en workspaces.
+- **TypeScript Estricto con ES Modules:** Adopción de una configuración moderna para maximizar la seguridad de tipos y alinearse con los estándares actuales de Node.js.
+- **Gestión de `JWT_EXPIRES_IN`:** Se define la duración de los tokens como un número de segundos en el `.env` para evitar conflictos de tipado con el toolchain.
+- **Estrategia de Documentación:** `README.md` describe QUÉ hace el producto; un futuro `SETUP_GUIDE.md` describirá CÓMO se instala.
 
-- **Objetivo:** Crear el servicio de autenticación que interactuará con la base de datos para gestionar el registro y el login de usuarios.
+---
+
+## 4. Próximo Paso Inmediato: Inicio del Módulo `SuperAdmin`
+
+La siguiente tarea inicia la FASE 3. Construiremos la primera pieza de lógica de negocio para la gestión de Tenants.
+
+- **Archivo:** `packages/server/src/api/tenants/tenants.service.ts`
+- **Objetivo:** Crear el servicio que contendrá la lógica de negocio para las operaciones CRUD (Crear, Leer, Actualizar, Borrar) sobre el modelo `Tenant`.
 - **Funciones a Implementar:**
-  - `register(userData)`:
-    - Recibirá los datos del nuevo usuario (nombre, email, password, etc.).
-    - Verificará si ya existe un usuario con ese email en la base de datos.
-    - Usará la utilidad `hashPassword` para asegurar la contraseña.
-    - Creará el nuevo registro de `User` en la base de datos usando `Prisma Client`.
-    - Devolverá los datos del usuario creado (sin la contraseña).
-  - `login(credentials)`:
-    - Recibirá un email y una contraseña.
-    - Buscará al usuario por email. Si no existe, lanzará un error.
-    - Usará la utilidad `comparePassword` para verificar la contraseña. Si no coincide, lanzará un error.
-    - Si todo es correcto, devolverá los datos del usuario autenticado.
+  - `createTenant(data)`: Creará un nuevo tenant y su primer usuario `ADMIN`.
+  - `getAllTenants()`: Devolverá un listado de todos los tenants.
+  - `getTenantById(id)`: Buscará un tenant por su ID.
+  - `updateTenantStatus(id, status)`: Actualizará el estado de la suscripción de un tenant.
 
 ---
 
-## 6. Bloqueos Actuales
+## 5. Bloqueos Actuales
 
-- **Ninguno.** El proyecto está completamente desbloqueado y listo para continuar con el desarrollo de funcionalidades.
+- **Ninguno.** El proyecto está completamente desbloqueado y listo para continuar.
