@@ -3,14 +3,12 @@ import {
   useContext,
   useState,
   useEffect,
-  // useCallback, // No se usa por ahora
+  useCallback,
 } from 'react';
 import type { PropsWithChildren } from 'react';
 import apiClient from '../api/apiClient.js';
 
 // --- Types ---
-// Este tipo define los datos que necesita la función de login.
-// Lo definimos aquí en el cliente.
 type LoginCredentials = {
   email: string;
   password: string;
@@ -39,12 +37,10 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // La función para comprobar el estado de la sesión se deja comentada
-  // hasta que el endpoint del backend '/api/auth/me' esté creado.
-  /*
   const checkAuthStatus = useCallback(async () => {
     setIsLoading(true);
     try {
+      // Este endpoint ahora existe y funciona gracias a los pasos anteriores
       const response = await apiClient.get('/auth/me');
       setUser(response.data.data);
     } catch (error) {
@@ -53,13 +49,11 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       setIsLoading(false);
     }
   }, []);
-  */
 
   useEffect(() => {
-    // Por ahora, asumimos que no hay sesión al iniciar la app
-    // y simplemente terminamos el estado de carga.
-    setIsLoading(false);
-  }, []);
+    // Activamos la comprobación de la sesión al cargar la app
+    checkAuthStatus();
+  }, [checkAuthStatus]);
 
   const login = async (credentials: LoginCredentials) => {
     const response = await apiClient.post('/auth/login', credentials);
@@ -67,7 +61,6 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   };
 
   const logout = async () => {
-    // TODO: Create a '/api/auth/logout' endpoint on the backend
     await apiClient.post('/auth/logout');
     setUser(null);
   };

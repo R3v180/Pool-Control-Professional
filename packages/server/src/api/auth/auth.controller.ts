@@ -1,8 +1,9 @@
-import type { Request, Response, NextFunction } from 'express';
+import type { Response, NextFunction } from 'express';
 import { register, login } from './auth.service.js';
 import { signToken } from '../../utils/jwt.utils.js';
 import config from '../../config/index.js';
-import type { CookieOptions } from 'express';
+import type { CookieOptions, Request } from 'express';
+import type { AuthRequest } from '../../middleware/auth.middleware.js';
 
 const cookieOptions: CookieOptions = {
   httpOnly: true,
@@ -26,8 +27,6 @@ export const registerHandler = async (
       data: user,
     });
   } catch (error) {
-    // Si el servicio lanza un error (ej. email duplicado),
-    // lo pasamos a nuestro gestor de errores global.
     next(error);
   }
 };
@@ -41,23 +40,26 @@ export const loginHandler = async (
   next: NextFunction
 ) => {
   try {
-    // 1. Validar credenciales con el servicio
     const user = await login(req.body);
-
-    // 2. Crear el token JWT
     const token = signToken({ id: user.id, role: user.role });
-
-    // 3. Establecer la cookie en la respuesta
     res.cookie('token', token, cookieOptions);
-
-    // 4. Enviar la respuesta con los datos del usuario
     res.status(200).json({
       success: true,
       data: user,
     });
   } catch (error) {
-    // Si el servicio lanza un error (ej. credenciales incorrectas),
-    // lo pasamos a nuestro gestor de errores global.
     next(error);
   }
+};
+
+/**
+ * Maneja la obtención del usuario actualmente autenticado (a través del token).
+ */
+export const getMeHandler = (req: AuthRequest, res: Response) => {
+  // El middleware 'protect' se ejecuta antes que este manejador.
+  // Si llega hasta aquí, significa que el token es válido y 'req.user' existe.
+  res.status(200).json({
+    success: true,
+    data: req.user,
+  });
 };
