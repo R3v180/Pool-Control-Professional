@@ -1,0 +1,23 @@
+{
+  "name": "pool-control-professional",
+  "private": true,
+  "version": "1.0.0",
+  "description": "SaaS para la gestión integral de empresas de mantenimiento de piscinas.",
+  "author": "",
+  "license": "ISC",
+  "scripts": {
+    "dev:server": "pnpm --filter @pool-control/server dev",
+    "dev:client": "pnpm --filter @pool-control/client dev",
+    "build": "pnpm --filter \"./packages/**\" build",
+    "prisma:generate": "pnpm --filter @pool-control/server prisma:generate",
+    "prisma:migrate": "pnpm --filter @pool-control/server prisma:migrate",
+    "prisma:studio": "pnpm --filter @pool-control/server prisma:studio"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}
