@@ -1,6 +1,6 @@
 # Dependencias
-/node_modules
-/.pnpm-lock.yaml
+node_modules
+.pnpm-lock.yaml
 
 # Archivos de compilación
 /dist
@@ -15,10 +15,7 @@ lerna-debug.log*
 
 # Variables de entorno
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env*.local
 
 # Archivos de sistema operativo
 .DS_Store
