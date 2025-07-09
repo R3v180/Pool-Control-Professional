@@ -1,5 +1,5 @@
 // filename: packages/client/src/router/components.tsx
-// Version: 1.3.0 (Add Clients link to navbar)
+// Version: 1.4.0 (Add Planner link to navbar)
 import { AppShell, Burger, Group, NavLink, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Navigate, Outlet, Link } from 'react-router-dom';
@@ -36,6 +36,12 @@ export const AppLayout = () => {
         {/* Enlaces solo para el rol ADMIN */}
         {user?.role === 'ADMIN' && (
           <>
+            <NavLink
+              component={Link}
+              to="/planner"
+              label="Planificador"
+              onClick={toggle}
+            />
             <NavLink
               component={Link}
               to="/clients"
