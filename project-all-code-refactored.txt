@@ -1,0 +1,3646 @@
+# ÍNDICE DE ARCHIVOS (ESTRUCTURA REFACTORIZADA)
+
+1. DEVELOPMENT_PLAN.md
+2. PROJECT_STATUS.md
+3. README.md
+4. package.json
+5. packages/client/index.html
+6. packages/client/package.json
+7. packages/client/src/App.tsx
+8. packages/client/src/api/apiClient.ts
+9. packages/client/src/features/admin/pages/ParameterCatalogPage.tsx
+10. packages/client/src/features/admin/pages/TaskCatalogPage.tsx
+11. packages/client/src/features/admin/pages/clients/ClientDetailPage.tsx
+12. packages/client/src/features/admin/pages/clients/ClientsPage.tsx
+13. packages/client/src/features/auth/pages/LoginPage.tsx
+14. packages/client/src/features/superadmin/pages/TenantsPage.tsx
+15. packages/client/src/main.tsx
+16. packages/client/src/providers/AuthProvider.tsx
+17. packages/client/src/router/components.tsx
+18. packages/client/src/router/index.tsx
+19. packages/client/src/styles/theme.ts
+20. packages/client/tsconfig.json
+21. packages/client/tsconfig.node.json
+22. packages/client/vite.config.ts
+23. packages/server/package.json
+24. packages/server/prisma/seed.ts
+25. packages/server/src/api/auth/auth.controller.ts
+26. packages/server/src/api/auth/auth.routes.ts
+27. packages/server/src/api/auth/auth.service.ts
+28. packages/server/src/api/clients/clients.controller.ts
+29. packages/server/src/api/clients/clients.routes.ts
+30. packages/server/src/api/clients/clients.service.ts
+31. packages/server/src/api/parameters/parameters.controller.ts
+32. packages/server/src/api/parameters/parameters.routes.ts
+33. packages/server/src/api/parameters/parameters.service.ts
+34. packages/server/src/api/pool-configurations/pool-configurations.service.ts
+35. packages/server/src/api/pools/pools.controller.ts
+36. packages/server/src/api/pools/pools.routes.ts
+37. packages/server/src/api/pools/pools.service.ts
+38. packages/server/src/api/tasks/tasks.controller.ts
+39. packages/server/src/api/tasks/tasks.routes.ts
+40. packages/server/src/api/tasks/tasks.service.ts
+41. packages/server/src/api/tenants/tenants.controller.ts
+42. packages/server/src/api/tenants/tenants.routes.ts
+43. packages/server/src/api/tenants/tenants.service.ts
+44. packages/server/src/app.ts
+45. packages/server/src/config/index.ts
+46. packages/server/src/middleware/auth.middleware.ts
+47. packages/server/src/middleware/error.middleware.ts
+48. packages/server/src/server.ts
+49. packages/server/src/utils/jwt.utils.ts
+50. packages/server/src/utils/password.utils.ts
+51. packages/server/tsconfig.json
+52. tsconfig.json
+
+
+# CONTENIDO DE ARCHIVOS
+
+
+// ====== [1] DEVELOPMENT_PLAN.md ======
+# Plan de Desarrollo Secuencial Detallado
+
+Este documento es la hoja de ruta arquitectónica y de implementación para **Pool-Control Professional**. Cada paso está descrito con el máximo detalle para servir como guía técnica durante el desarrollo, asegurando que cada componente se construya con un propósito claro y se integre correctamente en el ecosistema del proyecto.
+
+---
+
+## FASE 0: Configuración del Monorepo
+
+El objetivo de esta fase es establecer una base de proyecto robusta, escalable y con herramientas de desarrollo modernas.
+
+- **1. `/package.json` (Raíz):**
+
+  - **Propósito:** Definir el proyecto como un monorepo y centralizar la gestión de scripts.
+  - **Detalles:** Se configura `private: true` para indicar que el paquete raíz no se publica. La clave `workspaces` (gestionada a través de `pnpm-workspace.yaml`) define la estructura del monorepo. Los `scripts` aquí definidos (ej. `pnpm dev:server`) actúan como atajos que delegan la ejecución a los paquetes específicos usando el flag `--filter` de pnpm.
+
+- **2. `/pnpm-workspace.yaml`:**
+
+  - **Propósito:** Declarar la ubicación de los sub-proyectos (workspaces).
+  - **Detalles:** Este archivo contiene una única directiva (`packages: ['packages/*']`) que le indica a pnpm que cualquier subdirectorio dentro de `packages/` debe ser tratado como un proyecto individual, permitiendo la gestión centralizada de dependencias.
+
+- **3. `/tsconfig.json` (Raíz):**
+
+  - **Propósito:** Servir como la configuración "maestra" de TypeScript para todo el proyecto.
+  - **Detalles:** Establece las reglas de compilación más estrictas y modernas para garantizar la calidad del código (`strict: true`, `verbatimModuleSyntax: true`). Configura la resolución de módulos para ESM con Node.js (`module: NodeNext`, `moduleResolution: NodeNext`), que es la base de nuestra arquitectura de backend.
+
+- **4. `/.gitignore` (Raíz):**
+  - **Propósito:** Prevenir que archivos sensibles o innecesarios sean subidos al repositorio de Git.
+  - **Detalles:** Se configuran reglas para ignorar sistemáticamente directorios de dependencias (`node_modules`), archivos de entorno (`.env`), artefactos de compilación (`dist/`, `build/`) y archivos de configuración específicos de IDEs (`.vscode/`, `.idea/`).
+
+---
+
+## FASE 1: Fundación del Backend y Base de Datos
+
+Esta fase construye el esqueleto completo y funcional del servidor, incluyendo la base de datos, la autenticación y la gestión de errores.
+
+- **5. `packages/server/package.json`:**
+
+  - **Propósito:** Gestionar las dependencias y scripts exclusivos del backend.
+  - **Detalles:** Se añade `"type": "module"` para habilitar la sintaxis de ES Modules de forma nativa en Node.js. Se listan las dependencias de producción (`express`, `@prisma/client`, `jsonwebtoken`, `bcryptjs`, `cors`, `cookie-parser`) y de desarrollo (`tsx`, `@types/*`, `prisma`).
+
+- **6. `packages/server/tsconfig.json`:**
+
+  - **Propósito:** Especializar la configuración de TypeScript para el servidor.
+  - **Detalles:** Utiliza la directiva `extends` para heredar toda la configuración del `tsconfig.json` raíz. Su única adición es `"outDir": "./dist"`, que le indica al compilador dónde debe colocar los archivos JavaScript compilados.
+
+- **7. `packages/server/.env.example`:**
+
+  - **Propósito:** Servir como plantilla y documentación de las variables de entorno requeridas.
+  - **Detalles:** Define las claves que el servidor espera encontrar para funcionar: `DATABASE_URL` (la cadena de conexión a PostgreSQL), `PORT` (el puerto del servidor), `JWT_SECRET` (la clave secreta para firmar tokens) y `JWT_EXPIRES_IN` (la duración de los tokens en segundos).
+
+- **8. `packages/server/prisma/schema.prisma`:**
+
+  - **Propósito:** Es el corazón de la persistencia de datos. Define toda la arquitectura de la base de datos.
+  - **Detalles:** Este archivo es la "única fuente de verdad" para los modelos de datos. Describe cada tabla (`model`), sus columnas (campos) y tipos, y, fundamentalmente, las `relation` entre ellas. Al ejecutar `pnpm prisma:migrate`, Prisma lee este archivo para generar y aplicar las migraciones SQL correspondientes.
+
+- **9. `packages/server/src/config/index.ts`:**
+
+  - **Propósito:** Cargar, validar y centralizar el acceso a las variables de entorno de forma segura.
+  - **Detalles:** Este módulo utiliza `dotenv` para cargar el archivo `.env`. Implementa una lógica que verifica que todas las variables requeridas estén presentes, lanzando un error si falta alguna. Parsea los valores a sus tipos correctos (ej. `parseInt` para `PORT`) y exporta un único objeto `config` inmutable y tipado para su uso en el resto de la aplicación.
+
+- **10. `packages/server/src/utils/password.utils.ts`:**
+
+  - **Propósito:** Abstraer y centralizar la lógica de manejo de contraseñas.
+  - **Detalles:** Exportará dos funciones asíncronas: `hashPassword` (que encapsula a `bcrypt.hash`) y `comparePassword` (que encapsula a `bcrypt.compare`). Esto evita la dispersión de la lógica de hashing y facilita futuras actualizaciones (ej. cambiar el número de rondas de salting).
+
+- **11. `packages/server/src/utils/jwt.utils.ts`:**
+
+  - **Propósito:** Abstraer y centralizar la creación y verificación de JSON Web Tokens.
+  - **Detalles:** Exportará dos funciones: `signToken` (que usa el `JWT_SECRET` y `JWT_EXPIRES_IN` del `config` para crear un token a partir de un payload) y `verifyToken` (que valida un token y devuelve su payload decodificado o `null` si es inválido).
+
+- **12. `packages/server/src/middleware/error.middleware.ts`:**
+
+  - **Propósito:** Implementar un gestor de errores global ("catch-all").
+  - **Detalles:** Se define una función con la firma especial de 4 argumentos de Express (`err, req, res, next`). Este middleware se colocará al final de la cadena de middlewares y será responsable de atrapar cualquier error lanzado en las rutas (tanto síncronos como asíncronos), registrarlo en la consola y enviar al cliente una respuesta JSON limpia y estandarizada, evitando que el servidor se caiga por una excepción no controlada.
+
+- **13. `packages/server/src/api/auth/auth.service.ts`:**
+
+  - **Propósito:** Contener la lógica de negocio pura y desacoplada para la autenticación.
+  - **Detalles:** Este archivo se comunica directamente con la base de datos a través del Prisma Client. Contendrá funciones como `loginUser`, que buscará un usuario por email, usará `password.utils` para comparar la contraseña y, si es exitoso, devolverá los datos del usuario. No sabe nada sobre HTTP, cookies o `Request`/`Response`.
+
+- **14. `packages/server/src/api/auth/auth.controller.ts`:**
+
+  - **Propósito:** Orquestar el flujo de las peticiones de autenticación.
+  - **Detalles:** Actúa como un "controlador de tráfico". Sus funciones reciben `req` y `res`. Extraen datos del `req.body` (email, password), llaman a los métodos correspondientes en `auth.service.ts`, y con el resultado, construyen la respuesta HTTP. Por ejemplo, en un login exitoso, llamará a `jwt.utils.signToken`, establecerá una cookie `httpOnly` en el `res`, y enviará los datos del usuario como JSON.
+
+- **15. `packages/server/src/api/auth/auth.routes.ts`:**
+
+  - **Propósito:** Definir los endpoints de la API de autenticación.
+  - **Detalles:** Utiliza `express.Router()` para crear un mini-enrutador. Define las rutas (`POST /login`, `POST /register`, etc.) y las asocia con las funciones del controlador (`auth.controller.ts`) que las manejarán.
+
+- **16. `packages/server/src/app.ts`:**
+
+  - **Propósito:** Ensamblar la aplicación Express.
+  - **Detalles:** Crea la instancia de `express()`. Es responsable de configurar la secuencia de middlewares globales en el orden correcto: `cors` para permitir peticiones del frontend, `express.json` para parsear bodies JSON, `cookieParser` para parsear cookies. Luego, monta el enrutador de autenticación (`auth.routes.ts`) bajo un prefijo base como `/api/auth`. Finalmente, y de forma crucial, registra el `errorHandler` como el último middleware de la pila. Exporta la instancia `app` configurada.
+
+- **17. `packages/server/src/server.ts`:**
+  - **Propósito:** Iniciar el servidor web.
+  - **Detalles:** Es el punto de entrada ejecutable. Importa la instancia `app` desde `app.ts` y el objeto `config` desde `config/index.ts`. Su única responsabilidad es llamar a `app.listen()` usando el `PORT` de la configuración y mostrar un mensaje en consola para confirmar que el servidor está en línea y escuchando.
+
+---
+
+## FASE 2: Fundación del Frontend y Conexión
+
+Esta fase establece la base de la aplicación React, la configura y crea la primera funcionalidad de cara al usuario: el login.
+
+- **18-21. Archivos de Configuración (`package.json`, `tsconfig.json`, `vite.config.ts`, `theme.ts`):** Configuración inicial del proyecto de React con Vite, incluyendo dependencias (`react`, `mantine`), configuración de TypeScript y definición del tema visual de la UI.
+- **22. `packages/client/src/api/apiClient.ts`:** Creación de una instancia de `axios` preconfigurada con la `baseURL` del API del backend y la opción `withCredentials: true` para asegurar que las cookies de autenticación se envíen en cada petición.
+- **23. `packages/client/src/providers/AuthProvider.tsx`:** Implementación de un React Context Provider para gestionar el estado de autenticación (`usuario`, `isLoggedIn`). Expondrá funciones como `login` y `logout` que el resto de la app podrá usar.
+- **24-26. `router/index.ts`, `App.tsx`, `main.tsx`:** Configuración del enrutador de la aplicación (`react-router-dom`), definiendo rutas públicas y privadas. El componente `App.tsx` envolverá toda la aplicación con el `AuthProvider` y el `MantineProvider`.
+- **27. `packages/client/src/features/auth/pages/LoginPage.tsx`:** Desarrollo de la primera pantalla interactiva. Este componente contendrá el formulario de login, gestionará su estado, y al enviarse, llamará a la función `login` del `AuthProvider`, que a su vez usará el `apiClient` para realizar la petición `POST /api/auth/login` al backend.
+
+
+
+// ====== [2] PROJECT_STATUS.md ======
+# Estado del Proyecto: Pool-Control Professional
+
+_Última actualización: 8 de julio de 2025, 23:12 CEST_
+
+---
+
+## 1. Resumen Ejecutivo
+
+El proyecto ha completado exitosamente toda su fase de fundación. La infraestructura del backend (API, base de datos, autenticación) y la del frontend (React, enrutador, gestión de estado) están 100% operativas y conectadas. La aplicación ahora soporta un ciclo de login completo.
+
+Con la base ya construida, el proyecto entra oficialmente en la **FASE 3: Desarrollo por Módulos**. El foco se desplaza de la infraestructura al desarrollo de las funcionalidades específicas para cada rol, comenzando por el `SUPER_ADMIN`.
+
+---
+
+## 2. Hitos Completados y Entregables
+
+### ✅ Fase 0: Configuración del Monorepo
+
+- **Entregable:** Estructura de proyecto robusta con `pnpm` workspaces y configuración de TypeScript consistente.
+
+### ✅ Fase 1: Fundación del Backend y Base de Datos
+
+- **Entregable:** Una API de backend completamente funcional con Express.js, conectada a una base de datos PostgreSQL mediante Prisma. Incluye un sistema de autenticación por JWT/cookies y un gestor de errores global.
+
+### ✅ Fase 2: Fundación del Frontend y Conexión
+
+- **Entregable:** Una aplicación de React (`create-vite-app`) funcional. Se ha configurado el enrutamiento (`react-router-dom`), la gestión de estado de autenticación (`React Context`), la estilización con Mantine UI y la conexión con el backend a través de un cliente de API (`axios`). Se ha construido y validado el flujo de login completo.
+
+---
+
+## 3. Decisiones Arquitectónicas Clave Tomadas
+
+- **Monorepo con PNPM:** Selección de `pnpm` por su eficiencia en la gestión de dependencias en workspaces.
+- **TypeScript Estricto con ES Modules:** Adopción de una configuración moderna para maximizar la seguridad de tipos y alinearse con los estándares actuales de Node.js.
+- **Gestión de `JWT_EXPIRES_IN`:** Se define la duración de los tokens como un número de segundos en el `.env` para evitar conflictos de tipado con el toolchain.
+- **Estrategia de Documentación:** `README.md` describe QUÉ hace el producto; un futuro `SETUP_GUIDE.md` describirá CÓMO se instala.
+
+---
+
+## 4. Próximo Paso Inmediato: Inicio del Módulo `SuperAdmin`
+
+La siguiente tarea inicia la FASE 3. Construiremos la primera pieza de lógica de negocio para la gestión de Tenants.
+
+- **Archivo:** `packages/server/src/api/tenants/tenants.service.ts`
+- **Objetivo:** Crear el servicio que contendrá la lógica de negocio para las operaciones CRUD (Crear, Leer, Actualizar, Borrar) sobre el modelo `Tenant`.
+- **Funciones a Implementar:**
+  - `createTenant(data)`: Creará un nuevo tenant y su primer usuario `ADMIN`.
+  - `getAllTenants()`: Devolverá un listado de todos los tenants.
+  - `getTenantById(id)`: Buscará un tenant por su ID.
+  - `updateTenantStatus(id, status)`: Actualizará el estado de la suscripción de un tenant.
+
+---
+
+## 5. Bloqueos Actuales
+
+- **Ninguno.** El proyecto está completamente desbloqueado y listo para continuar.
+
+
+
+// ====== [3] README.md ======
+# Documento de Especificación Funcional v1.0: Sistema "Pool-Control Professional"
+
+**Fecha:** 8 de julio de 2025
+**Autor:** Pool-Control Professional Team
+**Proyecto:** Plataforma Integral de Gestión para Empresas de Mantenimiento de Piscinas.
+
+---
+
+## 1. Introducción y Objetivos
+
+Este documento detalla las funcionalidades y especificaciones técnicas del sistema **"Pool-Control Professional"**. El objetivo es crear una plataforma SaaS (Software as a Service) multi-tenant, centralizada y accesible desde cualquier dispositivo, que permita la gestión integral de las operaciones de una empresa de mantenimiento de piscinas.
+
+### Objetivos Clave:
+
+- **Maximizar la Eficiencia Operativa:** Automatizar la planificación de rutas y la generación de partes de trabajo para reducir drásticamente el tiempo de gestión en la oficina y de registro de datos en campo.
+- **Incrementar la Rentabilidad:** Controlar de forma exhaustiva el consumo de productos químicos, optimizar la política de precios por cliente y facilitar una facturación precisa.
+- **Mejorar la Calidad del Servicio:** Estandarizar los procedimientos de mantenimiento para cada piscina, asegurando el cumplimiento de tareas y garantizando la calidad del agua mediante un sistema de alertas proactivo.
+- **Aumentar la Transparencia y Control:** Ofrecer datos claros y precisos a la gerencia para la toma de decisiones estratégicas y, en futuras versiones, ofrecer un portal de cliente para total transparencia.
+
+---
+
+## 2. Arquitectura Tecnológica
+
+- **Frontend:** Aplicación web de una sola página (SPA) desarrollada en **React con Vite y TypeScript** para garantizar un código robusto y escalable. La interfaz de usuario se construirá con la librería de componentes **Mantine UI**, con un diseño 100% responsivo (mobile-first).
+- **Backend:** API RESTful construida con **Node.js y Express.js**, utilizando TypeScript. La interacción con la base de datos se gestionará a través de **Prisma ORM** por su seguridad de tipos y eficiencia.
+- **Base de Datos:** **PostgreSQL**, elegido por su fiabilidad, escalabilidad y robustez en el manejo de relaciones complejas.
+- **Autenticación:** Sistema basado en **Tokens JWT** almacenados en cookies `httpOnly` para una gestión de sesiones segura y moderna.
+- **Estructura:** **Monorepo** gestionado con `pnpm` workspaces para un desarrollo cohesivo y centralizado del frontend y el backend.
+
+---
+
+## 3. Definición de Roles y Permisos
+
+| Rol                      | Descripción                                                                         | Permisos Clave                                                                                                                         |
+| ------------------------ | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **SuperAdmin**           | Administrador de la plataforma SaaS. Gestiona los tenants.                          | Crear/Editar/Eliminar Tenants. Activar/desactivar suscripciones. Registrar pagos de suscripción.                                       |
+| **Administración (Isa)** | Usuario principal del tenant. Configura y gestiona toda la operativa de su empresa. | CRUD completo sobre: Clientes, Piscinas, Catálogo de Tareas y Parámetros, Productos, Precios y Planificación de Rutas.                 |
+| **Técnico**              | Usuario de campo. Su interacción es 100% a través del móvil o tablet.               | Ver su ruta asignada del día. Rellenar y guardar partes de trabajo. No puede ver datos de otros técnicos ni información de precios.    |
+| **Gerencia (Jorge)**     | Supervisor del negocio. Acceso de solo lectura a toda la información del tenant.    | Ver todos los datos, informes y configuraciones. **NO PUEDE** crear, editar ni eliminar nada, garantizando la integridad de los datos. |
+
+---
+
+## 4. Especificación Funcional por Rol y Pantalla
+
+### 4.1. Rol: Administración (Isa)
+
+- **Pantalla: Dashboard Principal**
+
+  - **Vista:** Al iniciar sesión, Isa ve un resumen del estado del negocio: "Visitas Programadas para Hoy" (con estado: pendiente/completada), "Alertas de Calidad Recientes" (listado de mediciones fuera de rango de las últimas 24h) y accesos directos a las funciones más utilizadas: "Planificar Rutas" y "Gestión de Clientes".
+  - **Funciones:** Navegación rápida a las secciones principales del panel de administración.
+
+- **Pantalla: Gestión de Clientes y Piscinas**
+
+  - **Vista:** Un listado maestro de todos los clientes de la empresa. Un buscador potente permite encontrar clientes por nombre, CIF o dirección.
+  - **Funciones:**
+    - **Crear Cliente:** Un formulario simple para dar de alta un nuevo cliente con sus datos de contacto y facturación, y un campo clave: **Modificador de Precio** (ej. 1.0 por defecto, 0.9 para un 10% de descuento).
+    - **Ficha de Cliente:** Al hacer clic en un cliente, se accede a su ficha detallada, donde se listan las piscinas asociadas a él.
+    - **Crear/Editar Piscina:** Dentro de la ficha del cliente, Isa puede añadir nuevas piscinas, especificando su dirección, nombre (ej. "Piscina Principal"), volumen en m³, tipo (cloro/sal), etc.
+    - Por cada piscina listada, hay dos botones de acción clave: **"Configurar Ficha"** y **"Generar QR"**.
+
+- **Pantalla: Constructor de Fichas de Mantenimiento (El Corazón del Sistema)**
+
+  - **Vista:** Una interfaz de dos columnas. A la izquierda, la "Librería de Parámetros y Tareas" del tenant. A la derecha, la "Ficha de Configuración" de la piscina seleccionada.
+  - **Funciones:**
+    - **Librería Dinámica:** Isa puede añadir, editar o eliminar plantillas de parámetros (ej. "pH", "Alcalinidad") y tareas (ej. "Limpiar cestos de skimmers", "Comprobar presión del filtro"). Al crear un parámetro, define su tipo de input (Número, Sí/No, Texto, Selección Múltiple).
+    - **Configuración por Arrastre:** Isa arrastra ítems de la librería a la ficha de la piscina para construir su plan de mantenimiento personalizado.
+    - **Reglas de Negocio:** Para cada ítem añadido a la ficha, Isa define su **frecuencia** (Diaria, Semanal, Mensual...). Para los parámetros numéricos, establece los **rangos Mín/Máx** que activarán una alerta si el técnico introduce un valor fuera de ellos.
+
+- **Pantalla: Planificador de Rutas Semanales**
+
+  - **Vista:** Una cuadrícula visual con los días de la semana en las columnas y los técnicos en las filas. Una barra lateral muestra una lista de "Visitas Pendientes", generadas automáticamente por el sistema según la frecuencia configurada en las fichas de cada piscina.
+  - **Funciones:** Isa **arrastra una visita pendiente y la suelta** en la casilla del técnico y día correspondientes. Puede mover las visitas entre técnicos y días para balancear la carga de trabajo. El sistema marca visualmente las rutas sobrecargadas.
+
+- **Pantalla: Gestión de Catálogo y Precios de Productos**
+  - **Vista:** Una tabla con todos los productos químicos que usa la empresa (hipoclorito, reductor de pH, etc.).
+  - **Funciones:** Permite hacer un CRUD completo sobre los productos, definiendo su nombre, unidad (L, Kg) y su **Precio Base de Venta**. Este precio, combinado con el "Modificador de Precio" del cliente, calculará el precio final en cada consumo.
+
+### 4.2. Rol: Técnico
+
+- **Pantalla: Mi Ruta de Hoy**
+
+  - **Vista:** Al iniciar sesión en su móvil, el técnico ve una lista vertical, simple y clara con las visitas del día, ordenadas por proximidad u horario. Cada tarjeta de visita muestra: Nombre del Cliente, Dirección y un botón grande: **"INICIAR VISITA"**.
+  - **Funciones:** Tocar la dirección abre Google Maps/Apple Maps con la ruta trazada. El flujo de trabajo está diseñado para ser lineal y sin distracciones.
+
+- **Pantalla: Parte de Trabajo Dinámico**
+  - **Vista:** Al iniciar la visita (opcionalmente escaneando el QR de la piscina), la pantalla se transforma en el parte de trabajo. **Este formulario no es estático**, se genera dinámicamente basándose en la configuración que Isa creó en el "Constructor de Fichas".
+    - **Sección "Mediciones":** Controles optimizados para la rapidez. Si el pH tiene un rango de 7.2-7.6, al introducir 7.8, el campo se pondrá en rojo brillante al instante.
+    - **Sección "Tareas Programadas":** SOLO si para esa visita toca "Limpiar cestos de skimmers", aparecerá un checkbox para marcarlo como hecho.
+    - **Sección "Consumo de Productos":** Una lista de los productos más comunes con botones `+` y `-` para añadir la cantidad usada de forma rápida.
+  - **Funciones:** Rellenar los campos. El botón **"GUARDAR Y FINALIZAR"** al final envía toda la información al sistema, la cual es **inmutable** y genera un registro histórico.
+
+### 4.3. Rol: Gerencia (Jorge)
+
+- **Pantalla: Dashboard de Gerencia**
+
+  - **Vista:** Un panel de alto nivel con los KPIs clave para la salud del negocio: Facturación por Consumo de Producto del último mes, Margen de Beneficio por Cliente, Nº de Alertas de Calidad generadas, Ranking de Rendimiento de Técnicos (visitas/día).
+  - **Funciones:** Todo es visual, con gráficos interactivos pero sin capacidad de edición. Permite filtrar por rangos de fecha.
+
+- **Navegación en Modo "Solo Lectura"**
+  - **Funcionalidad:** Jorge puede acceder a las mismas pantallas que Isa (planificador, fichas de clientes, precios), pero todos los botones de "Crear", "Editar", "Guardar" o "Eliminar" están desactivados o directamente no son visibles. Su rol es de supervisión y análisis estratégico, no de ejecución.
+
+### 4.4. Rol: SuperAdmin
+
+- **Funcionalidad:** El SuperAdmin no interactúa con la operativa de las piscinas, sino con la plataforma en sí. Su panel es mucho más simple y se centra en la gestión de los tenants (las empresas suscritas al servicio). Permite crear nuevas cuentas, definir sus subdominios, y gestionar su estado de suscripción y ciclo de pagos.
+
+
+
+// ====== [4] package.json ======
+{
+  "name": "pool-control-professional",
+  "private": true,
+  "version": "1.0.0",
+  "description": "SaaS para la gestión integral de empresas de mantenimiento de piscinas.",
+  "author": "",
+  "license": "ISC",
+  "scripts": {
+    "dev:server": "pnpm --filter @pool-control/server dev",
+    "dev:client": "pnpm --filter @pool-control/client dev",
+    "build": "pnpm --filter \"./packages/**\" build",
+    "prisma:generate": "pnpm --filter @pool-control/server prisma:generate",
+    "prisma:migrate": "pnpm --filter @pool-control/server prisma:migrate",
+    "prisma:studio": "pnpm --filter @pool-control/server prisma:studio"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}
+
+
+// ====== [5] packages/client/index.html ======
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pool-Control Professional</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
+
+// ====== [6] packages/client/package.json ======
+{
+  "name": "@pool-control/client",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc && vite build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@mantine/core": "^7.10.1",
+    "@mantine/form": "^8.1.3",
+    "@mantine/hooks": "^7.10.1",
+    "axios": "^1.7.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.23.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/eslint-plugin": "^7.13.0",
+    "@typescript-eslint/parser": "^7.13.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "eslint-plugin-react-refresh": "0.4.7",
+    "typescript": "^5.4.5",
+    "vite": "^5.3.1"
+  }
+}
+
+
+// ====== [7] packages/client/src/App.tsx ======
+import { MantineProvider } from '@mantine/core';
+import { RouterProvider } from 'react-router-dom';
+import { theme } from './styles/theme.js';
+import { router } from './router/index.js';
+import { AuthProvider } from './providers/AuthProvider.js';
+
+// Importa los estilos base de Mantine
+import '@mantine/core/styles.css';
+
+function App() {
+  return (
+    <MantineProvider theme={theme}>
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
+    </MantineProvider>
+  );
+}
+
+export default App;
+
+
+// ====== [8] packages/client/src/api/apiClient.ts ======
+import axios from 'axios';
+
+const apiClient = axios.create({
+  // La URL base para todas las peticiones al API.
+  // Gracias al proxy configurado en vite.config.ts, esto se
+  // redirigirá a http://localhost:3001/api en desarrollo.
+  baseURL: '/api',
+
+  // Permite que axios envíe y reciba cookies (como nuestro token JWT)
+  // en las peticiones a dominios diferentes.
+  withCredentials: true,
+});
+
+export default apiClient;
+
+
+// ====== [9] packages/client/src/features/admin/pages/ParameterCatalogPage.tsx ======
+// filename: packages/client/src/features/admin/pages/ParameterCatalogPage.tsx
+// Version: 1.2.0 (Implement TagsInput for SELECT options in the form)
+import { useEffect, useState } from 'react';
+import {
+  Container,
+  Title,
+  Table,
+  Loader,
+  Alert,
+  Button,
+  Group,
+  Modal,
+  TextInput,
+  Stack,
+  Select,
+  TagsInput,
+} from '@mantine/core';
+import { useForm } from '@mantine/form';
+import { useDisclosure } from '@mantine/hooks';
+import apiClient from '../../../api/apiClient.js';
+
+// --- Tipos ---
+const InputTypes = ['NUMBER', 'BOOLEAN', 'TEXT', 'SELECT'] as const;
+type InputType = (typeof InputTypes)[number];
+
+interface ParameterTemplate {
+  id: string;
+  name: string;
+  unit: string | null;
+  type: InputType;
+  selectOptions: string[];
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
+// --- Componente ---
+export function ParameterCatalogPage() {
+  const [templates, setTemplates] = useState<ParameterTemplate[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
+  const [editingTemplate, setEditingTemplate] = useState<ParameterTemplate | null>(null);
+
+  const form = useForm({
+    initialValues: {
+      name: '',
+      unit: '',
+      type: 'NUMBER' as InputType,
+      selectOptions: [] as string[],
+    },
+    validate: {
+      name: (value: string) => (value.trim().length < 2 ? 'El nombre es demasiado corto' : null),
+      type: (value: string) => (InputTypes.includes(value as InputType) ? null : 'Tipo inválido'),
+      selectOptions: (value: string[], values) => {
+        if (values.type === 'SELECT' && value.length === 0) {
+          return 'Debe definir al menos una opción para el tipo SELECT';
+        }
+        return null;
+      }
+    },
+  });
+
+  const fetchTemplates = async () => {
+    setIsLoading(true);
+    try {
+      const response = await apiClient.get<ApiResponse<ParameterTemplate[]>>('/parameters');
+      setTemplates(response.data.data);
+    } catch (err) {
+      setError('No se pudo cargar el catálogo de parámetros.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
+
+  const handleOpenModal = (template: ParameterTemplate | null = null) => {
+    setEditingTemplate(template);
+    if (template) {
+      form.setValues({
+        name: template.name,
+        unit: template.unit || '',
+        type: template.type,
+        selectOptions: template.selectOptions || [],
+      });
+    } else {
+      form.reset();
+    }
+    openModal();
+  };
+
+  const handleSubmit = async (values: typeof form.values) => {
+    const payload = {
+      ...values,
+      selectOptions: values.type === 'SELECT' ? values.selectOptions : [],
+    };
+    try {
+      if (editingTemplate) {
+        await apiClient.patch(`/parameters/${editingTemplate.id}`, payload);
+      } else {
+        await apiClient.post('/parameters', payload);
+      }
+      await fetchTemplates();
+      closeModal();
+    } catch (err: any) {
+      form.setErrors({ name: err.response?.data?.message || 'Error al guardar el parámetro' });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar este parámetro?')) {
+      try {
+        await apiClient.delete(`/parameters/${id}`);
+        setTemplates((current) => current.filter((t) => t.id !== id));
+      } catch (err) {
+        // TODO: Mostrar notificación de error
+        console.error('Failed to delete parameter', err);
+      }
+    }
+  };
+
+  if (isLoading) return <Loader size="xl" />;
+  if (error) return <Alert color="red" title="Error">{error}</Alert>;
+
+  const rows = templates.map((template) => (
+    <Table.Tr key={template.id}>
+      <Table.Td>{template.name}</Table.Td>
+      <Table.Td>{template.unit || '-'}</Table.Td>
+      <Table.Td>{template.type}</Table.Td>
+      <Table.Td>
+        <Group gap="xs">
+          <Button variant="subtle" size="xs" onClick={() => handleOpenModal(template)}>Editar</Button>
+          <Button variant="subtle" size="xs" color="red" onClick={() => handleDelete(template.id)}>Eliminar</Button>
+        </Group>
+      </Table.Td>
+    </Table.Tr>
+  ));
+
+  return (
+    <>
+      <Modal
+        opened={modalOpened}
+        onClose={closeModal}
+        title={editingTemplate ? 'Editar Parámetro' : 'Crear Nuevo Parámetro'}
+        centered
+      >
+        <form onSubmit={form.onSubmit(handleSubmit)}>
+          <Stack>
+            <TextInput required label="Nombre del Parámetro" {...form.getInputProps('name')} />
+            <TextInput label="Unidad (ej. ppm, pH, °C)" {...form.getInputProps('unit')} />
+            <Select
+              label="Tipo de Input"
+              required
+              data={InputTypes as unknown as string[]}
+              {...form.getInputProps('type')}
+            />
+            {form.values.type === 'SELECT' && (
+              <TagsInput
+                label="Opciones del Select"
+                placeholder="Añade opciones y presiona Enter"
+                description="Escribe una opción y presiona Enter para añadirla a la lista."
+                required
+                {...form.getInputProps('selectOptions')}
+              />
+            )}
+            <Button type="submit" mt="md">{editingTemplate ? 'Guardar Cambios' : 'Crear Parámetro'}</Button>
+          </Stack>
+        </form>
+      </Modal>
+
+      <Container fluid>
+        <Group justify="space-between" align="center">
+          <Title order={2} my="lg">Catálogo de Parámetros</Title>
+          <Button onClick={() => handleOpenModal()}>Crear Nuevo Parámetro</Button>
+        </Group>
+        <Table striped withTableBorder withColumnBorders mt="md">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Nombre</Table.Th>
+              <Table.Th>Unidad</Table.Th>
+              <Table.Th>Tipo</Table.Th>
+              <Table.Th>Acciones</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>{rows.length > 0 ? rows : <Table.Tr><Table.Td colSpan={4}>No hay parámetros definidos en el catálogo.</Table.Td></Table.Tr>}</Table.Tbody>
+        </Table>
+      </Container>
+    </>
+  );
+}
+
+
+// ====== [10] packages/client/src/features/admin/pages/TaskCatalogPage.tsx ======
+// filename: packages/client/src/features/admin/pages/TaskCatalogPage.tsx
+// Version: 1.0.0 (Initial implementation of the task template catalog page with full CRUD)
+import { useEffect, useState } from 'react';
+import {
+  Container,
+  Title,
+  Table,
+  Loader,
+  Alert,
+  Button,
+  Group,
+  Modal,
+  TextInput,
+  Stack,
+  Textarea,
+} from '@mantine/core';
+import { useForm } from '@mantine/form';
+import { useDisclosure } from '@mantine/hooks';
+import apiClient from '../../../api/apiClient.js';
+
+// --- Tipos ---
+interface TaskTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
+// --- Componente ---
+export function TaskCatalogPage() {
+  const [templates, setTemplates] = useState<TaskTemplate[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
+  const [editingTemplate, setEditingTemplate] = useState<TaskTemplate | null>(null);
+
+  const form = useForm({
+    initialValues: {
+      name: '',
+      description: '',
+    },
+    validate: {
+      name: (value: string) => (value.trim().length < 2 ? 'El nombre es demasiado corto' : null),
+    },
+  });
+
+  const fetchTemplates = async () => {
+    setIsLoading(true);
+    try {
+      const response = await apiClient.get<ApiResponse<TaskTemplate[]>>('/tasks');
+      setTemplates(response.data.data);
+    } catch (err) {
+      setError('No se pudo cargar el catálogo de tareas.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
+
+  const handleOpenModal = (template: TaskTemplate | null = null) => {
+    setEditingTemplate(template);
+    if (template) {
+      form.setValues({
+        name: template.name,
+        description: template.description || '',
+      });
+    } else {
+      form.reset();
+    }
+    openModal();
+  };
+
+  const handleSubmit = async (values: typeof form.values) => {
+    try {
+      if (editingTemplate) {
+        await apiClient.patch(`/tasks/${editingTemplate.id}`, values);
+      } else {
+        await apiClient.post('/tasks', values);
+      }
+      await fetchTemplates();
+      closeModal();
+    } catch (err: any) {
+      form.setErrors({ name: err.response?.data?.message || 'Error al guardar la tarea' });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar esta tarea?')) {
+      try {
+        await apiClient.delete(`/tasks/${id}`);
+        setTemplates((current) => current.filter((t) => t.id !== id));
+      } catch (err) {
+        // TODO: Mostrar notificación de error
+        console.error('Failed to delete task', err);
+      }
+    }
+  };
+
+  if (isLoading) return <Loader size="xl" />;
+  if (error) return <Alert color="red" title="Error">{error}</Alert>;
+
+  const rows = templates.map((template) => (
+    <Table.Tr key={template.id}>
+      <Table.Td>{template.name}</Table.Td>
+      <Table.Td>{template.description || '-'}</Table.Td>
+      <Table.Td>
+        <Group gap="xs">
+          <Button variant="subtle" size="xs" onClick={() => handleOpenModal(template)}>Editar</Button>
+          <Button variant="subtle" size="xs" color="red" onClick={() => handleDelete(template.id)}>Eliminar</Button>
+        </Group>
+      </Table.Td>
+    </Table.Tr>
+  ));
+
+  return (
+    <>
+      <Modal
+        opened={modalOpened}
+        onClose={closeModal}
+        title={editingTemplate ? 'Editar Tarea' : 'Crear Nueva Tarea'}
+        centered
+      >
+        <form onSubmit={form.onSubmit(handleSubmit)}>
+          <Stack>
+            <TextInput required label="Nombre de la Tarea" {...form.getInputProps('name')} />
+            <Textarea label="Descripción (opcional)" {...form.getInputProps('description')} />
+            <Button type="submit" mt="md">{editingTemplate ? 'Guardar Cambios' : 'Crear Tarea'}</Button>
+          </Stack>
+        </form>
+      </Modal>
+
+      <Container fluid>
+        <Group justify="space-between" align="center">
+          <Title order={2} my="lg">Catálogo de Tareas</Title>
+          <Button onClick={() => handleOpenModal()}>Crear Nueva Tarea</Button>
+        </Group>
+        <Table striped withTableBorder withColumnBorders mt="md">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Nombre</Table.Th>
+              <Table.Th>Descripción</Table.Th>
+              <Table.Th>Acciones</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>{rows.length > 0 ? rows : <Table.Tr><Table.Td colSpan={3}>No hay tareas definidas en el catálogo.</Table.Td></Table.Tr>}</Table.Tbody>
+        </Table>
+      </Container>
+    </>
+  );
+}
+
+
+// ====== [11] packages/client/src/features/admin/pages/clients/ClientDetailPage.tsx ======
+// filename: packages/client/src/features/admin/pages/clients/ClientDetailPage.tsx
+// Version: 1.1.0 (Implement Create/Update/Delete functionality for pools)
+import { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import {
+  Container,
+  Title,
+  Loader,
+  Alert,
+  Button,
+  Group,
+  Paper,
+  Text,
+  Table,
+  Breadcrumbs,
+  Modal,
+  TextInput,
+  Stack,
+  NumberInput,
+  Select,
+} from '@mantine/core';
+import { useForm } from '@mantine/form';
+import { useDisclosure } from '@mantine/hooks';
+import apiClient from '../../../../api/apiClient.js';
+
+// --- Tipos ---
+interface Pool {
+  id: string;
+  name: string;
+  address: string;
+  volume: number | null;
+  type: string | null;
+}
+
+interface Client {
+  id: string;
+  name: string;
+  contactPerson: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  pools: Pool[];
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
+// --- Componente ---
+export function ClientDetailPage() {
+  const { id: clientId } = useParams<{ id: string }>();
+  const [client, setClient] = useState<Client | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
+  const [editingPool, setEditingPool] = useState<Pool | null>(null);
+
+  const poolForm = useForm({
+    initialValues: {
+      name: '',
+      address: '',
+      volume: null as number | null,
+      type: '',
+    },
+    validate: {
+      name: (value) => (value.trim().length < 2 ? 'El nombre es demasiado corto' : null),
+      address: (value) => (value.trim().length < 5 ? 'La dirección es demasiado corta' : null),
+    },
+  });
+
+  const fetchClient = async () => {
+    if (!clientId) return;
+    setIsLoading(true);
+    try {
+      const response = await apiClient.get<ApiResponse<Client>>(`/clients/${clientId}`);
+      setClient(response.data.data);
+    } catch (err) {
+      setError('No se pudo cargar la información del cliente.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchClient();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientId]);
+
+  const handleOpenModal = (pool: Pool | null = null) => {
+    setEditingPool(pool);
+    if (pool) {
+      poolForm.setValues({
+        name: pool.name,
+        address: pool.address,
+        volume: pool.volume,
+        type: pool.type || '',
+      });
+    } else {
+      poolForm.reset();
+    }
+    openModal();
+  };
+
+  const handlePoolSubmit = async (values: typeof poolForm.values) => {
+    if (!clientId) return;
+    try {
+      const payload = { ...values, clientId };
+      if (editingPool) {
+        await apiClient.patch(`/pools/${editingPool.id}`, payload);
+      } else {
+        await apiClient.post('/pools', payload);
+      }
+      await fetchClient(); // Re-cargamos los datos del cliente para ver la piscina nueva/actualizada
+      closeModal();
+    } catch (err: any) {
+      poolForm.setErrors({ name: err.response?.data?.message || 'Error al guardar la piscina' });
+    }
+  };
+
+  const handlePoolDelete = async (poolId: string) => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar esta piscina?')) {
+      try {
+        await apiClient.delete(`/pools/${poolId}`);
+        await fetchClient(); // Re-cargamos para que desaparezca de la lista
+      } catch (err) {
+        console.error('Failed to delete pool', err);
+      }
+    }
+  };
+
+
+  if (isLoading) return <Loader size="xl" />;
+  if (error) return <Alert color="red" title="Error">{error}</Alert>;
+  if (!client) return <Alert color="yellow" title="Aviso">Cliente no encontrado.</Alert>;
+
+  const breadcrumbs = (
+    <Breadcrumbs>
+      <Link to="/clients">Clientes</Link>
+      <Text>{client.name}</Text>
+    </Breadcrumbs>
+  );
+
+  return (
+    <>
+      <Modal
+        opened={modalOpened}
+        onClose={closeModal}
+        title={editingPool ? 'Editar Piscina' : 'Crear Nueva Piscina'}
+        centered
+      >
+        <form onSubmit={poolForm.onSubmit(handlePoolSubmit)}>
+          <Stack>
+            <TextInput required label="Nombre de la Piscina" placeholder="Ej. Piscina Principal" {...poolForm.getInputProps('name')} />
+            <TextInput required label="Dirección de la Piscina" {...poolForm.getInputProps('address')} />
+            <NumberInput label="Volumen (m³)" placeholder="Ej. 50" min={0} {...poolForm.getInputProps('volume')} />
+            <Select label="Tipo de Piscina" data={['Cloro', 'Sal']} {...poolForm.getInputProps('type')} />
+            <Button type="submit" mt="md">{editingPool ? 'Guardar Cambios' : 'Crear Piscina'}</Button>
+          </Stack>
+        </form>
+      </Modal>
+    
+      <Container fluid>
+        {breadcrumbs}
+        <Title order={2} my="lg">{client.name}</Title>
+        <Paper withBorder p="md" mb="xl">
+          <Title order={4} mb="xs">Información de Contacto</Title>
+          <Text><strong>Persona de contacto:</strong> {client.contactPerson || '-'}</Text>
+          <Text><strong>Email:</strong> {client.email || '-'}</Text>
+          <Text><strong>Teléfono:</strong> {client.phone || '-'}</Text>
+          <Text><strong>Dirección de facturación:</strong> {client.address || '-'}</Text>
+        </Paper>
+        
+        <Group justify="space-between" align="center" mb="md">
+          <Title order={3}>Piscinas</Title>
+          <Button onClick={() => handleOpenModal()}>Crear Nueva Piscina</Button>
+        </Group>
+
+        <Table striped withTableBorder>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Nombre</Table.Th>
+              <Table.Th>Dirección</Table.Th>
+              <Table.Th>Volumen (m³)</Table.Th>
+              <Table.Th>Tipo</Table.Th>
+              <Table.Th>Acciones</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {client.pools.length > 0 ? (
+              client.pools.map(pool => (
+                <Table.Tr key={pool.id}>
+                  <Table.Td>{pool.name}</Table.Td>
+                  <Table.Td>{pool.address}</Table.Td>
+                  <Table.Td>{pool.volume || '-'}</Table.Td>
+                  <Table.Td>{pool.type || '-'}</Table.Td>
+                  <Table.Td>
+                    <Group gap="xs">
+                      <Button variant="subtle" size="xs" onClick={() => handleOpenModal(pool)}>Editar</Button>
+                      <Button variant="subtle" size="xs" color="red" onClick={() => handlePoolDelete(pool.id)}>Eliminar</Button>
+                    </Group>
+                  </Table.Td>
+                </Table.Tr>
+              ))
+            ) : (
+              <Table.Tr><Table.Td colSpan={5}>Este cliente no tiene piscinas asociadas.</Table.Td></Table.Tr>
+            )}
+          </Table.Tbody>
+        </Table>
+      </Container>
+    </>
+  );
+}
+
+
+// ====== [12] packages/client/src/features/admin/pages/clients/ClientsPage.tsx ======
+// filename: packages/client/src/features/admin/pages/clients/ClientsPage.tsx
+// Version: 1.1.0 (Make client names link to their detail page)
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  Container,
+  Title,
+  Table,
+  Loader,
+  Alert,
+  Button,
+  Group,
+  Modal,
+  TextInput,
+  Stack,
+  NumberInput,
+  Anchor,
+} from '@mantine/core';
+import { useForm } from '@mantine/form';
+import { useDisclosure } from '@mantine/hooks';
+import apiClient from '../../../../api/apiClient.js';
+
+// --- Tipos ---
+interface Client {
+  id: string;
+  name: string;
+  contactPerson: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  priceModifier: number;
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
+// --- Componente ---
+export function ClientsPage() {
+  const [clients, setClients] = useState<Client[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+
+  const form = useForm({
+    initialValues: {
+      name: '',
+      contactPerson: '',
+      email: '',
+      phone: '',
+      address: '',
+      priceModifier: 1.0,
+    },
+    validate: {
+      name: (value) => (value.trim().length < 2 ? 'El nombre es demasiado corto' : null),
+      email: (value) => (value && !/^\S+@\S+$/.test(value) ? 'Email inválido' : null),
+      priceModifier: (value) => (value <= 0 ? 'El modificador debe ser mayor que 0' : null),
+    },
+  });
+
+  const fetchClients = async () => {
+    setIsLoading(true);
+    try {
+      const response = await apiClient.get<ApiResponse<Client[]>>('/clients');
+      setClients(response.data.data);
+    } catch (err) {
+      setError('No se pudo cargar la lista de clientes.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  const handleOpenModal = (client: Client | null = null) => {
+    setEditingClient(client);
+    if (client) {
+      form.setValues({
+        name: client.name,
+        contactPerson: client.contactPerson || '',
+        email: client.email || '',
+        phone: client.phone || '',
+        address: client.address || '',
+        priceModifier: client.priceModifier,
+      });
+    } else {
+      form.reset();
+    }
+    openModal();
+  };
+
+  const handleSubmit = async (values: typeof form.values) => {
+    try {
+      if (editingClient) {
+        await apiClient.patch(`/clients/${editingClient.id}`, values);
+      } else {
+        await apiClient.post('/clients', values);
+      }
+      await fetchClients();
+      closeModal();
+    } catch (err: any) {
+      form.setErrors({ name: err.response?.data?.message || 'Error al guardar el cliente' });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar este cliente? Se borrarán también todas sus piscinas asociadas.')) {
+      try {
+        await apiClient.delete(`/clients/${id}`);
+        setClients((current) => current.filter((c) => c.id !== id));
+      } catch (err) {
+        console.error('Failed to delete client', err);
+      }
+    }
+  };
+
+  if (isLoading) return <Loader size="xl" />;
+  if (error) return <Alert color="red" title="Error">{error}</Alert>;
+
+  const rows = clients.map((client) => (
+    <Table.Tr key={client.id}>
+      <Table.Td>
+        <Anchor component={Link} to={`/clients/${client.id}`}>
+          {client.name}
+        </Anchor>
+      </Table.Td>
+      <Table.Td>{client.contactPerson || '-'}</Table.Td>
+      <Table.Td>{client.phone || '-'}</Table.Td>
+      <Table.Td>{client.email || '-'}</Table.Td>
+      <Table.Td>
+        <Group gap="xs">
+          <Button variant="subtle" size="xs" onClick={() => handleOpenModal(client)}>Editar</Button>
+          <Button variant="subtle" size="xs" color="red" onClick={() => handleDelete(client.id)}>Eliminar</Button>
+        </Group>
+      </Table.Td>
+    </Table.Tr>
+  ));
+
+  return (
+    <>
+      <Modal
+        opened={modalOpened}
+        onClose={closeModal}
+        title={editingClient ? 'Editar Cliente' : 'Crear Nuevo Cliente'}
+        centered
+      >
+        <form onSubmit={form.onSubmit(handleSubmit)}>
+          <Stack>
+            <TextInput required label="Nombre del Cliente" {...form.getInputProps('name')} />
+            <TextInput label="Persona de Contacto" {...form.getInputProps('contactPerson')} />
+            <TextInput label="Email" type="email" {...form.getInputProps('email')} />
+            <TextInput label="Teléfono" {...form.getInputProps('phone')} />
+            <TextInput label="Dirección" {...form.getInputProps('address')} />
+            <NumberInput 
+              label="Modificador de Precio" 
+              description="1.0 es normal, 0.9 es 10% dto, 1.1 es 10% recargo." 
+              defaultValue={1.0} 
+              step={0.05} 
+              min={0} 
+              decimalScale={2} 
+              {...form.getInputProps('priceModifier')} 
+            />
+            <Button type="submit" mt="md">{editingClient ? 'Guardar Cambios' : 'Crear Cliente'}</Button>
+          </Stack>
+        </form>
+      </Modal>
+
+      <Container fluid>
+        <Group justify="space-between" align="center">
+          <Title order={2} my="lg">Gestión de Clientes</Title>
+          <Button onClick={() => handleOpenModal()}>Crear Nuevo Cliente</Button>
+        </Group>
+        <Table striped withTableBorder withColumnBorders mt="md">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Nombre</Table.Th>
+              <Table.Th>Contacto</Table.Th>
+              <Table.Th>Teléfono</Table.Th>
+              <Table.Th>Email</Table.Th>
+              <Table.Th>Acciones</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>{rows.length > 0 ? rows : <Table.Tr><Table.Td colSpan={5}>No hay clientes creados.</Table.Td></Table.Tr>}</Table.Tbody>
+        </Table>
+      </Container>
+    </>
+  );
+}
+
+
+// ====== [13] packages/client/src/features/auth/pages/LoginPage.tsx ======
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Container,
+  Title,
+  Paper,
+  TextInput,
+  PasswordInput,
+  Button,
+  Stack,
+  Alert,
+} from '@mantine/core';
+import { useAuth } from '../../../providers/AuthProvider.js';
+
+export function LoginPage() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+    try {
+      await login({ email, password });
+      navigate('/'); // Redirige al dashboard en un login exitoso
+    } catch (err) {
+      setError('El email o la contraseña son incorrectos.');
+      console.error(err);
+    }
+  };
+
+  return (
+    <Container size={420} my={40}>
+      <Title ta="center">¡Bienvenido!</Title>
+      <Paper withBorder shadow="md" p={30} mt={30} radius="md">
+        <form onSubmit={handleSubmit}>
+          <Stack>
+            <TextInput
+              required
+              label="Email"
+              placeholder="tu@email.com"
+              value={email}
+              onChange={(event) => setEmail(event.currentTarget.value)}
+              radius="md"
+            />
+            <PasswordInput
+              required
+              label="Contraseña"
+              placeholder="Tu contraseña"
+              value={password}
+              onChange={(event) => setPassword(event.currentTarget.value)}
+              radius="md"
+            />
+            {error && (
+              <Alert title="Error de autenticación" color="red" withCloseButton onClose={() => setError(null)}>
+                {error}
+              </Alert>
+            )}
+            <Button type="submit" fullWidth mt="xl" radius="md">
+              Iniciar Sesión
+            </Button>
+          </Stack>
+        </form>
+      </Paper>
+    </Container>
+  );
+}
+
+
+// ====== [14] packages/client/src/features/superadmin/pages/TenantsPage.tsx ======
+import { useEffect, useState } from 'react';
+import {
+  Container,
+  Title,
+  Table,
+  Loader,
+  Alert,
+  Badge,
+  Button,
+  Group,
+  Modal,
+  TextInput,
+  Stack,
+  PasswordInput,
+  Menu,
+} from '@mantine/core';
+import { useForm } from '@mantine/form';
+import { useDisclosure } from '@mantine/hooks';
+import apiClient from '../../../api/apiClient.js';
+
+// --- Tipos ---
+type SubscriptionStatus = 'TRIAL' | 'ACTIVE' | 'PAYMENT_PENDING' | 'INACTIVE';
+
+interface Tenant {
+  id: string;
+  companyName: string;
+  subdomain: string;
+  subscriptionStatus: SubscriptionStatus;
+  createdAt: string;
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
+// --- Componente ---
+export function TenantsPage() {
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
+
+  const form = useForm({
+    initialValues: {
+      companyName: '',
+      subdomain: '',
+      adminUser: {
+        name: '',
+        email: '',
+        password: '',
+      },
+    },
+    validate: {
+      companyName: (value: string) => (value.length < 2 ? 'El nombre debe tener al menos 2 caracteres' : null),
+      subdomain: (value: string) => (/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value) ? null : 'Subdominio inválido'),
+      adminUser: {
+        email: (value: string) => (/^\S+@\S+$/.test(value) ? null : 'Email inválido'),
+        password: (value: string) => (value.length < 8 ? 'La contraseña debe tener al menos 8 caracteres' : null),
+      },
+    },
+  });
+
+  const fetchTenants = async () => {
+    if (tenants.length === 0) setIsLoading(true);
+    setError(null);
+    try {
+      const response = await apiClient.get<ApiResponse<Tenant[]>>('/tenants');
+      setTenants(response.data.data);
+    } catch (err) {
+      setError('No se pudo obtener la lista de tenants.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTenants();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleCreateTenant = async (values: typeof form.values) => {
+    try {
+      await apiClient.post<ApiResponse<Tenant>>('/tenants', values);
+      await fetchTenants();
+      closeModal();
+      form.reset();
+    } catch (err: any) {
+      form.setErrors({ companyName: err.response?.data?.message || 'Error al crear el tenant' });
+    }
+  };
+
+  const handleUpdateStatus = async (tenantId: string, status: SubscriptionStatus) => {
+    try {
+      setTenants((current) =>
+        current.map((t) => (t.id === tenantId ? { ...t, subscriptionStatus: status } : t))
+      );
+      await apiClient.patch(`/tenants/${tenantId}/status`, { status });
+    } catch (err) {
+      console.error('Failed to update tenant status', err);
+      await fetchTenants();
+    }
+  };
+
+  const handleDeleteTenant = async (tenantId: string) => {
+    if (window.confirm('¿Estás seguro? Esta acción eliminará el tenant y todos sus datos (usuarios, clientes, piscinas, etc.) de forma irreversible.')) {
+      try {
+        await apiClient.delete(`/tenants/${tenantId}`);
+        setTenants((current) => current.filter((t) => t.id !== tenantId));
+      } catch (err) {
+        console.error('Failed to delete tenant', err);
+        // TODO: Mostrar notificación de error al usuario
+      }
+    }
+  };
+
+  if (isLoading) return <Loader size="xl" />;
+  if (error) return <Alert color="red" title="Error">{error}</Alert>;
+
+  const rows = tenants.map((tenant) => (
+    <Table.Tr key={tenant.id}>
+      <Table.Td>{tenant.companyName}</Table.Td>
+      <Table.Td>{tenant.subdomain}.pool-control.pro</Table.Td>
+      <Table.Td>
+        <Badge
+          color={
+            {
+              ACTIVE: 'green',
+              TRIAL: 'blue',
+              PAYMENT_PENDING: 'orange',
+              INACTIVE: 'gray',
+            }[tenant.subscriptionStatus]
+          }
+        >
+          {tenant.subscriptionStatus}
+        </Badge>
+      </Table.Td>
+      <Table.Td>{new Date(tenant.createdAt).toLocaleDateString()}</Table.Td>
+      <Table.Td>
+        <Menu shadow="md" width={200}>
+          <Menu.Target>
+            <Button variant="outline" size="xs">Acciones</Button>
+          </Menu.Target>
+          <Menu.Dropdown>
+            <Menu.Label>Cambiar estado</Menu.Label>
+            <Menu.Item onClick={() => handleUpdateStatus(tenant.id, 'ACTIVE')}>Activar</Menu.Item>
+            <Menu.Item onClick={() => handleUpdateStatus(tenant.id, 'TRIAL')}>Poner en Trial</Menu.Item>
+            <Menu.Item onClick={() => handleUpdateStatus(tenant.id, 'PAYMENT_PENDING')}>Pago Pendiente</Menu.Item>
+            <Menu.Item onClick={() => handleUpdateStatus(tenant.id, 'INACTIVE')}>Desactivar</Menu.Item>
+            <Menu.Divider />
+            <Menu.Label>Zona de Peligro</Menu.Label>
+            <Menu.Item color="red" onClick={() => handleDeleteTenant(tenant.id)}>
+              Eliminar Tenant
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
+      </Table.Td>
+    </Table.Tr>
+  ));
+
+  return (
+    <>
+      <Modal opened={modalOpened} onClose={closeModal} title="Crear Nuevo Tenant" centered>
+        <form onSubmit={form.onSubmit(handleCreateTenant)}>
+          <Stack>
+            <TextInput required label="Nombre de la Empresa" placeholder="Ej. Piscinas Martínez" {...form.getInputProps('companyName')} />
+            <TextInput required label="Subdominio" placeholder="ej. martinez" {...form.getInputProps('subdomain')} />
+            <Title order={4} mt="md">Usuario Administrador</Title>
+            <TextInput required label="Nombre del Admin" placeholder="Ej. Juan Martínez" {...form.getInputProps('adminUser.name')} />
+            <TextInput required label="Email del Admin" placeholder="ej. juan@piscinasmartinez.com" {...form.getInputProps('adminUser.email')} />
+            <PasswordInput required label="Contraseña del Admin" {...form.getInputProps('adminUser.password')} />
+            <Button type="submit" mt="md">Crear Tenant</Button>
+          </Stack>
+        </form>
+      </Modal>
+
+      <Container fluid>
+        <Group justify="space-between" align="center">
+          <Title order={2} my="lg">Gestión de Tenants</Title>
+          <Button onClick={openModal}>Crear Nuevo Tenant</Button>
+        </Group>
+        <Table striped withTableBorder withColumnBorders mt="md">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Empresa</Table.Th>
+              <Table.Th>Subdominio</Table.Th>
+              <Table.Th>Estado</Table.Th>
+              <Table.Th>Fecha de Creación</Table.Th>
+              <Table.Th>Acciones</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>{rows.length > 0 ? rows : <Table.Tr><Table.Td colSpan={5}>No hay tenants creados.</Table.Td></Table.Tr>}</Table.Tbody>
+        </Table>
+      </Container>
+    </>
+  );
+}
+
+
+// ====== [15] packages/client/src/main.tsx ======
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App.js';
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+
+
+// ====== [16] packages/client/src/providers/AuthProvider.tsx ======
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from 'react';
+import type { PropsWithChildren } from 'react';
+import apiClient from '../api/apiClient.js';
+
+// --- Types ---
+type LoginCredentials = {
+  email: string;
+  password: string;
+};
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
+interface AuthContextType {
+  user: User | null;
+  login: (credentials: LoginCredentials) => Promise<void>;
+  logout: () => Promise<void>;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+}
+
+// --- Context ---
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// --- Provider Component ---
+export const AuthProvider = ({ children }: PropsWithChildren) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const checkAuthStatus = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // Este endpoint ahora existe y funciona gracias a los pasos anteriores
+      const response = await apiClient.get('/auth/me');
+      setUser(response.data.data);
+    } catch (error) {
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Activamos la comprobación de la sesión al cargar la app
+    checkAuthStatus();
+  }, [checkAuthStatus]);
+
+  const login = async (credentials: LoginCredentials) => {
+    const response = await apiClient.post('/auth/login', credentials);
+    setUser(response.data.data);
+  };
+
+  const logout = async () => {
+    await apiClient.post('/auth/logout');
+    setUser(null);
+  };
+
+  const value: AuthContextType = {
+    user,
+    login,
+    logout,
+    isLoading,
+    isAuthenticated: !!user,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+// --- Custom Hook ---
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+
+// ====== [17] packages/client/src/router/components.tsx ======
+// filename: packages/client/src/router/components.tsx
+// Version: 1.3.0 (Add Clients link to navbar)
+import { AppShell, Burger, Group, NavLink, Title } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import { Navigate, Outlet, Link } from 'react-router-dom';
+import { useAuth } from '../providers/AuthProvider.js';
+
+/**
+ * Componente de layout principal para las páginas autenticadas.
+ */
+export const AppLayout = () => {
+  const [opened, { toggle }] = useDisclosure();
+  const { user } = useAuth();
+
+  return (
+    <AppShell
+      header={{ height: 60 }}
+      navbar={{ width: 300, breakpoint: 'sm', collapsed: { mobile: !opened } }}
+      padding="md"
+    >
+      <AppShell.Header>
+        <Group h="100%" px="md">
+          <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+          <Title order={3}>Pool Control Professional</Title>
+        </Group>
+      </AppShell.Header>
+
+      <AppShell.Navbar p="md">
+        <NavLink
+          component={Link}
+          to="/"
+          label="Dashboard"
+          onClick={toggle}
+        />
+        
+        {/* Enlaces solo para el rol ADMIN */}
+        {user?.role === 'ADMIN' && (
+          <>
+            <NavLink
+              component={Link}
+              to="/clients"
+              label="Clientes"
+              onClick={toggle}
+            />
+            <NavLink label="Catálogos">
+              <NavLink 
+                component={Link} 
+                to="/catalog/parameters" 
+                label="Parámetros" 
+                onClick={toggle} 
+              />
+              <NavLink 
+                component={Link} 
+                to="/catalog/tasks" 
+                label="Tareas" 
+                onClick={toggle} 
+              />
+            </NavLink>
+          </>
+        )}
+
+        {/* Enlaces solo para el rol SUPER_ADMIN */}
+        {user?.role === 'SUPER_ADMIN' && (
+           <NavLink 
+              component={Link} 
+              to="/superadmin/tenants" 
+              label="Gestión de Tenants" 
+              onClick={toggle} 
+            />
+        )}
+      </AppShell.Navbar>
+
+      <AppShell.Main>
+        <Outlet />
+      </AppShell.Main>
+    </AppShell>
+  );
+};
+
+/**
+ * Componente que protege rutas genéricas de usuarios no autenticados.
+ */
+export const ProtectedRoute = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return <div>Cargando...</div>;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return <Outlet />;
+};
+
+/**
+ * Componente que protege rutas específicas para el rol SUPER_ADMIN.
+ */
+export const SuperAdminRoute = () => {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <div>Cargando...</div>;
+  if (user?.role !== 'SUPER_ADMIN') return <Navigate to="/" replace />;
+  return <Outlet />;
+};
+
+/**
+ * Componente que protege rutas específicas para los roles ADMIN y SUPER_ADMIN.
+ */
+export const AdminRoute = () => {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <div>Cargando...</div>;
+  // Permitimos acceso si el rol es ADMIN o SUPER_ADMIN (que puede verlo todo)
+  if (user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN') {
+    return <Navigate to="/" replace />;
+  }
+  return <Outlet />;
+};
+
+
+// ====== [18] packages/client/src/router/index.tsx ======
+// filename: packages/client/src/router/index.tsx
+// Version: 1.4.2 (Align with final folder structure for client pages)
+import { createBrowserRouter } from 'react-router-dom';
+import { LoginPage } from '../features/auth/pages/LoginPage.js';
+import { TenantsPage } from '../features/superadmin/pages/TenantsPage.js';
+import { ParameterCatalogPage } from '../features/admin/pages/ParameterCatalogPage.js';
+import { TaskCatalogPage } from '../features/admin/pages/TaskCatalogPage.js';
+import { ClientsPage } from '../features/admin/pages/clients/ClientsPage.js';
+import { ClientDetailPage } from '../features/admin/pages/clients/ClientDetailPage.js';
+import {
+  AppLayout,
+  ProtectedRoute,
+  SuperAdminRoute,
+  AdminRoute,
+} from './components.js';
+
+export const router = createBrowserRouter([
+  {
+    path: '/login',
+    element: <LoginPage />,
+  },
+  {
+    path: '/',
+    element: <ProtectedRoute />,
+    children: [
+      {
+        element: <AppLayout />,
+        children: [
+          {
+            index: true,
+            element: <div>Dashboard Principal</div>,
+          },
+          // --- Sección de SuperAdmin ---
+          {
+            path: 'superadmin',
+            element: <SuperAdminRoute />,
+            children: [
+              {
+                path: 'tenants',
+                element: <TenantsPage />,
+              },
+            ],
+          },
+          // --- Sección de Administración ---
+          {
+            path: 'clients',
+            element: <AdminRoute />,
+            children: [
+              {
+                index: true,
+                element: <ClientsPage />,
+              },
+              {
+                path: ':id', 
+                element: <ClientDetailPage />,
+              },
+            ],
+          },
+          {
+            path: 'catalog',
+            element: <AdminRoute />,
+            children: [
+              {
+                path: 'parameters',
+                element: <ParameterCatalogPage />,
+              },
+              {
+                path: 'tasks',
+                element: <TaskCatalogPage />,
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+]);
+
+
+// ====== [19] packages/client/src/styles/theme.ts ======
+import { createTheme } from '@mantine/core';
+import type { MantineColorsTuple } from '@mantine/core';
+
+// Definimos una paleta de colores personalizada para nuestra marca.
+// Puedes generar las tuyas en https://mantine.dev/colors-generator/
+const brandBlue: MantineColorsTuple = [
+  '#e7f5ff',
+  '#d0ebff',
+  '#a5d8ff',
+  '#74c0fc',
+  '#4dabf7',
+  '#339af0',
+  '#228be6',
+  '#1c7ed6',
+  '#1572c3',
+  '#1068b1',
+];
+
+export const theme = createTheme({
+  fontFamily: 'Inter, sans-serif',
+  primaryColor: 'brandBlue',
+
+  colors: {
+    brandBlue,
+  },
+
+  headings: {
+    fontFamily: 'Inter, sans-serif',
+  },
+});
+
+
+// ====== [20] packages/client/tsconfig.json ======
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "allowJs": false,
+    "skipLibCheck": true,
+    "esModuleInterop": false,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx"
+  },
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
+
+
+// ====== [21] packages/client/tsconfig.node.json ======
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["vite.config.ts"]
+}
+
+
+// ====== [22] packages/client/vite.config.ts ======
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 5173,
+    // Configuramos un proxy para evitar problemas de CORS en desarrollo.
+    // Todas las peticiones del frontend a '/api' serán redirigidas
+    // a nuestro servidor de backend en el puerto 3001.
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+    },
+  },
+});
+
+
+// ====== [23] packages/server/package.json ======
+{
+  "name": "@pool-control/server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "db:seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.15.0",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "ms": "^2.1.3"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cookie-parser": "^1.4.7",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/ms": "^0.7.34",
+    "@types/node": "^20.14.2",
+    "prisma": "^5.15.0",
+    "tsx": "^4.15.4",
+    "typescript": "^5.4.5"
+  }
+}
+
+
+// ====== [24] packages/server/prisma/seed.ts ======
+import { PrismaClient } from '@prisma/client';
+import { hashPassword } from '../src/utils/password.utils.js';
+
+const prisma = new PrismaClient();
+
+async function main() {
+  console.log('🌱 Empezando el proceso de seeding...');
+
+  // 1. Eliminar datos antiguos para asegurar un estado limpio
+  // La eliminación debe ser en el orden correcto para no violar las restricciones de clave foránea.
+  await prisma.user.deleteMany({});
+  await prisma.tenant.deleteMany({});
+  console.log('🗑️ Datos antiguos eliminados.');
+
+  // 2. Crear el Tenant del Sistema
+  const systemTenant = await prisma.tenant.create({
+    data: {
+      companyName: 'SYSTEM_INTERNAL',
+      subdomain: 'system',
+      subscriptionStatus: 'ACTIVE',
+    },
+  });
+  console.log(`🏢 Tenant del sistema creado: ${systemTenant.companyName}`);
+
+  // 3. Hashear la contraseña del SuperAdmin
+  const password = 'superadmin123';
+  const hashedPassword = await hashPassword(password);
+  console.log('🔑 Contraseña del SuperAdmin hasheada.');
+
+  // 4. Crear el usuario SuperAdmin
+  const superAdmin = await prisma.user.create({
+    data: {
+      email: 'super@admin.com',
+      name: 'Super Admin',
+      password: hashedPassword,
+      role: 'SUPER_ADMIN',
+      tenantId: systemTenant.id, // Se asigna al tenant del sistema
+    },
+  });
+  console.log(`👤 Usuario SuperAdmin creado: ${superAdmin.email}`);
+
+  console.log('✅ Seeding completado con éxito.');
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
+
+
+// ====== [25] packages/server/src/api/auth/auth.controller.ts ======
+import type { Response, NextFunction } from 'express';
+import { register, login } from './auth.service.js';
+import { signToken } from '../../utils/jwt.utils.js';
+import config from '../../config/index.js';
+import type { CookieOptions, Request } from 'express';
+import type { AuthRequest } from '../../middleware/auth.middleware.js';
+
+const cookieOptions: CookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax',
+  maxAge: config.JWT_EXPIRES_IN * 1000, // maxAge está en milisegundos
+};
+
+/**
+ * Maneja la petición de registro de un nuevo usuario.
+ */
+export const registerHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const user = await register(req.body);
+    res.status(201).json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Maneja la petición de login de un usuario.
+ */
+export const loginHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const user = await login(req.body);
+    const token = signToken({ id: user.id, role: user.role });
+    res.cookie('token', token, cookieOptions);
+    res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Maneja la obtención del usuario actualmente autenticado (a través del token).
+ */
+export const getMeHandler = (req: AuthRequest, res: Response) => {
+  // El middleware 'protect' se ejecuta antes que este manejador.
+  // Si llega hasta aquí, significa que el token es válido y 'req.user' existe.
+  res.status(200).json({
+    success: true,
+    data: req.user,
+  });
+};
+
+
+// ====== [26] packages/server/src/api/auth/auth.routes.ts ======
+import { Router } from 'express';
+import type { Response } from 'express';
+import {
+  registerHandler,
+  loginHandler,
+  getMeHandler,
+} from './auth.controller.js';
+import { protect } from '../../middleware/auth.middleware.js';
+
+const authRouter = Router();
+
+/**
+ * @route   POST /api/auth/register
+ * @desc    Registra un nuevo usuario
+ * @access  Public
+ */
+authRouter.post('/register', registerHandler);
+
+/**
+ * @route   POST /api/auth/login
+ * @desc    Inicia sesión y devuelve un token en una cookie
+ * @access  Public
+ */
+authRouter.post('/login', loginHandler);
+
+/**
+ * @route   GET /api/auth/me
+ * @desc    Obtiene los datos del usuario logueado a partir de su token
+ * @access  Private
+ */
+authRouter.get('/me', protect, getMeHandler);
+
+/**
+ * @route   POST /api/auth/logout
+ * @desc    Cierra la sesión del usuario eliminando la cookie
+ * @access  Public
+ */
+authRouter.post('/logout', (_req, res: Response) => {
+  res.cookie('token', '', {
+    httpOnly: true,
+    expires: new Date(0),
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+  });
+  res.status(200).json({ success: true, message: 'Sesión cerrada con éxito.' });
+});
+
+export default authRouter;
+
+
+// ====== [27] packages/server/src/api/auth/auth.service.ts ======
+import { PrismaClient } from '@prisma/client';
+import type { User } from '@prisma/client';
+import { hashPassword, comparePassword } from '../../utils/password.utils.js';
+
+const prisma = new PrismaClient();
+
+// Tipo para la entrada de datos del registro.
+export type RegisterUserInput = Omit<User, 'id' | 'createdAt' | 'updatedAt'>;
+
+// Tipo para la entrada de datos del login.
+export type LoginUserInput = {
+  email: string;
+  password: string;
+};
+
+/**
+ * Registra un nuevo usuario en la base de datos.
+ * @param input - Datos del usuario para el registro.
+ * @returns El objeto de usuario creado (sin la contraseña).
+ */
+export const register = async (input: RegisterUserInput) => {
+  const { email, password, ...rest } = input;
+
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (existingUser) {
+    throw new Error('Ya existe un usuario con este correo electrónico.');
+  }
+
+  const hashedPassword = await hashPassword(password);
+
+  const user = await prisma.user.create({
+    data: {
+      email,
+      password: hashedPassword,
+      ...rest,
+    },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      tenantId: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  return user;
+};
+
+/**
+ * Valida las credenciales de un usuario para el login.
+ * @param input - Email y contraseña del usuario.
+ * @returns El objeto de usuario autenticado (sin la contraseña).
+ */
+export const login = async (input: LoginUserInput): Promise<Omit<User, 'password'>> => {
+  const user = await prisma.user.findUnique({
+    where: { email: input.email },
+  });
+
+  if (!user) {
+    throw new Error('El email o la contraseña son incorrectos.');
+  }
+
+  const isPasswordValid = await comparePassword(input.password, user.password);
+
+  if (!isPasswordValid) {
+    throw new Error('El email o la contraseña son incorrectos.');
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { password, ...userWithoutPassword } = user;
+
+  return userWithoutPassword;
+};
+
+
+// ====== [28] packages/server/src/api/clients/clients.controller.ts ======
+// filename: packages/server/src/api/clients/clients.controller.ts
+// Version: 1.0.0 (Initial creation of the controller for Client management)
+import type { Response, NextFunction } from 'express';
+import type { AuthRequest } from '../../middleware/auth.middleware.js';
+import {
+  createClient,
+  deleteClient,
+  getClientById,
+  getClientsByTenant,
+  updateClient,
+} from './clients.service.js';
+
+/**
+ * Maneja la creación de un nuevo cliente.
+ */
+export const createClientHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(403).json({ message: 'Acción no permitida.' });
+    }
+
+    const input = { ...req.body, tenantId };
+    const newClient = await createClient(input);
+    res.status(201).json({ success: true, data: newClient });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Maneja la obtención de todos los clientes de un tenant.
+ */
+export const getClientsByTenantHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(403).json({ message: 'Acción no permitida.' });
+    }
+
+    const clients = await getClientsByTenant(tenantId);
+    res.status(200).json({ success: true, data: clients });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Maneja la obtención de un cliente específico por ID.
+ */
+export const getClientByIdHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    const { id: clientId } = req.params;
+
+    if (!tenantId) {
+      return res.status(403).json({ message: 'Acción no permitida.' });
+    }
+    if (!clientId) {
+      return res.status(400).json({ message: 'El ID del cliente es requerido.' });
+    }
+
+    const client = await getClientById(clientId, tenantId);
+    if (!client) {
+      return res.status(404).json({ message: 'Cliente no encontrado.' });
+    }
+
+    res.status(200).json({ success: true, data: client });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+/**
+ * Maneja la actualización de un cliente.
+ */
+export const updateClientHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ message: 'El ID del cliente es requerido.' });
+    }
+    // TODO: Verificar que el cliente que se quiere editar pertenece al tenant del usuario logueado.
+    
+    const updatedClient = await updateClient(id, req.body);
+    res.status(200).json({ success: true, data: updatedClient });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Maneja la eliminación de un cliente.
+ */
+export const deleteClientHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ message: 'El ID del cliente es requerido.' });
+    }
+    // TODO: Verificar que el cliente que se quiere eliminar pertenece al tenant del usuario logueado.
+
+    await deleteClient(id);
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+// ====== [29] packages/server/src/api/clients/clients.routes.ts ======
+// filename: packages/server/src/api/clients/clients.routes.ts
+// Version: 1.0.0 (Initial creation of routes for Client management)
+import { Router } from 'express';
+import {
+  createClientHandler,
+  deleteClientHandler,
+  getClientByIdHandler,
+  getClientsByTenantHandler,
+  updateClientHandler,
+} from './clients.controller.js';
+import { protect } from '../../middleware/auth.middleware.js';
+
+const clientsRouter = Router();
+
+// Aplicamos el middleware 'protect' a TODAS las rutas de este enrutador.
+clientsRouter.use(protect);
+
+// TODO: Añadir un middleware de autorización para asegurar que el rol sea 'ADMIN'.
+
+clientsRouter.route('/')
+  .get(getClientsByTenantHandler)
+  .post(createClientHandler);
+
+clientsRouter.route('/:id')
+  .get(getClientByIdHandler)
+  .patch(updateClientHandler)
+  .delete(deleteClientHandler);
+
+export default clientsRouter;
+
+
+// ====== [30] packages/server/src/api/clients/clients.service.ts ======
+// filename: packages/server/src/api/clients/clients.service.ts
+// Version: 1.0.0 (Initial creation of the service for Client management)
+import { PrismaClient } from '@prisma/client';
+import type { Client } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+// --- Tipos de Entrada (DTOs) ---
+export type CreateClientInput = Omit<Client, 'id' | 'createdAt' | 'updatedAt'>;
+export type UpdateClientInput = Partial<CreateClientInput>;
+
+// --- Funciones del Servicio ---
+
+/**
+ * Crea un nuevo cliente para un tenant específico.
+ * @param data - Datos del nuevo cliente.
+ * @returns El cliente creado.
+ */
+export const createClient = async (data: CreateClientInput): Promise<Client> => {
+  return prisma.client.create({
+    data,
+  });
+};
+
+/**
+ * Obtiene todos los clientes de un tenant específico.
+ * @param tenantId - El ID del tenant.
+ * @returns Un array de clientes.
+ */
+export const getClientsByTenant = async (tenantId: string): Promise<Client[]> => {
+  return prisma.client.findMany({
+    where: { tenantId },
+    orderBy: { name: 'asc' },
+    // Incluimos las piscinas asociadas a cada cliente
+    include: {
+      pools: true,
+    },
+  });
+};
+
+/**
+ * Obtiene un cliente específico por su ID.
+ * @param id - El ID del cliente a buscar.
+ * @param tenantId - El ID del tenant para asegurar la pertenencia.
+ * @returns El objeto del cliente o null si no se encuentra o no pertenece al tenant.
+ */
+export const getClientById = async (id: string, tenantId: string): Promise<Client | null> => {
+  return prisma.client.findFirst({
+    where: { id, tenantId },
+     include: {
+      pools: true,
+    },
+  });
+};
+
+
+/**
+ * Actualiza un cliente existente.
+ * @param id - El ID del cliente a actualizar.
+ * @param data - Los datos a actualizar.
+ * @returns El cliente actualizado.
+ */
+export const updateClient = async (id: string, data: UpdateClientInput): Promise<Client> => {
+  return prisma.client.update({
+    where: { id },
+    data,
+  });
+};
+
+/**
+ * Elimina un cliente.
+ * @param id - El ID del cliente a eliminar.
+ * @returns El cliente que fue eliminado.
+ */
+export const deleteClient = async (id: string): Promise<Client> => {
+  // Al borrar el cliente, se borrarán en cascada sus piscinas asociadas.
+  return prisma.client.delete({
+    where: { id },
+  });
+};
+
+
+// ====== [31] packages/server/src/api/parameters/parameters.controller.ts ======
+// filename: packages/server/src/api/parameters/parameters.controller.ts
+// Version: 1.0.0 (Initial creation of the controller for Parameter Templates)
+import type { Response, NextFunction } from 'express';
+import type { AuthRequest } from '../../middleware/auth.middleware.js';
+import {
+createParameterTemplate,
+deleteParameterTemplate,
+getParameterTemplatesByTenant,
+updateParameterTemplate,
+} from './parameters.service.js';
+/**
+Maneja la creación de una nueva plantilla de parámetro.
+*/
+export const createParameterTemplateHandler = async (
+req: AuthRequest,
+res: Response,
+next: NextFunction
+) => {
+try {
+// Aseguramos que el usuario esté autenticado y tenga un tenantId
+const tenantId = req.user?.tenantId;
+if (!tenantId) {
+return res.status(403).json({ message: 'Acción no permitida.' });
+}
+const input = { ...req.body, tenantId };
+const newTemplate = await createParameterTemplate(input);
+res.status(201).json({ success: true, data: newTemplate });
+} catch (error) {
+next(error);
+}
+};
+/**
+Maneja la obtención de todas las plantillas de un tenant.
+*/
+export const getParameterTemplatesByTenantHandler = async (
+req: AuthRequest,
+res: Response,
+next: NextFunction
+) => {
+try {
+const tenantId = req.user?.tenantId;
+if (!tenantId) {
+return res.status(403).json({ message: 'Acción no permitida.' });
+}
+const templates = await getParameterTemplatesByTenant(tenantId);
+res.status(200).json({ success: true, data: templates });
+} catch (error) {
+next(error);
+}
+};
+/**
+Maneja la actualización de una plantilla de parámetro.
+*/
+export const updateParameterTemplateHandler = async (
+req: AuthRequest,
+res: Response,
+next: NextFunction
+) => {
+try {
+const { id } = req.params;
+if (!id) {
+return res.status(400).json({ message: 'El ID de la plantilla es requerido.' });
+}
+// TODO: Verificar que la plantilla que se quiere editar pertenece al tenant del usuario logueado.
+const updatedTemplate = await updateParameterTemplate(id, req.body);
+res.status(200).json({ success: true, data: updatedTemplate });
+} catch (error) {
+next(error);
+}
+};
+/**
+Maneja la eliminación de una plantilla de parámetro.
+*/
+export const deleteParameterTemplateHandler = async (
+req: AuthRequest,
+res: Response,
+next: NextFunction
+) => {
+try {
+const { id } = req.params;
+if (!id) {
+return res.status(400).json({ message: 'El ID de la plantilla es requerido.' });
+}
+// TODO: Verificar que la plantilla que se quiere eliminar pertenece al tenant del usuario logueado.
+await deleteParameterTemplate(id);
+res.status(204).send();
+} catch (error) {
+next(error);
+}
+};
+
+
+// ====== [32] packages/server/src/api/parameters/parameters.routes.ts ======
+// filename: packages/server/src/api/parameters/parameters.routes.ts
+// Version: 1.0.0 (Initial creation of routes for Parameter Templates)
+import { Router } from 'express';
+import {
+  createParameterTemplateHandler,
+  deleteParameterTemplateHandler,
+  getParameterTemplatesByTenantHandler,
+  updateParameterTemplateHandler,
+} from './parameters.controller.js';
+import { protect } from '../../middleware/auth.middleware.js';
+
+const parametersRouter = Router();
+
+// Aplicamos el middleware 'protect' a TODAS las rutas definidas en este archivo.
+// Esto asegura que solo los usuarios autenticados pueden gestionar el catálogo.
+parametersRouter.use(protect);
+
+// TODO: Añadir un middleware de autorización para asegurar que el rol sea 'ADMIN'.
+
+parametersRouter.route('/')
+  .get(getParameterTemplatesByTenantHandler)
+  .post(createParameterTemplateHandler);
+
+parametersRouter.route('/:id')
+  .patch(updateParameterTemplateHandler)
+  .delete(deleteParameterTemplateHandler);
+
+export default parametersRouter;
+
+
+// ====== [33] packages/server/src/api/parameters/parameters.service.ts ======
+// filename: packages/server/src/api/parameters/parameters.service.ts
+// Version: 1.0.0 (Initial creation of the service with CRUD functions)
+import { PrismaClient } from '@prisma/client';
+import type { ParameterTemplate, InputType } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+// --- Tipos de Entrada (DTOs) ---
+export type CreateParameterTemplateInput = {
+  name: string;
+  tenantId: string; // Cada plantilla pertenece a un tenant
+  unit?: string;
+  type?: InputType;
+  selectOptions?: string[];
+};
+
+export type UpdateParameterTemplateInput = Partial<Omit<CreateParameterTemplateInput, 'tenantId'>>;
+
+// --- Funciones del Servicio ---
+
+/**
+ * Crea una nueva plantilla de parámetro para un tenant específico.
+ * @param input - Datos de la nueva plantilla.
+ * @returns La plantilla de parámetro creada.
+ */
+export const createParameterTemplate = async (
+  input: CreateParameterTemplateInput
+): Promise<ParameterTemplate> => {
+  return prisma.parameterTemplate.create({
+    data: input,
+  });
+};
+
+/**
+ * Obtiene todas las plantillas de parámetros para un tenant específico.
+ * @param tenantId - El ID del tenant.
+ * @returns Un array de plantillas de parámetros.
+ */
+export const getParameterTemplatesByTenant = async (
+  tenantId: string
+): Promise<ParameterTemplate[]> => {
+  return prisma.parameterTemplate.findMany({
+    where: { tenantId },
+    orderBy: { name: 'asc' },
+  });
+};
+
+/**
+ * Actualiza una plantilla de parámetro existente.
+ * @param id - El ID de la plantilla a actualizar.
+ * @param data - Los datos a actualizar.
+ * @returns La plantilla de parámetro actualizada.
+ */
+export const updateParameterTemplate = async (
+  id: string,
+  data: UpdateParameterTemplateInput
+): Promise<ParameterTemplate> => {
+  return prisma.parameterTemplate.update({
+    where: { id },
+    data,
+  });
+};
+
+/**
+ * Elimina una plantilla de parámetro.
+ * @param id - El ID de la plantilla a eliminar.
+ * @returns La plantilla de parámetro que fue eliminada.
+ */
+export const deleteParameterTemplate = async (
+  id: string
+): Promise<ParameterTemplate> => {
+  // TODO: Añadir lógica para verificar que esta plantilla no está siendo
+  // usada en ninguna PoolConfiguration antes de permitir el borrado.
+  return prisma.parameterTemplate.delete({
+    where: { id },
+  });
+};
+
+
+// ====== [34] packages/server/src/api/pool-configurations/pool-configurations.service.ts ======
+// filename: packages/server/src/api/pool-configurations/pool-configurations.service.ts
+// Version: 1.0.0 (Initial creation of the service for Pool Configurations)
+import { PrismaClient } from '@prisma/client';
+import type { PoolConfiguration, Frequency } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+// --- Tipos de Entrada (DTOs) ---
+// Tipo para crear una nueva configuración.
+export type CreatePoolConfigurationInput = {
+  poolId: string;
+  frequency: Frequency;
+  minThreshold?: number;
+  maxThreshold?: number;
+  parameterTemplateId?: string; // Opcional, para parámetros
+  taskTemplateId?: string;      // Opcional, para tareas
+};
+
+// --- Funciones del Servicio ---
+
+/**
+ * Crea una nueva configuración de mantenimiento para una piscina.
+ * @param data - Los datos de la nueva configuración.
+ * @returns La configuración creada.
+ */
+export const createPoolConfiguration = async (
+  data: CreatePoolConfigurationInput
+): Promise<PoolConfiguration> => {
+  // Validación para asegurar que se proporciona o un parámetro o una tarea, pero no ambos.
+  if (data.parameterTemplateId && data.taskTemplateId) {
+    throw new Error('Una configuración solo puede estar asociada a un parámetro O a una tarea, no a ambos.');
+  }
+  if (!data.parameterTemplateId && !data.taskTemplateId) {
+    throw new Error('La configuración debe estar asociada a un parámetro o a una tarea.');
+  }
+
+  return prisma.poolConfiguration.create({
+    data,
+  });
+};
+
+/**
+ * Obtiene todas las configuraciones para una piscina específica.
+ * @param poolId - El ID de la piscina.
+ * @returns Un array de configuraciones para esa piscina.
+ */
+export const getConfigurationsByPool = async (poolId: string): Promise<PoolConfiguration[]> => {
+  return prisma.poolConfiguration.findMany({
+    where: { poolId },
+    // Incluimos los datos de las plantillas asociadas para mostrarlos en el frontend
+    include: {
+      parameterTemplate: true,
+      taskTemplate: true,
+    },
+  });
+};
+
+/**
+ * Elimina una configuración de mantenimiento de una piscina.
+ * @param id - El ID de la configuración a eliminar.
+ * @returns La configuración que fue eliminada.
+ */
+export const deletePoolConfiguration = async (id: string): Promise<PoolConfiguration> => {
+  return prisma.poolConfiguration.delete({
+    where: { id },
+  });
+};
+
+
+// ====== [35] packages/server/src/api/pools/pools.controller.ts ======
+// filename: packages/server/src/api/pools/pools.controller.ts
+// Version: 1.0.0 (Initial creation of the controller for Pool management)
+import type { Response, NextFunction } from 'express';
+import type { AuthRequest } from '../../middleware/auth.middleware.js';
+import { createPool, deletePool, updatePool } from './pools.service.js';
+
+/**
+ * Maneja la creación de una nueva piscina.
+ */
+export const createPoolHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(403).json({ message: 'Acción no permitida.' });
+    }
+
+    // Aseguramos que la piscina se asigne al tenant del usuario.
+    const input = { ...req.body, tenantId };
+    const newPool = await createPool(input);
+    res.status(201).json({ success: true, data: newPool });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Maneja la actualización de una piscina.
+ */
+export const updatePoolHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ message: 'El ID de la piscina es requerido.' });
+    }
+    // TODO: Verificar que la piscina que se quiere editar pertenece al tenant del usuario logueado.
+
+    const updatedPool = await updatePool(id, req.body);
+    res.status(200).json({ success: true, data: updatedPool });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Maneja la eliminación de una piscina.
+ */
+export const deletePoolHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ message: 'El ID de la piscina es requerido.' });
+    }
+    // TODO: Verificar que la piscina que se quiere eliminar pertenece al tenant del usuario logueado.
+
+    await deletePool(id);
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+// ====== [36] packages/server/src/api/pools/pools.routes.ts ======
+// filename: packages/server/src/api/pools/pools.routes.ts
+// Version: 1.0.0 (Initial creation of routes for Pool management)
+import { Router } from 'express';
+import {
+  createPoolHandler,
+  deletePoolHandler,
+  updatePoolHandler,
+} from './pools.controller.js';
+import { protect } from '../../middleware/auth.middleware.js';
+
+const poolsRouter = Router();
+
+// Aplicamos el middleware 'protect' a TODAS las rutas de este enrutador.
+poolsRouter.use(protect);
+
+// TODO: Añadir un middleware de autorización para asegurar que el rol sea 'ADMIN'.
+
+// No hay una ruta GET / aquí porque las piscinas se obtienen
+// a través de la ruta del cliente (/api/clients/:id) para mantener el contexto.
+poolsRouter.route('/')
+  .post(createPoolHandler);
+
+poolsRouter.route('/:id')
+  .patch(updatePoolHandler)
+  .delete(deletePoolHandler);
+
+export default poolsRouter;
+
+
+// ====== [37] packages/server/src/api/pools/pools.service.ts ======
+// filename: packages/server/src/api/pools/pools.service.ts
+// Version: 1.0.0 (Initial creation of the service for Pool management)
+import { PrismaClient } from '@prisma/client';
+import type { Pool } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+// --- Tipos de Entrada (DTOs) ---
+// Omitimos los campos autogenerados por la base de datos (id, qrCode, timestamps)
+export type CreatePoolInput = Omit<Pool, 'id' | 'qrCode' | 'createdAt' | 'updatedAt'>;
+export type UpdatePoolInput = Partial<CreatePoolInput>;
+
+// --- Funciones del Servicio ---
+
+/**
+ * Crea una nueva piscina para un cliente y tenant específicos.
+ * @param data - Datos de la nueva piscina.
+ * @returns La piscina creada.
+ */
+export const createPool = async (data: CreatePoolInput): Promise<Pool> => {
+  return prisma.pool.create({
+    data,
+  });
+};
+
+/**
+ * Actualiza una piscina existente.
+ * @param id - El ID de la piscina a actualizar.
+ * @param data - Los datos a actualizar.
+ * @returns La piscina actualizada.
+ */
+export const updatePool = async (id: string, data: UpdatePoolInput): Promise<Pool> => {
+  return prisma.pool.update({
+    where: { id },
+    data,
+  });
+};
+
+/**
+ * Elimina una piscina.
+ * @param id - El ID de la piscina a eliminar.
+ * @returns La piscina que fue eliminada.
+ */
+export const deletePool = async (id: string): Promise<Pool> => {
+  // Al borrar la piscina, se borrarán en cascada sus visitas, etc.
+  return prisma.pool.delete({
+    where: { id },
+  });
+};
+
+
+// ====== [38] packages/server/src/api/tasks/tasks.controller.ts ======
+// filename: packages/server/src/api/tasks/tasks.controller.ts
+// Version: 1.0.0 (Initial creation of the controller for Scheduled Tasks)
+import type { Response, NextFunction } from 'express';
+import type { AuthRequest } from '../../middleware/auth.middleware.js';
+import {
+  createTaskTemplate,
+  deleteTaskTemplate,
+  getTaskTemplatesByTenant,
+  updateTaskTemplate,
+} from './tasks.service.js';
+
+/**
+ * Maneja la creación de una nueva plantilla de tarea.
+ */
+export const createTaskTemplateHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(403).json({ message: 'Acción no permitida.' });
+    }
+
+    const input = { ...req.body, tenantId };
+    const newTemplate = await createTaskTemplate(input);
+    res.status(201).json({ success: true, data: newTemplate });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Maneja la obtención de todas las plantillas de tareas de un tenant.
+ */
+export const getTaskTemplatesByTenantHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(403).json({ message: 'Acción no permitida.' });
+    }
+
+    const templates = await getTaskTemplatesByTenant(tenantId);
+    res.status(200).json({ success: true, data: templates });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Maneja la actualización de una plantilla de tarea.
+ */
+export const updateTaskTemplateHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ message: 'El ID de la plantilla es requerido.' });
+    }
+    // TODO: Verificar que la plantilla que se quiere editar pertenece al tenant del usuario logueado.
+
+    const updatedTemplate = await updateTaskTemplate(id, req.body);
+    res.status(200).json({ success: true, data: updatedTemplate });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Maneja la eliminación de una plantilla de tarea.
+ */
+export const deleteTaskTemplateHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ message: 'El ID de la plantilla es requerido.' });
+    }
+    // TODO: Verificar que la plantilla que se quiere eliminar pertenece al tenant del usuario logueado.
+
+    await deleteTaskTemplate(id);
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+// ====== [39] packages/server/src/api/tasks/tasks.routes.ts ======
+// filename: packages/server/src/api/tasks/tasks.routes.ts
+// Version: 1.0.0 (Initial creation of routes for Scheduled Tasks)
+import { Router } from 'express';
+import {
+  createTaskTemplateHandler,
+  deleteTaskTemplateHandler,
+  getTaskTemplatesByTenantHandler,
+  updateTaskTemplateHandler,
+} from './tasks.controller.js';
+import { protect } from '../../middleware/auth.middleware.js';
+
+const tasksRouter = Router();
+
+// Aplicamos el middleware 'protect' a TODAS las rutas de este enrutador.
+tasksRouter.use(protect);
+
+// TODO: Añadir un middleware de autorización para asegurar que el rol sea 'ADMIN'.
+
+tasksRouter.route('/')
+  .get(getTaskTemplatesByTenantHandler)
+  .post(createTaskTemplateHandler);
+
+tasksRouter.route('/:id')
+  .patch(updateTaskTemplateHandler)
+  .delete(deleteTaskTemplateHandler);
+
+export default tasksRouter;
+
+
+// ====== [40] packages/server/src/api/tasks/tasks.service.ts ======
+// filename: packages/server/src/api/tasks/tasks.service.ts
+// Version: 1.0.0 (Initial creation of the service for Scheduled Tasks)
+import { PrismaClient } from '@prisma/client';
+import type { ScheduledTaskTemplate } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+// --- Tipos de Entrada (DTOs) ---
+export type CreateTaskTemplateInput = {
+  name: string;
+  tenantId: string; // Cada plantilla pertenece a un tenant
+  description?: string;
+};
+
+export type UpdateTaskTemplateInput = Partial<Omit<CreateTaskTemplateInput, 'tenantId'>>;
+
+// --- Funciones del Servicio ---
+
+/**
+ * Crea una nueva plantilla de tarea para un tenant específico.
+ * @param input - Datos de la nueva plantilla.
+ * @returns La plantilla de tarea creada.
+ */
+export const createTaskTemplate = async (
+  input: CreateTaskTemplateInput
+): Promise<ScheduledTaskTemplate> => {
+  return prisma.scheduledTaskTemplate.create({
+    data: input,
+  });
+};
+
+/**
+ * Obtiene todas las plantillas de tareas para un tenant específico.
+ * @param tenantId - El ID del tenant.
+ * @returns Un array de plantillas de tareas.
+ */
+export const getTaskTemplatesByTenant = async (
+  tenantId: string
+): Promise<ScheduledTaskTemplate[]> => {
+  return prisma.scheduledTaskTemplate.findMany({
+    where: { tenantId },
+    orderBy: { name: 'asc' },
+  });
+};
+
+/**
+ * Actualiza una plantilla de tarea existente.
+ * @param id - El ID de la plantilla a actualizar.
+ * @param data - Los datos a actualizar.
+ * @returns La plantilla de tarea actualizada.
+ */
+export const updateTaskTemplate = async (
+  id: string,
+  data: UpdateTaskTemplateInput
+): Promise<ScheduledTaskTemplate> => {
+  return prisma.scheduledTaskTemplate.update({
+    where: { id },
+    data,
+  });
+};
+
+/**
+ * Elimina una plantilla de tarea.
+ * @param id - El ID de la plantilla a eliminar.
+ * @returns La plantilla de tarea que fue eliminada.
+ */
+export const deleteTaskTemplate = async (
+  id: string
+): Promise<ScheduledTaskTemplate> => {
+  // TODO: Añadir lógica para verificar que esta plantilla no está siendo
+  // usada en ninguna PoolConfiguration antes de permitir el borrado.
+  return prisma.scheduledTaskTemplate.delete({
+    where: { id },
+  });
+};
+
+
+// ====== [41] packages/server/src/api/tenants/tenants.controller.ts ======
+import type { Request, Response, NextFunction } from 'express';
+import {
+  createTenant,
+  getAllTenants,
+  getTenantById,
+  updateTenantStatus,
+  deleteTenant,
+} from './tenants.service.js';
+
+/**
+ * Maneja la creación de un nuevo tenant.
+ */
+export const createTenantHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const tenant = await createTenant(req.body);
+    res.status(201).json({ success: true, data: tenant });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Maneja la obtención de todos los tenants.
+ */
+export const getAllTenantsHandler = async (
+  _req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const tenants = await getAllTenants();
+    res.status(200).json({ success: true, data: tenants });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Maneja la obtención de un tenant por su ID.
+ */
+export const getTenantByIdHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ message: 'El ID del tenant es requerido.' });
+    }
+
+    const tenant = await getTenantById(id);
+
+    if (!tenant) {
+      const error: any = new Error('Tenant no encontrado.');
+      error.statusCode = 404;
+      return next(error);
+    }
+
+    res.status(200).json({ success: true, data: tenant });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Maneja la actualización del estado de un tenant.
+ */
+export const updateTenantStatusHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ message: 'El ID del tenant es requerido.' });
+    }
+
+    const { status } = req.body;
+    // TODO: Añadir validación para asegurar que 'status' es un valor válido del enum SubscriptionStatus
+
+    const updatedTenant = await updateTenantStatus(id, status);
+    res.status(200).json({ success: true, data: updatedTenant });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Maneja la eliminación de un tenant.
+ */
+export const deleteTenantHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ message: 'El ID del tenant es requerido.' });
+    }
+
+    await deleteTenant(id);
+
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+// ====== [42] packages/server/src/api/tenants/tenants.routes.ts ======
+import { Router } from 'express';
+import {
+  createTenantHandler,
+  getAllTenantsHandler,
+  getTenantByIdHandler,
+  updateTenantStatusHandler,
+  deleteTenantHandler,
+} from './tenants.controller.js';
+
+const tenantsRouter = Router();
+
+// TODO: Proteger todas estas rutas para que solo sean accesibles por un SUPER_ADMIN.
+
+/**
+ * @route   GET /api/tenants
+ * @desc    Obtiene todos los tenants
+ * @access  Private (SuperAdmin)
+ */
+tenantsRouter.get('/', getAllTenantsHandler);
+
+/**
+ * @route   POST /api/tenants
+ * @desc    Crea un nuevo tenant y su primer usuario admin
+ * @access  Private (SuperAdmin)
+ */
+tenantsRouter.post('/', createTenantHandler);
+
+/**
+ * @route   GET /api/tenants/:id
+ * @desc    Obtiene un tenant específico por su ID
+ * @access  Private (SuperAdmin)
+ */
+tenantsRouter.get('/:id', getTenantByIdHandler);
+
+/**
+ * @route   PATCH /api/tenants/:id/status
+ * @desc    Actualiza el estado de la suscripción de un tenant
+ * @access  Private (SuperAdmin)
+ */
+tenantsRouter.patch('/:id/status', updateTenantStatusHandler);
+
+/**
+ * @route   DELETE /api/tenants/:id
+ * @desc    Elimina un tenant y toda su información asociada
+ * @access  Private (SuperAdmin)
+ */
+tenantsRouter.delete('/:id', deleteTenantHandler);
+
+export default tenantsRouter;
+
+
+// ====== [43] packages/server/src/api/tenants/tenants.service.ts ======
+import { PrismaClient } from '@prisma/client';
+import type { Tenant, SubscriptionStatus } from '@prisma/client';
+import { hashPassword } from '../../utils/password.utils.js';
+
+const prisma = new PrismaClient();
+
+// --- Tipos de Entrada (DTOs) ---
+type AdminUserInput = {
+  name: string;
+  email: string;
+  password: string;
+};
+
+export type CreateTenantInput = {
+  companyName: string;
+  subdomain: string;
+  adminUser: AdminUserInput;
+};
+
+// --- Funciones del Servicio ---
+
+/**
+ * Crea un nuevo Tenant y su primer usuario Administrador de forma atómica.
+ * @param input - Datos para el nuevo tenant y su admin.
+ * @returns El objeto del Tenant recién creado.
+ */
+export const createTenant = async (input: CreateTenantInput): Promise<Tenant> => {
+  const { companyName, subdomain, adminUser } = input;
+
+  const newTenant = await prisma.$transaction(async (tx) => {
+    const existingSubdomain = await tx.tenant.findUnique({ where: { subdomain } });
+    if (existingSubdomain) {
+      throw new Error('El subdominio ya está en uso.');
+    }
+
+    const existingEmail = await tx.user.findUnique({ where: { email: adminUser.email } });
+    if (existingEmail) {
+      throw new Error('El correo electrónico ya está en uso por otro usuario.');
+    }
+
+    const tenant = await tx.tenant.create({
+      data: {
+        companyName,
+        subdomain,
+      },
+    });
+
+    const hashedPassword = await hashPassword(adminUser.password);
+    await tx.user.create({
+      data: {
+        name: adminUser.name,
+        email: adminUser.email,
+        password: hashedPassword,
+        role: 'ADMIN',
+        tenantId: tenant.id,
+      },
+    });
+
+    return tenant;
+  });
+
+  return newTenant;
+};
+
+/**
+ * Obtiene un listado de todos los tenants.
+ * @returns Un array de todos los tenants.
+ */
+export const getAllTenants = async (): Promise<Tenant[]> => {
+  return prisma.tenant.findMany({
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+};
+
+/**
+ * Busca un tenant específico por su ID.
+ * @param id - El ID del tenant a buscar.
+ * @returns El objeto del tenant o null si no se encuentra.
+ */
+export const getTenantById = async (id: string): Promise<Tenant | null> => {
+  return prisma.tenant.findUnique({
+    where: { id },
+  });
+};
+
+/**
+ * Actualiza el estado de la suscripción de un tenant.
+ * @param id - El ID del tenant a actualizar.
+ * @param status - El nuevo estado de la suscripción.
+ * @returns El objeto del tenant actualizado.
+ */
+export const updateTenantStatus = async (
+  id: string,
+  status: SubscriptionStatus
+): Promise<Tenant> => {
+  return prisma.tenant.update({
+    where: { id },
+    data: {
+      subscriptionStatus: status,
+    },
+  });
+};
+
+/**
+ * Elimina un tenant y toda su información asociada (cascade).
+ * @param id - El ID del tenant a eliminar.
+ * @returns El objeto del tenant que fue eliminado.
+ */
+export const deleteTenant = async (id: string): Promise<Tenant> => {
+  // Gracias a 'onDelete: Cascade' en el schema, al borrar un tenant,
+  // se borrarán en cascada todos sus usuarios, clientes, piscinas, etc.
+  return prisma.tenant.delete({
+    where: { id },
+  });
+};
+
+
+// ====== [44] packages/server/src/app.ts ======
+// filename: packages/server/src/app.ts
+// Version: 1.4.0 (Mount poolsRouter for Admin module)
+import express from 'express';
+import type { Request, Response } from 'express';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+
+import { errorHandler } from './middleware/error.middleware.js';
+import authRouter from './api/auth/auth.routes.js';
+import tenantsRouter from './api/tenants/tenants.routes.js';
+import parametersRouter from './api/parameters/parameters.routes.js';
+import tasksRouter from './api/tasks/tasks.routes.js';
+import clientsRouter from './api/clients/clients.routes.js';
+import poolsRouter from './api/pools/pools.routes.js';
+
+// --- Instancia de la App ---
+const app = express();
+
+// --- Middlewares Esenciales ---
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true,
+}));
+app.use(cookieParser());
+app.use(express.json());
+
+
+// --- Rutas de la API ---
+
+// Ruta de health-check para verificar que el servidor está vivo.
+app.get('/api/health', (_req: Request, res: Response) => {
+  res.status(200).json({ status: 'UP' });
+});
+
+// Montamos los enrutadores de cada módulo
+app.use('/api/auth', authRouter);
+app.use('/api/tenants', tenantsRouter);
+app.use('/api/parameters', parametersRouter);
+app.use('/api/tasks', tasksRouter);
+app.use('/api/clients', clientsRouter);
+app.use('/api/pools', poolsRouter);
+
+
+// --- Gestor de Errores ---
+app.use(errorHandler);
+
+export default app;
+
+
+// ====== [45] packages/server/src/config/index.ts ======
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// --- Recreación de __dirname para ES Modules ---
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+// ---------------------------------------------
+
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
+const getEnvVar = (key: string): string => {
+  const value = process.env[key];
+  if (!value) {
+    throw new Error(`Falta la variable de entorno requerida: ${key}`);
+  }
+  return value;
+};
+
+const config = {
+  PORT: parseInt(getEnvVar('PORT'), 10),
+  JWT_SECRET: getEnvVar('JWT_SECRET'),
+  JWT_EXPIRES_IN: parseInt(getEnvVar('JWT_EXPIRES_IN'), 10),
+  DATABASE_URL: getEnvVar('DATABASE_URL'),
+};
+
+export default config;
+
+
+// ====== [46] packages/server/src/middleware/auth.middleware.ts ======
+import type { Request, Response, NextFunction } from 'express';
+import { PrismaClient } from '@prisma/client';
+import type { User } from '@prisma/client';
+import { verifyToken } from '../utils/jwt.utils.js';
+
+const prisma = new PrismaClient();
+
+// Creamos un tipo "seguro" para el usuario, omitiendo la contraseña.
+type SafeUser = Omit<User, 'password'>;
+
+// Extendemos la interfaz Request de Express para que use nuestro tipo SafeUser.
+export interface AuthRequest extends Request {
+  user?: SafeUser;
+}
+
+/**
+ * Middleware para proteger rutas. Verifica el token JWT de la cookie.
+ * Si el token es válido, adjunta el usuario a la request y pasa al siguiente middleware.
+ * Si no, devuelve un error 401 (No autorizado).
+ */
+export const protect = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  const token = req.cookies.token;
+
+  if (!token) {
+    return res.status(401).json({ message: 'No autenticado: no hay token.' });
+  }
+
+  try {
+    const decoded = verifyToken<{ id: string }>(token);
+
+    if (!decoded) {
+      return res.status(401).json({ message: 'No autenticado: token inválido.' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      // Seleccionamos todos los campos EXCEPTO la contraseña.
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        tenantId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: 'No autenticado: usuario no encontrado.' });
+    }
+
+    // Ahora `user` coincide con el tipo `SafeUser`, por lo que la asignación es válida.
+    req.user = user;
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: 'No autenticado: error en la validación.' });
+  }
+};
+
+
+// ====== [47] packages/server/src/middleware/error.middleware.ts ======
+import type { Request, Response, NextFunction } from 'express';
+
+// Interfaz para asegurar que nuestros errores puedan tener un código de estado
+interface HttpError extends Error {
+  statusCode?: number;
+}
+
+export const errorHandler = (
+  err: HttpError,
+  _req: Request,
+  res: Response,
+  _next: NextFunction
+) => {
+  // Guardamos el error en la consola para depuración
+  console.error(err);
+
+  const statusCode = err.statusCode || 500;
+  const message = err.message || 'Ha ocurrido un error inesperado en el servidor.';
+
+  res.status(statusCode).json({
+    success: false,
+    statusCode: statusCode,
+    message: message,
+  });
+};
+
+
+// ====== [48] packages/server/src/server.ts ======
+import app from './app.js';
+import config from './config/index.js';
+
+const PORT = config.PORT || 3001;
+
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor escuchando en http://localhost:${PORT}`);
+});
+
+
+// ====== [49] packages/server/src/utils/jwt.utils.ts ======
+import jwt from 'jsonwebtoken';
+import type { SignOptions } from 'jsonwebtoken';
+import config from '../config/index.js';
+
+/**
+ * Firma un payload para crear un token JWT.
+ * @param payload El objeto que se incluirá en el token (ej. { userId: '...' }).
+ * @returns El token JWT como una cadena de texto.
+ */
+export const signToken = (payload: object): string => {
+  const options: SignOptions = {
+    expiresIn: config.JWT_EXPIRES_IN,
+  };
+
+  return jwt.sign(payload, config.JWT_SECRET, options);
+};
+
+/**
+ * Verifica un token JWT y devuelve su payload si es válido.
+ * @template T El tipo esperado del payload.
+ * @param token El token JWT a verificar.
+ * @returns El payload decodificado si el token es válido; de lo contrario, null.
+ */
+export const verifyToken = <T>(token: string): T | null => {
+  try {
+    const decoded = jwt.verify(token, config.JWT_SECRET) as T;
+    return decoded;
+  } catch (error) {
+    return null;
+  }
+};
+
+
+// ====== [50] packages/server/src/utils/password.utils.ts ======
+import bcrypt from 'bcryptjs';
+
+const SALT_ROUNDS = 12;
+
+/**
+ * Genera el hash de una contraseña en texto plano.
+ * @param password La contraseña en texto plano.
+ * @returns Una promesa que resuelve en el hash de la contraseña.
+ */
+export const hashPassword = (password: string): Promise<string> => {
+  return bcrypt.hash(password, SALT_ROUNDS);
+};
+
+/**
+ * Compara una contraseña en texto plano con un hash.
+ * @param password La contraseña en texto plano a comparar.
+ * @param hash El hash almacenado en la base de datos.
+ * @returns Una promesa que resuelve en `true` si las contraseñas coinciden, `false` en caso contrario.
+ */
+export const comparePassword = (password: string, hash: string): Promise<boolean> => {
+  return bcrypt.compare(password, hash);
+};
+
+
+// ====== [51] packages/server/tsconfig.json ======
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"]
+}
+
+
+// ====== [52] tsconfig.json ======
+{
+  "compilerOptions": {
+    /* Base Options */
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "target": "ES2022",
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+
+    /* Strictness */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitAny": true,
+
+    /* Module Resolution */
+    "moduleResolution": "NodeNext",
+    "module": "NodeNext",
+
+    /* Linter */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "exclude": ["node_modules"]
+}
+

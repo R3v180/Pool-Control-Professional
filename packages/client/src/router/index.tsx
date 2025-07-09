@@ -1,5 +1,5 @@
 // filename: packages/client/src/router/index.tsx
-// Version: 1.4.2 (Align with final folder structure for client pages)
+// Version: 1.5.0 (Add pool detail/configuration route)
 import { createBrowserRouter } from 'react-router-dom';
 import { LoginPage } from '../features/auth/pages/LoginPage.js';
 import { TenantsPage } from '../features/superadmin/pages/TenantsPage.js';
@@ -7,6 +7,7 @@ import { ParameterCatalogPage } from '../features/admin/pages/ParameterCatalogPa
 import { TaskCatalogPage } from '../features/admin/pages/TaskCatalogPage.js';
 import { ClientsPage } from '../features/admin/pages/clients/ClientsPage.js';
 import { ClientDetailPage } from '../features/admin/pages/clients/ClientDetailPage.js';
+import { PoolDetailPage } from '../features/admin/pages/pools/PoolDetailPage.js';
 import {
   AppLayout,
   ProtectedRoute,
@@ -55,6 +56,16 @@ export const router = createBrowserRouter([
                 element: <ClientDetailPage />,
               },
             ],
+          },
+          {
+            path: 'pools/:id', // Nueva ruta para el detalle de la piscina
+            element: <AdminRoute />,
+            children: [
+              {
+                index: true,
+                element: <PoolDetailPage />
+              }
+            ]
           },
           {
             path: 'catalog',

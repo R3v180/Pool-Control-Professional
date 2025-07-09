@@ -1,5 +1,5 @@
 // filename: packages/client/src/features/admin/pages/clients/ClientDetailPage.tsx
-// Version: 1.1.0 (Implement Create/Update/Delete functionality for pools)
+// Version: 1.2.0 (Make pool names link to their future detail page)
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
@@ -18,6 +18,7 @@ import {
   Stack,
   NumberInput,
   Select,
+  Anchor,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
@@ -111,7 +112,7 @@ export function ClientDetailPage() {
       } else {
         await apiClient.post('/pools', payload);
       }
-      await fetchClient(); // Re-cargamos los datos del cliente para ver la piscina nueva/actualizada
+      await fetchClient();
       closeModal();
     } catch (err: any) {
       poolForm.setErrors({ name: err.response?.data?.message || 'Error al guardar la piscina' });
@@ -122,7 +123,7 @@ export function ClientDetailPage() {
     if (window.confirm('¿Estás seguro de que quieres eliminar esta piscina?')) {
       try {
         await apiClient.delete(`/pools/${poolId}`);
-        await fetchClient(); // Re-cargamos para que desaparezca de la lista
+        await fetchClient();
       } catch (err) {
         console.error('Failed to delete pool', err);
       }
@@ -190,7 +191,11 @@ export function ClientDetailPage() {
             {client.pools.length > 0 ? (
               client.pools.map(pool => (
                 <Table.Tr key={pool.id}>
-                  <Table.Td>{pool.name}</Table.Td>
+                  <Table.Td>
+                    <Anchor component={Link} to={`/pools/${pool.id}`}>
+                      {pool.name}
+                    </Anchor>
+                  </Table.Td>
                   <Table.Td>{pool.address}</Table.Td>
                   <Table.Td>{pool.volume || '-'}</Table.Td>
                   <Table.Td>{pool.type || '-'}</Table.Td>
