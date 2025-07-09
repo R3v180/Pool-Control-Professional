@@ -1,5 +1,5 @@
 // filename: packages/client/src/router/components.tsx
-// Version: 1.4.1 (Add Logout button to navbar)
+// Version: 1.5.0 (Add TechnicianRoute and navigation link)
 import { AppShell, Burger, Group, NavLink, Title, Button } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Navigate, Outlet, Link, useNavigate } from 'react-router-dom';
@@ -74,6 +74,16 @@ export const AppLayout = () => {
           </>
         )}
 
+        {/* Enlaces solo para el rol TECHNICIAN */}
+        {user?.role === 'TECHNICIAN' && (
+          <NavLink
+            component={Link}
+            to="/my-route"
+            label="Mi Ruta de Hoy"
+            onClick={toggle}
+          />
+        )}
+
         {/* Enlaces solo para el rol SUPER_ADMIN */}
         {user?.role === 'SUPER_ADMIN' && (
            <NavLink 
@@ -119,6 +129,19 @@ export const AdminRoute = () => {
   const { user, isLoading } = useAuth();
   if (isLoading) return <div>Cargando...</div>;
   if (user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN') {
+    return <Navigate to="/" replace />;
+  }
+  return <Outlet />;
+};
+
+/**
+ * Componente que protege rutas específicas para el rol TECHNICIAN.
+ */
+export const TechnicianRoute = () => {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <div>Cargando...</div>;
+  // Solo permite acceso si el rol es TECHNICIAN
+  if (user?.role !== 'TECHNICIAN') {
     return <Navigate to="/" replace />;
   }
   return <Outlet />;

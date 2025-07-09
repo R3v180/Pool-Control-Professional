@@ -1,5 +1,5 @@
 // filename: packages/client/src/router/index.tsx
-// Version: 1.6.0 (Add /planner route for Admin)
+// Version: 1.7.0 (Add /my-route for Technician role)
 import { createBrowserRouter } from 'react-router-dom';
 import { LoginPage } from '../features/auth/pages/LoginPage.js';
 import { TenantsPage } from '../features/superadmin/pages/TenantsPage.js';
@@ -9,11 +9,13 @@ import { ClientsPage } from '../features/admin/pages/clients/ClientsPage.js';
 import { ClientDetailPage } from '../features/admin/pages/clients/ClientDetailPage.js';
 import { PoolDetailPage } from '../features/admin/pages/pools/PoolDetailPage.js';
 import { PlannerPage } from '../features/admin/pages/planner/PlannerPage.js';
+import { MyRoutePage } from '../features/technician/pages/MyRoutePage.js';
 import {
   AppLayout,
   ProtectedRoute,
   SuperAdminRoute,
   AdminRoute,
+  TechnicianRoute,
 } from './components.js';
 
 export const router = createBrowserRouter([
@@ -89,6 +91,17 @@ export const router = createBrowserRouter([
               {
                 path: 'tasks',
                 element: <TaskCatalogPage />,
+              },
+            ],
+          },
+          // --- Sección de Técnico ---
+          {
+            path: 'my-route',
+            element: <TechnicianRoute />,
+            children: [
+              {
+                index: true,
+                element: <MyRoutePage />,
               },
             ],
           },

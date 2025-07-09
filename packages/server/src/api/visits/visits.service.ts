@@ -1,14 +1,14 @@
 // filename: packages/server/src/api/visits/visits.service.ts
-// Version: 1.1.1 (Import missing addDays function)
+// Version: 1.3.0 (Remove temporary getAllVisitsForTechnician function)
 import { PrismaClient } from '@prisma/client';
-import type { Frequency } from '@prisma/client';
-import { startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, startOfDay, addDays } from 'date-fns';
+import type { Frequency, Visit } from '@prisma/client';
+import { startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, startOfDay, endOfDay } from 'date-fns';
 
 const prisma = new PrismaClient();
 
 // --- Tipos ---
 interface ScheduledVisit {
-  id: string; // ID de la visita real si existe, o uno temporal
+  id: string; 
   date: Date;
   poolId: string;
   poolName: string;
@@ -16,7 +16,7 @@ interface ScheduledVisit {
   technicianId: string | null;
 }
 
-// --- Lógica de Frecuencia (Mejorada) ---
+// --- Lógica de Frecuencia ---
 function shouldOccurOnDate(
   frequency: Frequency,
   lastCompleted: Date | null,
@@ -94,14 +94,12 @@ export const assignTechnicianToVisit = async (
   date: Date
 ) => {
   const dayStart = startOfDay(date);
+  const dayEnd = endOfDay(date);
 
   const visit = await prisma.visit.findFirst({
     where: {
       poolId,
-      timestamp: {
-        gte: dayStart,
-        lt: addDays(dayStart, 1)
-      }
+      timestamp: { gte: dayStart, lt: dayEnd }
     }
   });
 
@@ -119,4 +117,38 @@ export const assignTechnicianToVisit = async (
       },
     });
   }
+};
+
+/**
+ * Obtiene las visitas asignadas a un técnico en una fecha específica.
+ * @param technicianId - El ID del técnico.
+ * @param date - La fecha de interés.
+ * @returns Un array de visitas.
+ */
+export const getVisitsForTechnicianOnDate = async (
+  technicianId: string,
+  date: Date
+): Promise<Visit[]> => {
+  const dayStart = startOfDay(date);
+  const dayEnd = endOfDay(date);
+
+  return prisma.visit.findMany({
+    where: {
+      technicianId,
+      timestamp: {
+        gte: dayStart,
+        lte: dayEnd,
+      },
+    },
+    include: {
+      pool: {
+        include: {
+          client: true,
+        },
+      },
+    },
+    orderBy: {
+      timestamp: 'asc',
+    },
+  });
 };

@@ -12,46 +12,56 @@
 10. packages/client/src/features/admin/pages/TaskCatalogPage.tsx
 11. packages/client/src/features/admin/pages/clients/ClientDetailPage.tsx
 12. packages/client/src/features/admin/pages/clients/ClientsPage.tsx
-13. packages/client/src/features/auth/pages/LoginPage.tsx
-14. packages/client/src/features/superadmin/pages/TenantsPage.tsx
-15. packages/client/src/main.tsx
-16. packages/client/src/providers/AuthProvider.tsx
-17. packages/client/src/router/components.tsx
-18. packages/client/src/router/index.tsx
-19. packages/client/src/styles/theme.ts
-20. packages/client/tsconfig.json
-21. packages/client/tsconfig.node.json
-22. packages/client/vite.config.ts
-23. packages/server/package.json
-24. packages/server/prisma/seed.ts
-25. packages/server/src/api/auth/auth.controller.ts
-26. packages/server/src/api/auth/auth.routes.ts
-27. packages/server/src/api/auth/auth.service.ts
-28. packages/server/src/api/clients/clients.controller.ts
-29. packages/server/src/api/clients/clients.routes.ts
-30. packages/server/src/api/clients/clients.service.ts
-31. packages/server/src/api/parameters/parameters.controller.ts
-32. packages/server/src/api/parameters/parameters.routes.ts
-33. packages/server/src/api/parameters/parameters.service.ts
-34. packages/server/src/api/pool-configurations/pool-configurations.service.ts
-35. packages/server/src/api/pools/pools.controller.ts
-36. packages/server/src/api/pools/pools.routes.ts
-37. packages/server/src/api/pools/pools.service.ts
-38. packages/server/src/api/tasks/tasks.controller.ts
-39. packages/server/src/api/tasks/tasks.routes.ts
-40. packages/server/src/api/tasks/tasks.service.ts
-41. packages/server/src/api/tenants/tenants.controller.ts
-42. packages/server/src/api/tenants/tenants.routes.ts
-43. packages/server/src/api/tenants/tenants.service.ts
-44. packages/server/src/app.ts
-45. packages/server/src/config/index.ts
-46. packages/server/src/middleware/auth.middleware.ts
-47. packages/server/src/middleware/error.middleware.ts
-48. packages/server/src/server.ts
-49. packages/server/src/utils/jwt.utils.ts
-50. packages/server/src/utils/password.utils.ts
-51. packages/server/tsconfig.json
-52. tsconfig.json
+13. packages/client/src/features/admin/pages/planner/PlannerPage.tsx
+14. packages/client/src/features/admin/pages/pools/PoolDetailPage.tsx
+15. packages/client/src/features/auth/pages/LoginPage.tsx
+16. packages/client/src/features/superadmin/pages/TenantsPage.tsx
+17. packages/client/src/main.tsx
+18. packages/client/src/providers/AuthProvider.tsx
+19. packages/client/src/router/components.tsx
+20. packages/client/src/router/index.tsx
+21. packages/client/src/styles/theme.ts
+22. packages/client/tsconfig.json
+23. packages/client/tsconfig.node.json
+24. packages/client/vite.config.ts
+25. packages/server/package.json
+26. packages/server/prisma/seed.ts
+27. packages/server/src/api/auth/auth.controller.ts
+28. packages/server/src/api/auth/auth.routes.ts
+29. packages/server/src/api/auth/auth.service.ts
+30. packages/server/src/api/clients/clients.controller.ts
+31. packages/server/src/api/clients/clients.routes.ts
+32. packages/server/src/api/clients/clients.service.ts
+33. packages/server/src/api/parameters/parameters.controller.ts
+34. packages/server/src/api/parameters/parameters.routes.ts
+35. packages/server/src/api/parameters/parameters.service.ts
+36. packages/server/src/api/pool-configurations/pool-configurations.controller.ts
+37. packages/server/src/api/pool-configurations/pool-configurations.routes.ts
+38. packages/server/src/api/pool-configurations/pool-configurations.service.ts
+39. packages/server/src/api/pools/pools.controller.ts
+40. packages/server/src/api/pools/pools.routes.ts
+41. packages/server/src/api/pools/pools.service.ts
+42. packages/server/src/api/tasks/tasks.controller.ts
+43. packages/server/src/api/tasks/tasks.routes.ts
+44. packages/server/src/api/tasks/tasks.service.ts
+45. packages/server/src/api/tenants/tenants.controller.ts
+46. packages/server/src/api/tenants/tenants.routes.ts
+47. packages/server/src/api/tenants/tenants.service.ts
+48. packages/server/src/api/users/users.controller.ts
+49. packages/server/src/api/users/users.routes.ts
+50. packages/server/src/api/users/users.service.ts
+51. packages/server/src/api/visits/visits.controller.ts
+52. packages/server/src/api/visits/visits.routes.ts
+53. packages/server/src/api/visits/visits.service.ts
+54. packages/server/src/app.ts
+55. packages/server/src/config/index.ts
+56. packages/server/src/middleware/auth.middleware.ts
+57. packages/server/src/middleware/error.middleware.ts
+58. packages/server/src/server.ts
+59. packages/server/src/utils/jwt.utils.ts
+60. packages/server/src/utils/password.utils.ts
+61. packages/server/tsconfig.json
+62. tsconfig.json
 
 
 # CONTENIDO DE ARCHIVOS
@@ -394,10 +404,12 @@ Este documento detalla las funcionalidades y especificaciones técnicas del sist
     "preview": "vite preview"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
     "@mantine/core": "^7.10.1",
     "@mantine/form": "^8.1.3",
     "@mantine/hooks": "^7.10.1",
     "axios": "^1.7.2",
+    "date-fns": "^4.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.23.1"
@@ -817,7 +829,7 @@ export function TaskCatalogPage() {
 
 // ====== [11] packages/client/src/features/admin/pages/clients/ClientDetailPage.tsx ======
 // filename: packages/client/src/features/admin/pages/clients/ClientDetailPage.tsx
-// Version: 1.1.0 (Implement Create/Update/Delete functionality for pools)
+// Version: 1.2.0 (Make pool names link to their future detail page)
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
@@ -836,6 +848,7 @@ import {
   Stack,
   NumberInput,
   Select,
+  Anchor,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
@@ -929,7 +942,7 @@ export function ClientDetailPage() {
       } else {
         await apiClient.post('/pools', payload);
       }
-      await fetchClient(); // Re-cargamos los datos del cliente para ver la piscina nueva/actualizada
+      await fetchClient();
       closeModal();
     } catch (err: any) {
       poolForm.setErrors({ name: err.response?.data?.message || 'Error al guardar la piscina' });
@@ -940,7 +953,7 @@ export function ClientDetailPage() {
     if (window.confirm('¿Estás seguro de que quieres eliminar esta piscina?')) {
       try {
         await apiClient.delete(`/pools/${poolId}`);
-        await fetchClient(); // Re-cargamos para que desaparezca de la lista
+        await fetchClient();
       } catch (err) {
         console.error('Failed to delete pool', err);
       }
@@ -1008,7 +1021,11 @@ export function ClientDetailPage() {
             {client.pools.length > 0 ? (
               client.pools.map(pool => (
                 <Table.Tr key={pool.id}>
-                  <Table.Td>{pool.name}</Table.Td>
+                  <Table.Td>
+                    <Anchor component={Link} to={`/pools/${pool.id}`}>
+                      {pool.name}
+                    </Anchor>
+                  </Table.Td>
                   <Table.Td>{pool.address}</Table.Td>
                   <Table.Td>{pool.volume || '-'}</Table.Td>
                   <Table.Td>{pool.type || '-'}</Table.Td>
@@ -1226,7 +1243,451 @@ export function ClientsPage() {
 }
 
 
-// ====== [13] packages/client/src/features/auth/pages/LoginPage.tsx ======
+// ====== [13] packages/client/src/features/admin/pages/planner/PlannerPage.tsx ======
+// filename: packages/client/src/features/admin/pages/planner/PlannerPage.tsx
+// Version: 1.2.2 (Connect Drag and Drop to the backend API)
+import { useEffect, useState } from 'react';
+import {
+  Container,
+  Title,
+  Loader,
+  Alert,
+  Paper,
+  Text,
+  Grid,
+  Card,
+  Group,
+  ActionIcon,
+  Stack,
+} from '@mantine/core';
+import { useAuth } from '../../../../providers/AuthProvider.js';
+import apiClient from '../../../../api/apiClient.js';
+import { startOfWeek, format, addDays, subDays } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { DndContext, useDraggable, useDroppable } from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
+
+// --- Tipos ---
+interface ScheduledVisit {
+  id: string;
+  date: string;
+  poolId: string;
+  poolName: string;
+  clientName: string;
+  technicianId: string | null;
+}
+
+interface Technician {
+  id: string;
+  name: string;
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
+// --- Componentes de Drag and Drop ---
+
+function DraggableVisit({ visit }: { visit: ScheduledVisit }) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: visit.id,
+    data: visit,
+  });
+
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    zIndex: 100,
+  } : undefined;
+
+  return (
+    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+      <Card shadow="sm" p="xs" withBorder>
+        <Text fw={500}>{visit.poolName}</Text>
+        <Text size="sm" c="dimmed">{visit.clientName}</Text>
+        <Text size="xs" mt={4}>{format(new Date(visit.date), 'eeee d', { locale: es })}</Text>
+      </Card>
+    </div>
+  );
+}
+
+function DroppableArea({ id, children, title }: { id: string; children: React.ReactNode; title: string }) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  return (
+    <Paper 
+      ref={setNodeRef} 
+      withBorder 
+      p="sm" 
+      style={{ 
+        height: '100%', 
+        backgroundColor: isOver ? '#e7f5ff' : '#f1f3f5',
+        transition: 'background-color 0.2s ease'
+      }}
+    >
+      <Title order={5} ta="center" mb="md">{title}</Title>
+      <Stack>{children}</Stack>
+    </Paper>
+  );
+}
+
+
+// --- Componente Principal ---
+export function PlannerPage() {
+  const { user } = useAuth();
+  const [visits, setVisits] = useState<ScheduledVisit[]>([]);
+  const [technicians, setTechnicians] = useState<Technician[]>([]);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+
+  const fetchData = async () => {
+    if (!user) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [visitsRes, techsRes] = await Promise.all([
+        apiClient.get<ApiResponse<ScheduledVisit[]>>('/visits/scheduled', {
+          params: { date: currentDate.toISOString() },
+        }),
+        apiClient.get<ApiResponse<Technician[]>>('/users/technicians'),
+      ]);
+      
+      setVisits(visitsRes.data.data);
+      setTechnicians(techsRes.data.data);
+    } catch (err) {
+      setError('No se pudo cargar la planificación.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDate, user]);
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { over, active } = event;
+    if (!over) return;
+
+    const visit = active.data.current as ScheduledVisit;
+    const targetTechnicianId = over.id === 'unassigned' ? null : String(over.id);
+
+    // Evitar llamadas a la API si no hay cambio
+    if (visit.technicianId === targetTechnicianId) return;
+
+    // Actualización optimista de la UI
+    setVisits(prevVisits => 
+      prevVisits.map(v => 
+        v.id === visit.id ? { ...v, technicianId: targetTechnicianId } : v
+      )
+    );
+
+    try {
+      // Llamada a la API para persistir el cambio
+      await apiClient.post('/visits/assign', {
+        poolId: visit.poolId,
+        date: visit.date,
+        technicianId: targetTechnicianId,
+      });
+    } catch (err) {
+      setError('No se pudo asignar la visita. Reintentando...');
+      // En caso de error, revertimos la UI volviendo a cargar los datos del servidor
+      await fetchData();
+    }
+  };
+
+  if (isLoading) return <Loader size="xl" />;
+  
+  const goToPreviousWeek = () => setCurrentDate(subDays(currentDate, 7));
+  const goToNextWeek = () => setCurrentDate(addDays(currentDate, 7));
+
+  return (
+    <DndContext onDragEnd={handleDragEnd}>
+      <Container fluid>
+        {error && <Alert color="red" title="Error" withCloseButton onClose={() => setError(null)} mb="md">{error}</Alert>}
+        <Group justify="space-between" align="center">
+          <Title order={2} my="lg">Planificador Semanal</Title>
+          <Group>
+            <ActionIcon variant="default" onClick={goToPreviousWeek}>{'<'}</ActionIcon>
+            <Text size="lg" fw={500}>{format(weekStart, 'd MMMM yyyy', { locale: es })}</Text>
+            <ActionIcon variant="default" onClick={goToNextWeek}>{'>'}</ActionIcon>
+          </Group>
+        </Group>
+
+        <Grid grow>
+          <Grid.Col span={{ base: 12, md: 3 }}>
+            <DroppableArea id="unassigned" title="Visitas Pendientes">
+              {visits
+                .filter(v => v.technicianId === null)
+                .map(visit => <DraggableVisit key={visit.id} visit={visit} />)
+              }
+            </DroppableArea>
+          </Grid.Col>
+
+          <Grid.Col span={{ base: 12, md: 9 }}>
+            <Grid>
+              {technicians.map(tech => (
+                <Grid.Col key={tech.id} span={{ base: 12, lg: 6, xl: 4 }}>
+                   <DroppableArea id={tech.id} title={tech.name}>
+                    {visits
+                      .filter(v => v.technicianId === tech.id)
+                      .map(visit => <DraggableVisit key={visit.id} visit={visit} />)
+                    }
+                   </DroppableArea>
+                </Grid.Col>
+              ))}
+            </Grid>
+          </Grid.Col>
+        </Grid>
+      </Container>
+    </DndContext>
+  );
+}
+
+
+// ====== [14] packages/client/src/features/admin/pages/pools/PoolDetailPage.tsx ======
+// filename: packages/client/src/features/admin/pages/pools/PoolDetailPage.tsx
+// Version: 1.2.0 (Implement Edit functionality for Pool Configurations)
+import { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import {
+  Container,
+  Title,
+  Loader,
+  Alert,
+  Paper,
+  Text,
+  Table,
+  Breadcrumbs,
+  Grid,
+  Card,
+  Button,
+  Group,
+  Modal,
+  Select,
+  NumberInput,
+  Stack,
+  Menu,
+} from '@mantine/core';
+import { useForm } from '@mantine/form';
+import { useDisclosure } from '@mantine/hooks';
+import apiClient from '../../../../api/apiClient.js';
+
+// --- Tipos ---
+const Frequencies = ['DIARIA', 'SEMANAL', 'QUINCENAL', 'MENSUAL', 'TRIMESTRAL', 'SEMESTRAL', 'ANUAL'] as const;
+type Frequency = (typeof Frequencies)[number];
+
+interface Pool { id: string; name: string; clientId: string; }
+interface ParameterTemplate { id: string; name: string; unit: string | null; type: 'NUMBER' | 'BOOLEAN' | 'TEXT' | 'SELECT'; }
+interface TaskTemplate { id: string; name: string; }
+interface PoolConfiguration {
+  id: string;
+  frequency: Frequency;
+  minThreshold: number | null;
+  maxThreshold: number | null;
+  parameterTemplate?: ParameterTemplate;
+  taskTemplate?: TaskTemplate;
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
+// --- Componente ---
+export function PoolDetailPage() {
+  const { id: poolId } = useParams<{ id: string }>();
+  const [pool, ] = useState<Pool | null>(null);
+  const [configurations, setConfigurations] = useState<PoolConfiguration[]>([]);
+  const [parameterCatalog, setParameterCatalog] = useState<ParameterTemplate[]>([]);
+  const [taskCatalog, setTaskCatalog] = useState<TaskTemplate[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
+  // Estado para saber qué estamos configurando (un nuevo ítem o editando uno existente)
+  const [editingConfig, setEditingConfig] = useState<PoolConfiguration | null>(null);
+  const [itemToAdd, setItemToAdd] = useState<{ id: string; name: string; type: 'parameter' | 'task' } | null>(null);
+
+  const configForm = useForm({
+    initialValues: {
+      frequency: 'SEMANAL' as Frequency,
+      minThreshold: null as number | null,
+      maxThreshold: null as number | null,
+    },
+    validate: {
+      frequency: (value) => (Frequencies.includes(value) ? null : 'Frecuencia inválida'),
+    },
+  });
+
+  const fetchData = async () => {
+    if (!poolId) return;
+    setIsLoading(true);
+    try {
+      const [configsRes, paramsRes, tasksRes] = await Promise.all([
+        apiClient.get<ApiResponse<PoolConfiguration[]>>(`/pool-configurations/by-pool/${poolId}`),
+        apiClient.get<ApiResponse<ParameterTemplate[]>>('/parameters'),
+        apiClient.get<ApiResponse<TaskTemplate[]>>('/tasks'),
+      ]);
+      setConfigurations(configsRes.data.data);
+      setParameterCatalog(paramsRes.data.data);
+      setTaskCatalog(tasksRes.data.data);
+    } catch (err) {
+      setError('No se pudo cargar la configuración de la piscina.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [poolId]);
+
+  const handleOpenModal = (config: PoolConfiguration | null, item: { id: string; name: string; } | null, type: 'parameter' | 'task' | null) => {
+    setEditingConfig(config);
+    setItemToAdd(item ? { ...item, type: type as 'parameter' | 'task' } : null);
+    
+    if (config) { // Estamos editando
+      configForm.setValues({
+        frequency: config.frequency,
+        minThreshold: config.minThreshold,
+        maxThreshold: config.maxThreshold,
+      });
+    } else { // Estamos creando
+      configForm.reset();
+    }
+    openModal();
+  };
+
+  const handleConfigSubmit = async (values: typeof configForm.values) => {
+    if (!poolId) return;
+    try {
+      if (editingConfig) { // Lógica para actualizar
+        const payload = { frequency: values.frequency, minThreshold: values.minThreshold, maxThreshold: values.maxThreshold };
+        await apiClient.patch(`/pool-configurations/${editingConfig.id}`, payload);
+      } else if (itemToAdd) { // Lógica para crear
+        const payload = {
+          poolId,
+          frequency: values.frequency,
+          ...(itemToAdd.type === 'parameter' && { parameterTemplateId: itemToAdd.id, minThreshold: values.minThreshold, maxThreshold: values.maxThreshold }),
+          ...(itemToAdd.type === 'task' && { taskTemplateId: itemToAdd.id }),
+        };
+        await apiClient.post('/pool-configurations', payload);
+      }
+      await fetchData();
+      closeModal();
+    } catch (err: any) {
+      configForm.setErrors({ frequency: err.response?.data?.message || 'Error al guardar la configuración' });
+    }
+  };
+  
+  const handleConfigDelete = async (configId: string) => {
+    if (window.confirm('¿Estás seguro de que quieres quitar este ítem de la ficha?')) {
+      try {
+        await apiClient.delete(`/pool-configurations/${configId}`);
+        await fetchData();
+      } catch (err) {}
+    }
+  };
+
+  if (isLoading) return <Loader size="xl" />;
+  if (error) return <Alert color="red" title="Error">{error}</Alert>;
+
+  const currentItem = editingConfig?.parameterTemplate || editingConfig?.taskTemplate || itemToAdd;
+  const modalTitle = editingConfig ? `Editar: ${currentItem?.name}` : `Añadir: ${currentItem?.name}`;
+  const isParameter = (editingConfig && editingConfig.parameterTemplate) || (itemToAdd?.type === 'parameter');
+  
+  const breadcrumbs = (
+    <Breadcrumbs>
+      <Link to="/clients">Clientes</Link>
+      <Text>Cliente (TODO)</Text>
+      <Text>{pool?.name || 'Piscina'}</Text>
+    </Breadcrumbs>
+  );
+
+  return (
+    <>
+      <Modal opened={modalOpened} onClose={closeModal} title={modalTitle} centered>
+        <form onSubmit={configForm.onSubmit(handleConfigSubmit)}>
+          <Stack>
+            <Select label="Frecuencia" required data={[...Frequencies]} {...configForm.getInputProps('frequency')} />
+            {isParameter && (
+              <>
+                <NumberInput label="Umbral Mínimo (opcional)" {...configForm.getInputProps('minThreshold')} />
+                <NumberInput label="Umbral Máximo (opcional)" {...configForm.getInputProps('maxThreshold')} />
+              </>
+            )}
+            <Button type="submit" mt="md">{editingConfig ? 'Guardar Cambios' : 'Añadir a la Ficha'}</Button>
+          </Stack>
+        </form>
+      </Modal>
+
+      <Container fluid>
+        {breadcrumbs}
+        <Title order={2} my="lg">Constructor de Ficha: {pool?.name || ''}</Title>
+        <Grid>
+          <Grid.Col span={{ base: 12, md: 6 }}>
+            <Paper withBorder p="md">
+              <Title order={4} mb="md">Ficha de Mantenimiento Actual</Title>
+              <Table>
+                <Table.Thead><Table.Tr><Table.Th>Ítem</Table.Th><Table.Th>Frecuencia</Table.Th><Table.Th>Acciones</Table.Th></Table.Tr></Table.Thead>
+                <Table.Tbody>
+                  {configurations.length > 0 ? configurations.map(config => (
+                    <Table.Tr key={config.id}>
+                      <Table.Td>{config.parameterTemplate?.name || config.taskTemplate?.name}</Table.Td>
+                      <Table.Td>{config.frequency}</Table.Td>
+                      <Table.Td>
+                        <Menu shadow="md" width={200}>
+                          <Menu.Target><Button variant="outline" size="xs">Acciones</Button></Menu.Target>
+                          <Menu.Dropdown>
+                            <Menu.Item onClick={() => handleOpenModal(config, null, null)}>Editar</Menu.Item>
+                            <Menu.Item color="red" onClick={() => handleConfigDelete(config.id)}>Quitar</Menu.Item>
+                          </Menu.Dropdown>
+                        </Menu>
+                      </Table.Td>
+                    </Table.Tr>
+                  )) : <Table.Tr><Table.Td colSpan={3}>La ficha está vacía. Añade ítems desde los catálogos.</Table.Td></Table.Tr>}
+                </Table.Tbody>
+              </Table>
+            </Paper>
+          </Grid.Col>
+
+          <Grid.Col span={{ base: 12, md: 6 }}>
+            <Paper withBorder p="md" mb="md">
+              <Title order={4} mb="md">Catálogo de Parámetros Disponibles</Title>
+              {parameterCatalog.map(param => (
+                <Card key={param.id} shadow="sm" p="sm" mb="xs" withBorder>
+                  <Group justify="space-between">
+                    <Text>{param.name} {param.unit ? `(${param.unit})` : ''}</Text>
+                    <Button size="xs" onClick={() => handleOpenModal(null, param, 'parameter')}>Añadir</Button>
+                  </Group>
+                </Card>
+              ))}
+            </Paper>
+            <Paper withBorder p="md">
+              <Title order={4} mb="md">Catálogo de Tareas Disponibles</Title>
+              {taskCatalog.map(task => (
+                <Card key={task.id} shadow="sm" p="sm" mb="xs" withBorder>
+                  <Group justify="space-between">
+                    <Text>{task.name}</Text>
+                    <Button size="xs" onClick={() => handleOpenModal(null, task, 'task')}>Añadir</Button>
+                  </Group>
+                </Card>
+              ))}
+            </Paper>
+          </Grid.Col>
+        </Grid>
+      </Container>
+    </>
+  );
+}
+
+
+// ====== [15] packages/client/src/features/auth/pages/LoginPage.tsx ======
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -1298,7 +1759,7 @@ export function LoginPage() {
 }
 
 
-// ====== [14] packages/client/src/features/superadmin/pages/TenantsPage.tsx ======
+// ====== [16] packages/client/src/features/superadmin/pages/TenantsPage.tsx ======
 import { useEffect, useState } from 'react';
 import {
   Container,
@@ -1498,7 +1959,7 @@ export function TenantsPage() {
 }
 
 
-// ====== [15] packages/client/src/main.tsx ======
+// ====== [17] packages/client/src/main.tsx ======
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.js';
@@ -1510,7 +1971,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 );
 
 
-// ====== [16] packages/client/src/providers/AuthProvider.tsx ======
+// ====== [18] packages/client/src/providers/AuthProvider.tsx ======
 import {
   createContext,
   useContext,
@@ -1599,12 +2060,12 @@ export const useAuth = (): AuthContextType => {
 };
 
 
-// ====== [17] packages/client/src/router/components.tsx ======
+// ====== [19] packages/client/src/router/components.tsx ======
 // filename: packages/client/src/router/components.tsx
-// Version: 1.3.0 (Add Clients link to navbar)
-import { AppShell, Burger, Group, NavLink, Title } from '@mantine/core';
+// Version: 1.4.1 (Add Logout button to navbar)
+import { AppShell, Burger, Group, NavLink, Title, Button } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { Navigate, Outlet, Link } from 'react-router-dom';
+import { Navigate, Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../providers/AuthProvider.js';
 
 /**
@@ -1612,7 +2073,13 @@ import { useAuth } from '../providers/AuthProvider.js';
  */
 export const AppLayout = () => {
   const [opened, { toggle }] = useDisclosure();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   return (
     <AppShell
@@ -1621,9 +2088,12 @@ export const AppLayout = () => {
       padding="md"
     >
       <AppShell.Header>
-        <Group h="100%" px="md">
-          <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-          <Title order={3}>Pool Control Professional</Title>
+        <Group h="100%" px="md" justify="space-between">
+          <Group>
+            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            <Title order={3}>Pool Control Professional</Title>
+          </Group>
+          <Button variant="light" onClick={handleLogout}>Cerrar Sesión</Button>
         </Group>
       </AppShell.Header>
 
@@ -1638,6 +2108,12 @@ export const AppLayout = () => {
         {/* Enlaces solo para el rol ADMIN */}
         {user?.role === 'ADMIN' && (
           <>
+            <NavLink
+              component={Link}
+              to="/planner"
+              label="Planificador"
+              onClick={toggle}
+            />
             <NavLink
               component={Link}
               to="/clients"
@@ -1705,7 +2181,6 @@ export const SuperAdminRoute = () => {
 export const AdminRoute = () => {
   const { user, isLoading } = useAuth();
   if (isLoading) return <div>Cargando...</div>;
-  // Permitimos acceso si el rol es ADMIN o SUPER_ADMIN (que puede verlo todo)
   if (user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN') {
     return <Navigate to="/" replace />;
   }
@@ -1713,9 +2188,9 @@ export const AdminRoute = () => {
 };
 
 
-// ====== [18] packages/client/src/router/index.tsx ======
+// ====== [20] packages/client/src/router/index.tsx ======
 // filename: packages/client/src/router/index.tsx
-// Version: 1.4.2 (Align with final folder structure for client pages)
+// Version: 1.6.0 (Add /planner route for Admin)
 import { createBrowserRouter } from 'react-router-dom';
 import { LoginPage } from '../features/auth/pages/LoginPage.js';
 import { TenantsPage } from '../features/superadmin/pages/TenantsPage.js';
@@ -1723,6 +2198,8 @@ import { ParameterCatalogPage } from '../features/admin/pages/ParameterCatalogPa
 import { TaskCatalogPage } from '../features/admin/pages/TaskCatalogPage.js';
 import { ClientsPage } from '../features/admin/pages/clients/ClientsPage.js';
 import { ClientDetailPage } from '../features/admin/pages/clients/ClientDetailPage.js';
+import { PoolDetailPage } from '../features/admin/pages/pools/PoolDetailPage.js';
+import { PlannerPage } from '../features/admin/pages/planner/PlannerPage.js';
 import {
   AppLayout,
   ProtectedRoute,
@@ -1759,6 +2236,16 @@ export const router = createBrowserRouter([
           },
           // --- Sección de Administración ---
           {
+            path: 'planner',
+            element: <AdminRoute />,
+            children: [
+              {
+                index: true,
+                element: <PlannerPage />,
+              },
+            ],
+          },
+          {
             path: 'clients',
             element: <AdminRoute />,
             children: [
@@ -1771,6 +2258,16 @@ export const router = createBrowserRouter([
                 element: <ClientDetailPage />,
               },
             ],
+          },
+          {
+            path: 'pools/:id', 
+            element: <AdminRoute />,
+            children: [
+              {
+                index: true,
+                element: <PoolDetailPage />
+              }
+            ]
           },
           {
             path: 'catalog',
@@ -1793,7 +2290,7 @@ export const router = createBrowserRouter([
 ]);
 
 
-// ====== [19] packages/client/src/styles/theme.ts ======
+// ====== [21] packages/client/src/styles/theme.ts ======
 import { createTheme } from '@mantine/core';
 import type { MantineColorsTuple } from '@mantine/core';
 
@@ -1826,7 +2323,7 @@ export const theme = createTheme({
 });
 
 
-// ====== [20] packages/client/tsconfig.json ======
+// ====== [22] packages/client/tsconfig.json ======
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
@@ -1851,7 +2348,7 @@ export const theme = createTheme({
 }
 
 
-// ====== [21] packages/client/tsconfig.node.json ======
+// ====== [23] packages/client/tsconfig.node.json ======
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
@@ -1865,7 +2362,7 @@ export const theme = createTheme({
 }
 
 
-// ====== [22] packages/client/vite.config.ts ======
+// ====== [24] packages/client/vite.config.ts ======
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -1887,7 +2384,7 @@ export default defineConfig({
 });
 
 
-// ====== [23] packages/server/package.json ======
+// ====== [25] packages/server/package.json ======
 {
   "name": "@pool-control/server",
   "version": "1.0.0",
@@ -1908,6 +2405,7 @@ export default defineConfig({
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
@@ -1928,7 +2426,7 @@ export default defineConfig({
 }
 
 
-// ====== [24] packages/server/prisma/seed.ts ======
+// ====== [26] packages/server/prisma/seed.ts ======
 import { PrismaClient } from '@prisma/client';
 import { hashPassword } from '../src/utils/password.utils.js';
 
@@ -1983,7 +2481,7 @@ main()
   });
 
 
-// ====== [25] packages/server/src/api/auth/auth.controller.ts ======
+// ====== [27] packages/server/src/api/auth/auth.controller.ts ======
 import type { Response, NextFunction } from 'express';
 import { register, login } from './auth.service.js';
 import { signToken } from '../../utils/jwt.utils.js';
@@ -2051,7 +2549,7 @@ export const getMeHandler = (req: AuthRequest, res: Response) => {
 };
 
 
-// ====== [26] packages/server/src/api/auth/auth.routes.ts ======
+// ====== [28] packages/server/src/api/auth/auth.routes.ts ======
 import { Router } from 'express';
 import type { Response } from 'express';
 import {
@@ -2102,7 +2600,7 @@ authRouter.post('/logout', (_req, res: Response) => {
 export default authRouter;
 
 
-// ====== [27] packages/server/src/api/auth/auth.service.ts ======
+// ====== [29] packages/server/src/api/auth/auth.service.ts ======
 import { PrismaClient } from '@prisma/client';
 import type { User } from '@prisma/client';
 import { hashPassword, comparePassword } from '../../utils/password.utils.js';
@@ -2183,7 +2681,7 @@ export const login = async (input: LoginUserInput): Promise<Omit<User, 'password
 };
 
 
-// ====== [28] packages/server/src/api/clients/clients.controller.ts ======
+// ====== [30] packages/server/src/api/clients/clients.controller.ts ======
 // filename: packages/server/src/api/clients/clients.controller.ts
 // Version: 1.0.0 (Initial creation of the controller for Client management)
 import type { Response, NextFunction } from 'express';
@@ -2315,7 +2813,7 @@ export const deleteClientHandler = async (
 };
 
 
-// ====== [29] packages/server/src/api/clients/clients.routes.ts ======
+// ====== [31] packages/server/src/api/clients/clients.routes.ts ======
 // filename: packages/server/src/api/clients/clients.routes.ts
 // Version: 1.0.0 (Initial creation of routes for Client management)
 import { Router } from 'express';
@@ -2347,7 +2845,7 @@ clientsRouter.route('/:id')
 export default clientsRouter;
 
 
-// ====== [30] packages/server/src/api/clients/clients.service.ts ======
+// ====== [32] packages/server/src/api/clients/clients.service.ts ======
 // filename: packages/server/src/api/clients/clients.service.ts
 // Version: 1.0.0 (Initial creation of the service for Client management)
 import { PrismaClient } from '@prisma/client';
@@ -2430,7 +2928,7 @@ export const deleteClient = async (id: string): Promise<Client> => {
 };
 
 
-// ====== [31] packages/server/src/api/parameters/parameters.controller.ts ======
+// ====== [33] packages/server/src/api/parameters/parameters.controller.ts ======
 // filename: packages/server/src/api/parameters/parameters.controller.ts
 // Version: 1.0.0 (Initial creation of the controller for Parameter Templates)
 import type { Response, NextFunction } from 'express';
@@ -2523,7 +3021,7 @@ next(error);
 };
 
 
-// ====== [32] packages/server/src/api/parameters/parameters.routes.ts ======
+// ====== [34] packages/server/src/api/parameters/parameters.routes.ts ======
 // filename: packages/server/src/api/parameters/parameters.routes.ts
 // Version: 1.0.0 (Initial creation of routes for Parameter Templates)
 import { Router } from 'express';
@@ -2554,7 +3052,7 @@ parametersRouter.route('/:id')
 export default parametersRouter;
 
 
-// ====== [33] packages/server/src/api/parameters/parameters.service.ts ======
+// ====== [35] packages/server/src/api/parameters/parameters.service.ts ======
 // filename: packages/server/src/api/parameters/parameters.service.ts
 // Version: 1.0.0 (Initial creation of the service with CRUD functions)
 import { PrismaClient } from '@prisma/client';
@@ -2634,36 +3132,161 @@ export const deleteParameterTemplate = async (
 };
 
 
-// ====== [34] packages/server/src/api/pool-configurations/pool-configurations.service.ts ======
+// ====== [36] packages/server/src/api/pool-configurations/pool-configurations.controller.ts ======
+// filename: packages/server/src/api/pool-configurations/pool-configurations.controller.ts
+// Version: 1.1.0 (Add handler for update functionality)
+import type { Response, NextFunction } from 'express';
+import type { AuthRequest } from '../../middleware/auth.middleware.js';
+import {
+  createPoolConfiguration,
+  deletePoolConfiguration,
+  getConfigurationsByPool,
+  updatePoolConfiguration,
+} from './pool-configurations.service.js';
+
+/**
+ * Maneja la creación de una nueva configuración de mantenimiento.
+ */
+export const createPoolConfigurationHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(403).json({ message: 'Acción no permitida.' });
+    }
+    const newConfig = await createPoolConfiguration(req.body);
+    res.status(201).json({ success: true, data: newConfig });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Maneja la obtención de todas las configuraciones para una piscina.
+ */
+export const getConfigurationsByPoolHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { poolId } = req.params;
+    if (!poolId) {
+      return res.status(400).json({ message: 'El ID de la piscina es requerido.' });
+    }
+    const configs = await getConfigurationsByPool(poolId);
+    res.status(200).json({ success: true, data: configs });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Maneja la actualización de una configuración de mantenimiento.
+ */
+export const updatePoolConfigurationHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ message: 'El ID de la configuración es requerido.' });
+    }
+    // TODO: Verificar que la configuración que se quiere editar pertenece al tenant del usuario.
+    const updatedConfig = await updatePoolConfiguration(id, req.body);
+    res.status(200).json({ success: true, data: updatedConfig });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+/**
+ * Maneja la eliminación de una configuración de mantenimiento.
+ */
+export const deletePoolConfigurationHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ message: 'El ID de la configuración es requerido.' });
+    }
+    await deletePoolConfiguration(id);
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+// ====== [37] packages/server/src/api/pool-configurations/pool-configurations.routes.ts ======
+// filename: packages/server/src/api/pool-configurations/pool-configurations.routes.ts
+// Version: 1.1.0 (Add PATCH route for update functionality)
+import { Router } from 'express';
+import {
+  createPoolConfigurationHandler,
+  deletePoolConfigurationHandler,
+  getConfigurationsByPoolHandler,
+  updatePoolConfigurationHandler,
+} from './pool-configurations.controller.js';
+import { protect } from '../../middleware/auth.middleware.js';
+
+const poolConfigurationsRouter = Router();
+
+poolConfigurationsRouter.use(protect);
+
+// TODO: Añadir un middleware de autorización para asegurar que el rol sea 'ADMIN'.
+
+poolConfigurationsRouter.route('/')
+  .post(createPoolConfigurationHandler);
+
+poolConfigurationsRouter.route('/by-pool/:poolId')
+  .get(getConfigurationsByPoolHandler);
+
+poolConfigurationsRouter.route('/:id')
+  .patch(updatePoolConfigurationHandler) // Nueva ruta PATCH
+  .delete(deletePoolConfigurationHandler);
+
+export default poolConfigurationsRouter;
+
+
+// ====== [38] packages/server/src/api/pool-configurations/pool-configurations.service.ts ======
 // filename: packages/server/src/api/pool-configurations/pool-configurations.service.ts
-// Version: 1.0.0 (Initial creation of the service for Pool Configurations)
+// Version: 1.1.0 (Add update functionality)
 import { PrismaClient } from '@prisma/client';
 import type { PoolConfiguration, Frequency } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 // --- Tipos de Entrada (DTOs) ---
-// Tipo para crear una nueva configuración.
 export type CreatePoolConfigurationInput = {
   poolId: string;
   frequency: Frequency;
   minThreshold?: number;
   maxThreshold?: number;
-  parameterTemplateId?: string; // Opcional, para parámetros
-  taskTemplateId?: string;      // Opcional, para tareas
+  parameterTemplateId?: string;
+  taskTemplateId?: string;
 };
+
+export type UpdatePoolConfigurationInput = Partial<Omit<CreatePoolConfigurationInput, 'poolId' | 'parameterTemplateId' | 'taskTemplateId'>>;
+
 
 // --- Funciones del Servicio ---
 
 /**
  * Crea una nueva configuración de mantenimiento para una piscina.
- * @param data - Los datos de la nueva configuración.
- * @returns La configuración creada.
  */
 export const createPoolConfiguration = async (
   data: CreatePoolConfigurationInput
 ): Promise<PoolConfiguration> => {
-  // Validación para asegurar que se proporciona o un parámetro o una tarea, pero no ambos.
   if (data.parameterTemplateId && data.taskTemplateId) {
     throw new Error('Una configuración solo puede estar asociada a un parámetro O a una tarea, no a ambos.');
   }
@@ -2678,13 +3301,10 @@ export const createPoolConfiguration = async (
 
 /**
  * Obtiene todas las configuraciones para una piscina específica.
- * @param poolId - El ID de la piscina.
- * @returns Un array de configuraciones para esa piscina.
  */
 export const getConfigurationsByPool = async (poolId: string): Promise<PoolConfiguration[]> => {
   return prisma.poolConfiguration.findMany({
     where: { poolId },
-    // Incluimos los datos de las plantillas asociadas para mostrarlos en el frontend
     include: {
       parameterTemplate: true,
       taskTemplate: true,
@@ -2693,9 +3313,24 @@ export const getConfigurationsByPool = async (poolId: string): Promise<PoolConfi
 };
 
 /**
+ * Actualiza una configuración de mantenimiento existente.
+ * @param id - El ID de la configuración a actualizar.
+ * @param data - Los datos a actualizar.
+ * @returns La configuración actualizada.
+ */
+export const updatePoolConfiguration = async (
+  id: string,
+  data: UpdatePoolConfigurationInput
+): Promise<PoolConfiguration> => {
+  return prisma.poolConfiguration.update({
+    where: { id },
+    data,
+  });
+};
+
+
+/**
  * Elimina una configuración de mantenimiento de una piscina.
- * @param id - El ID de la configuración a eliminar.
- * @returns La configuración que fue eliminada.
  */
 export const deletePoolConfiguration = async (id: string): Promise<PoolConfiguration> => {
   return prisma.poolConfiguration.delete({
@@ -2704,7 +3339,7 @@ export const deletePoolConfiguration = async (id: string): Promise<PoolConfigura
 };
 
 
-// ====== [35] packages/server/src/api/pools/pools.controller.ts ======
+// ====== [39] packages/server/src/api/pools/pools.controller.ts ======
 // filename: packages/server/src/api/pools/pools.controller.ts
 // Version: 1.0.0 (Initial creation of the controller for Pool management)
 import type { Response, NextFunction } from 'express';
@@ -2779,7 +3414,7 @@ export const deletePoolHandler = async (
 };
 
 
-// ====== [36] packages/server/src/api/pools/pools.routes.ts ======
+// ====== [40] packages/server/src/api/pools/pools.routes.ts ======
 // filename: packages/server/src/api/pools/pools.routes.ts
 // Version: 1.0.0 (Initial creation of routes for Pool management)
 import { Router } from 'express';
@@ -2809,7 +3444,7 @@ poolsRouter.route('/:id')
 export default poolsRouter;
 
 
-// ====== [37] packages/server/src/api/pools/pools.service.ts ======
+// ====== [41] packages/server/src/api/pools/pools.service.ts ======
 // filename: packages/server/src/api/pools/pools.service.ts
 // Version: 1.0.0 (Initial creation of the service for Pool management)
 import { PrismaClient } from '@prisma/client';
@@ -2861,7 +3496,7 @@ export const deletePool = async (id: string): Promise<Pool> => {
 };
 
 
-// ====== [38] packages/server/src/api/tasks/tasks.controller.ts ======
+// ====== [42] packages/server/src/api/tasks/tasks.controller.ts ======
 // filename: packages/server/src/api/tasks/tasks.controller.ts
 // Version: 1.0.0 (Initial creation of the controller for Scheduled Tasks)
 import type { Response, NextFunction } from 'express';
@@ -2961,7 +3596,7 @@ export const deleteTaskTemplateHandler = async (
 };
 
 
-// ====== [39] packages/server/src/api/tasks/tasks.routes.ts ======
+// ====== [43] packages/server/src/api/tasks/tasks.routes.ts ======
 // filename: packages/server/src/api/tasks/tasks.routes.ts
 // Version: 1.0.0 (Initial creation of routes for Scheduled Tasks)
 import { Router } from 'express';
@@ -2991,7 +3626,7 @@ tasksRouter.route('/:id')
 export default tasksRouter;
 
 
-// ====== [40] packages/server/src/api/tasks/tasks.service.ts ======
+// ====== [44] packages/server/src/api/tasks/tasks.service.ts ======
 // filename: packages/server/src/api/tasks/tasks.service.ts
 // Version: 1.0.0 (Initial creation of the service for Scheduled Tasks)
 import { PrismaClient } from '@prisma/client';
@@ -3069,7 +3704,7 @@ export const deleteTaskTemplate = async (
 };
 
 
-// ====== [41] packages/server/src/api/tenants/tenants.controller.ts ======
+// ====== [45] packages/server/src/api/tenants/tenants.controller.ts ======
 import type { Request, Response, NextFunction } from 'express';
 import {
   createTenant,
@@ -3186,7 +3821,7 @@ export const deleteTenantHandler = async (
 };
 
 
-// ====== [42] packages/server/src/api/tenants/tenants.routes.ts ======
+// ====== [46] packages/server/src/api/tenants/tenants.routes.ts ======
 import { Router } from 'express';
 import {
   createTenantHandler,
@@ -3238,7 +3873,7 @@ tenantsRouter.delete('/:id', deleteTenantHandler);
 export default tenantsRouter;
 
 
-// ====== [43] packages/server/src/api/tenants/tenants.service.ts ======
+// ====== [47] packages/server/src/api/tenants/tenants.service.ts ======
 import { PrismaClient } from '@prisma/client';
 import type { Tenant, SubscriptionStatus } from '@prisma/client';
 import { hashPassword } from '../../utils/password.utils.js';
@@ -3358,9 +3993,391 @@ export const deleteTenant = async (id: string): Promise<Tenant> => {
 };
 
 
-// ====== [44] packages/server/src/app.ts ======
+// ====== [48] packages/server/src/api/users/users.controller.ts ======
+// filename: packages/server/src/api/users/users.controller.ts
+// Version: 1.0.0 (Initial creation of the controller for User queries)
+import type { Response, NextFunction } from 'express';
+import type { AuthRequest } from '../../middleware/auth.middleware.js';
+import { getTechniciansByTenant } from './users.service.js';
+
+/**
+ * Maneja la obtención de todos los técnicos de un tenant.
+ */
+export const getTechniciansByTenantHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(403).json({ message: 'Acción no permitida.' });
+    }
+
+    const technicians = await getTechniciansByTenant(tenantId);
+    res.status(200).json({ success: true, data: technicians });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+// ====== [49] packages/server/src/api/users/users.routes.ts ======
+// filename: packages/server/src/api/users/users.routes.ts
+// Version: 1.0.0 (Initial creation of routes for User queries)
+import { Router } from 'express';
+import { getTechniciansByTenantHandler } from './users.controller.js';
+import { protect } from '../../middleware/auth.middleware.js';
+
+const usersRouter = Router();
+
+// Aplicamos el middleware 'protect' a TODAS las rutas de este enrutador.
+usersRouter.use(protect);
+
+// TODO: Añadir un middleware de autorización para asegurar que el rol sea 'ADMIN'.
+
+/**
+ * @route   GET /api/users/technicians
+ * @desc    Obtiene una lista de todos los técnicos del tenant.
+ * @access  Private (Admin)
+ */
+usersRouter.get('/technicians', getTechniciansByTenantHandler);
+
+
+export default usersRouter;
+
+
+// ====== [50] packages/server/src/api/users/users.service.ts ======
+// filename: packages/server/src/api/users/users.service.ts
+// Version: 1.0.0 (Initial creation of the service for User queries)
+import { PrismaClient } from '@prisma/client';
+import type { User } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+// --- Funciones del Servicio ---
+
+/**
+ * Obtiene todos los usuarios con el rol de TECHNICIAN para un tenant específico.
+ * @param tenantId - El ID del tenant.
+ * @returns Un array de usuarios técnicos (sin la contraseña).
+ */
+export const getTechniciansByTenant = async (
+  tenantId: string
+): Promise<Omit<User, 'password'>[]> => {
+  return prisma.user.findMany({
+    where: {
+      tenantId,
+      role: 'TECHNICIAN',
+    },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      tenantId: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+    orderBy: {
+      name: 'asc',
+    },
+  });
+};
+
+
+// ====== [51] packages/server/src/api/visits/visits.controller.ts ======
+// filename: packages/server/src/api/visits/visits.controller.ts
+// Version: 1.2.0 (Add handler to get a technician's daily route)
+import type { Response, NextFunction } from 'express';
+import type { AuthRequest } from '../../middleware/auth.middleware.js';
+import { 
+  getScheduledVisitsForWeek, 
+  assignTechnicianToVisit,
+  getVisitsForTechnicianOnDate,
+} from './visits.service.js';
+
+/**
+ * Maneja la obtención de las visitas programadas para una semana.
+ */
+export const getScheduledVisitsForWeekHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(403).json({ message: 'Acción no permitida.' });
+    }
+
+    const { date } = req.query;
+    if (!date || typeof date !== 'string') {
+      return res.status(400).json({ message: 'Se requiere un parámetro de fecha válido.' });
+    }
+
+    const weekDate = new Date(date);
+    const visits = await getScheduledVisitsForWeek(tenantId, weekDate);
+
+    res.status(200).json({ success: true, data: visits });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Maneja la asignación de un técnico a una visita.
+ */
+export const assignTechnicianHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(403).json({ message: 'Acción no permitida.' });
+    }
+
+    const { poolId, technicianId, date } = req.body;
+    if (!poolId || !date) {
+      return res.status(400).json({ message: 'poolId y date son requeridos.' });
+    }
+    
+    const visitDate = new Date(date);
+    const assignedVisit = await assignTechnicianToVisit(poolId, technicianId, visitDate);
+    
+    res.status(200).json({ success: true, data: assignedVisit });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Maneja la obtención de la ruta diaria para el técnico autenticado.
+ */
+export const getMyRouteHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const technicianId = req.user?.id;
+    if (!technicianId || req.user?.role !== 'TECHNICIAN') {
+      return res.status(403).json({ message: 'Acceso denegado.' });
+    }
+    
+    // Por simplicidad, siempre obtenemos la ruta para el día de hoy.
+    const today = new Date();
+    const visits = await getVisitsForTechnicianOnDate(technicianId, today);
+    
+    res.status(200).json({ success: true, data: visits });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+// ====== [52] packages/server/src/api/visits/visits.routes.ts ======
+// filename: packages/server/src/api/visits/visits.routes.ts
+// Version: 1.2.0 (Add route for a technician to get their daily route)
+import { Router } from 'express';
+import { 
+  getScheduledVisitsForWeekHandler,
+  assignTechnicianHandler,
+  getMyRouteHandler,
+} from './visits.controller.js';
+import { protect } from '../../middleware/auth.middleware.js';
+
+const visitsRouter = Router();
+
+visitsRouter.use(protect);
+
+/**
+ * @route   GET /api/visits/scheduled
+ * @desc    Obtiene las visitas programadas para una semana (ADMIN)
+ * @access  Private (Admin)
+ */
+visitsRouter.get('/scheduled', getScheduledVisitsForWeekHandler);
+
+/**
+ * @route   POST /api/visits/assign
+ * @desc    Asigna un técnico a una visita (ADMIN)
+ * @access  Private (Admin)
+ */
+visitsRouter.post('/assign', assignTechnicianHandler);
+
+/**
+ * @route   GET /api/visits/my-route
+ * @desc    Obtiene la ruta del día para el técnico logueado (TECHNICIAN)
+ * @access  Private (Technician)
+ */
+visitsRouter.get('/my-route', getMyRouteHandler);
+
+
+export default visitsRouter;
+
+
+// ====== [53] packages/server/src/api/visits/visits.service.ts ======
+// filename: packages/server/src/api/visits/visits.service.ts
+// Version: 1.2.1 (Remove unused addDays import)
+import { PrismaClient } from '@prisma/client';
+import type { Frequency, Visit } from '@prisma/client';
+import { startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, startOfDay, endOfDay } from 'date-fns';
+
+const prisma = new PrismaClient();
+
+// --- Tipos ---
+interface ScheduledVisit {
+  id: string; 
+  date: Date;
+  poolId: string;
+  poolName: string;
+  clientName: string;
+  technicianId: string | null;
+}
+
+// --- Lógica de Frecuencia ---
+function shouldOccurOnDate(
+  frequency: Frequency,
+  lastCompleted: Date | null,
+  targetDate: Date,
+  weekStart: Date
+): boolean {
+  if (!lastCompleted) return true;
+  switch (frequency) {
+    case 'DIARIA':
+      return true;
+    case 'SEMANAL':
+      return targetDate.getDay() === weekStart.getDay();
+    default:
+      return targetDate.getDay() === weekStart.getDay();
+  }
+}
+
+// --- Funciones del Servicio ---
+export const getScheduledVisitsForWeek = async (
+  tenantId: string,
+  weekDate: Date
+): Promise<ScheduledVisit[]> => {
+  const start = startOfWeek(weekDate, { weekStartsOn: 1 });
+  const end = endOfWeek(weekDate, { weekStartsOn: 1 });
+  const weekDays = eachDayOfInterval({ start, end });
+
+  const [poolsWithConfigs, existingVisits] = await Promise.all([
+    prisma.pool.findMany({
+      where: { tenantId, configurations: { some: {} } },
+      include: { client: true, configurations: true },
+    }),
+    prisma.visit.findMany({
+      where: {
+        pool: { tenantId },
+        timestamp: { gte: start, lte: end },
+      },
+    }),
+  ]);
+
+  const scheduledVisitsMap = new Map<string, ScheduledVisit>();
+
+  for (const day of weekDays) {
+    for (const pool of poolsWithConfigs) {
+      const shouldVisit = pool.configurations.some(config =>
+        shouldOccurOnDate(config.frequency, config.lastCompleted, day, start)
+      );
+      
+      if (shouldVisit) {
+        const visitKey = `${pool.id}-${day.toISOString().split('T')[0]}`;
+        
+        if (!scheduledVisitsMap.has(visitKey)) {
+          const existingVisit = existingVisits.find(
+            v => v.poolId === pool.id && isSameDay(v.timestamp, day)
+          );
+
+          scheduledVisitsMap.set(visitKey, {
+            id: existingVisit ? existingVisit.id : visitKey,
+            date: day,
+            poolId: pool.id,
+            poolName: pool.name,
+            clientName: pool.client.name,
+            technicianId: existingVisit ? existingVisit.technicianId : null,
+          });
+        }
+      }
+    }
+  }
+  
+  return Array.from(scheduledVisitsMap.values());
+};
+
+export const assignTechnicianToVisit = async (
+  poolId: string,
+  technicianId: string | null,
+  date: Date
+) => {
+  const dayStart = startOfDay(date);
+  const dayEnd = endOfDay(date);
+
+  const visit = await prisma.visit.findFirst({
+    where: {
+      poolId,
+      timestamp: { gte: dayStart, lt: dayEnd }
+    }
+  });
+
+  if (visit) {
+    return prisma.visit.update({
+      where: { id: visit.id },
+      data: { technicianId },
+    });
+  } else {
+    return prisma.visit.create({
+      data: {
+        poolId,
+        technicianId,
+        timestamp: date,
+      },
+    });
+  }
+};
+
+/**
+ * Obtiene las visitas asignadas a un técnico en una fecha específica.
+ * @param technicianId - El ID del técnico.
+ * @param date - La fecha de interés.
+ * @returns Un array de visitas.
+ */
+export const getVisitsForTechnicianOnDate = async (
+  technicianId: string,
+  date: Date
+): Promise<Visit[]> => {
+  const dayStart = startOfDay(date);
+  const dayEnd = endOfDay(date);
+
+  return prisma.visit.findMany({
+    where: {
+      technicianId,
+      timestamp: {
+        gte: dayStart,
+        lt: dayEnd,
+      },
+    },
+    include: {
+      pool: {
+        include: {
+          client: true, // Para mostrar el nombre del cliente
+        },
+      },
+    },
+    orderBy: {
+      timestamp: 'asc',
+    },
+  });
+};
+
+
+// ====== [54] packages/server/src/app.ts ======
 // filename: packages/server/src/app.ts
-// Version: 1.4.0 (Mount poolsRouter for Admin module)
+// Version: 1.7.0 (Mount usersRouter for Admin module)
 import express from 'express';
 import type { Request, Response } from 'express';
 import cors from 'cors';
@@ -3373,6 +4390,9 @@ import parametersRouter from './api/parameters/parameters.routes.js';
 import tasksRouter from './api/tasks/tasks.routes.js';
 import clientsRouter from './api/clients/clients.routes.js';
 import poolsRouter from './api/pools/pools.routes.js';
+import poolConfigurationsRouter from './api/pool-configurations/pool-configurations.routes.js';
+import visitsRouter from './api/visits/visits.routes.js';
+import usersRouter from './api/users/users.routes.js';
 
 // --- Instancia de la App ---
 const app = express();
@@ -3400,6 +4420,9 @@ app.use('/api/parameters', parametersRouter);
 app.use('/api/tasks', tasksRouter);
 app.use('/api/clients', clientsRouter);
 app.use('/api/pools', poolsRouter);
+app.use('/api/pool-configurations', poolConfigurationsRouter);
+app.use('/api/visits', visitsRouter);
+app.use('/api/users', usersRouter);
 
 
 // --- Gestor de Errores ---
@@ -3408,7 +4431,7 @@ app.use(errorHandler);
 export default app;
 
 
-// ====== [45] packages/server/src/config/index.ts ======
+// ====== [55] packages/server/src/config/index.ts ======
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -3438,7 +4461,7 @@ const config = {
 export default config;
 
 
-// ====== [46] packages/server/src/middleware/auth.middleware.ts ======
+// ====== [56] packages/server/src/middleware/auth.middleware.ts ======
 import type { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import type { User } from '@prisma/client';
@@ -3504,7 +4527,7 @@ export const protect = async (
 };
 
 
-// ====== [47] packages/server/src/middleware/error.middleware.ts ======
+// ====== [57] packages/server/src/middleware/error.middleware.ts ======
 import type { Request, Response, NextFunction } from 'express';
 
 // Interfaz para asegurar que nuestros errores puedan tener un código de estado
@@ -3532,7 +4555,7 @@ export const errorHandler = (
 };
 
 
-// ====== [48] packages/server/src/server.ts ======
+// ====== [58] packages/server/src/server.ts ======
 import app from './app.js';
 import config from './config/index.js';
 
@@ -3543,7 +4566,7 @@ app.listen(PORT, () => {
 });
 
 
-// ====== [49] packages/server/src/utils/jwt.utils.ts ======
+// ====== [59] packages/server/src/utils/jwt.utils.ts ======
 import jwt from 'jsonwebtoken';
 import type { SignOptions } from 'jsonwebtoken';
 import config from '../config/index.js';
@@ -3577,7 +4600,7 @@ export const verifyToken = <T>(token: string): T | null => {
 };
 
 
-// ====== [50] packages/server/src/utils/password.utils.ts ======
+// ====== [60] packages/server/src/utils/password.utils.ts ======
 import bcrypt from 'bcryptjs';
 
 const SALT_ROUNDS = 12;
@@ -3602,7 +4625,7 @@ export const comparePassword = (password: string, hash: string): Promise<boolean
 };
 
 
-// ====== [51] packages/server/tsconfig.json ======
+// ====== [61] packages/server/tsconfig.json ======
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
@@ -3613,7 +4636,7 @@ export const comparePassword = (password: string, hash: string): Promise<boolean
 }
 
 
-// ====== [52] tsconfig.json ======
+// ====== [62] tsconfig.json ======
 {
   "compilerOptions": {
     /* Base Options */

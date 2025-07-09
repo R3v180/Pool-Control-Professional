@@ -1,8 +1,12 @@
 // filename: packages/server/src/api/visits/visits.controller.ts
-// Version: 1.1.0 (Add handler for visit assignment)
+// Version: 1.3.0 (Restore 'today' logic for getMyRouteHandler)
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
-import { getScheduledVisitsForWeek, assignTechnicianToVisit } from './visits.service.js';
+import { 
+  getScheduledVisitsForWeek, 
+  assignTechnicianToVisit,
+  getVisitsForTechnicianOnDate, // <-- Volvemos a usar esta
+} from './visits.service.js';
 
 /**
  * Maneja la obtención de las visitas programadas para una semana.
@@ -51,12 +55,34 @@ export const assignTechnicianHandler = async (
       return res.status(400).json({ message: 'poolId y date son requeridos.' });
     }
     
-    // TODO: Verificar que el poolId y el technicianId pertenecen al tenant del usuario.
-    
     const visitDate = new Date(date);
     const assignedVisit = await assignTechnicianToVisit(poolId, technicianId, visitDate);
     
     res.status(200).json({ success: true, data: assignedVisit });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Maneja la obtención de la ruta diaria para el técnico autenticado.
+ */
+export const getMyRouteHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const technicianId = req.user?.id;
+    if (!technicianId || req.user?.role !== 'TECHNICIAN') {
+      return res.status(403).json({ message: 'Acceso denegado.' });
+    }
+    
+    // RESTAURAMOS LA LÓGICA ORIGINAL: filtramos por el día de hoy
+    const today = new Date();
+    const visits = await getVisitsForTechnicianOnDate(technicianId, today);
+    
+    res.status(200).json({ success: true, data: visits });
   } catch (error) {
     next(error);
   }
