@@ -1,11 +1,12 @@
 // filename: packages/server/src/api/pool-configurations/pool-configurations.controller.ts
-// Version: 1.0.0 (Initial creation of the controller for Pool Configurations)
+// Version: 1.1.0 (Add handler for update functionality)
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
 import {
   createPoolConfiguration,
   deletePoolConfiguration,
   getConfigurationsByPool,
+  updatePoolConfiguration,
 } from './pool-configurations.service.js';
 
 /**
@@ -21,7 +22,6 @@ export const createPoolConfigurationHandler = async (
     if (!tenantId) {
       return res.status(403).json({ message: 'Acción no permitida.' });
     }
-    // TODO: Verificar que el poolId del req.body pertenece al tenantId del usuario.
     const newConfig = await createPoolConfiguration(req.body);
     res.status(201).json({ success: true, data: newConfig });
   } catch (error) {
@@ -42,13 +42,34 @@ export const getConfigurationsByPoolHandler = async (
     if (!poolId) {
       return res.status(400).json({ message: 'El ID de la piscina es requerido.' });
     }
-    // TODO: Verificar que la piscina a la que se intenta acceder pertenece al tenant del usuario.
     const configs = await getConfigurationsByPool(poolId);
     res.status(200).json({ success: true, data: configs });
   } catch (error) {
     next(error);
   }
 };
+
+/**
+ * Maneja la actualización de una configuración de mantenimiento.
+ */
+export const updatePoolConfigurationHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ message: 'El ID de la configuración es requerido.' });
+    }
+    // TODO: Verificar que la configuración que se quiere editar pertenece al tenant del usuario.
+    const updatedConfig = await updatePoolConfiguration(id, req.body);
+    res.status(200).json({ success: true, data: updatedConfig });
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 /**
  * Maneja la eliminación de una configuración de mantenimiento.
@@ -63,7 +84,6 @@ export const deletePoolConfigurationHandler = async (
     if (!id) {
       return res.status(400).json({ message: 'El ID de la configuración es requerido.' });
     }
-    // TODO: Verificar que la configuración que se quiere eliminar pertenece al tenant del usuario.
     await deletePoolConfiguration(id);
     res.status(204).send();
   } catch (error) {

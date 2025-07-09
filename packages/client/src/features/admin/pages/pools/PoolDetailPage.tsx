@@ -1,5 +1,5 @@
 // filename: packages/client/src/features/admin/pages/pools/PoolDetailPage.tsx
-// Version: 1.1.1 (Fix JSX syntax errors and remove unused variable)
+// Version: 1.2.0 (Implement Edit functionality for Pool Configurations)
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
@@ -19,6 +19,7 @@ import {
   Select,
   NumberInput,
   Stack,
+  Menu,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
@@ -29,7 +30,7 @@ const Frequencies = ['DIARIA', 'SEMANAL', 'QUINCENAL', 'MENSUAL', 'TRIMESTRAL', 
 type Frequency = (typeof Frequencies)[number];
 
 interface Pool { id: string; name: string; clientId: string; }
-interface ParameterTemplate { id: string; name: string; unit: string | null; }
+interface ParameterTemplate { id: string; name: string; unit: string | null; type: 'NUMBER' | 'BOOLEAN' | 'TEXT' | 'SELECT'; }
 interface TaskTemplate { id: string; name: string; }
 interface PoolConfiguration {
   id: string;
@@ -48,7 +49,7 @@ interface ApiResponse<T> {
 // --- Componente ---
 export function PoolDetailPage() {
   const { id: poolId } = useParams<{ id: string }>();
-  const [pool, ] = useState<Pool | null>(null); // setPool no se usa aún
+  const [pool, ] = useState<Pool | null>(null);
   const [configurations, setConfigurations] = useState<PoolConfiguration[]>([]);
   const [parameterCatalog, setParameterCatalog] = useState<ParameterTemplate[]>([]);
   const [taskCatalog, setTaskCatalog] = useState<TaskTemplate[]>([]);
@@ -56,6 +57,8 @@ export function PoolDetailPage() {
   const [error, setError] = useState<string | null>(null);
   
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
+  // Estado para saber qué estamos configurando (un nuevo ítem o editando uno existente)
+  const [editingConfig, setEditingConfig] = useState<PoolConfiguration | null>(null);
   const [itemToAdd, setItemToAdd] = useState<{ id: string; name: string; type: 'parameter' | 'task' } | null>(null);
 
   const configForm = useForm({
@@ -72,7 +75,6 @@ export function PoolDetailPage() {
   const fetchData = async () => {
     if (!poolId) return;
     setIsLoading(true);
-    setError(null);
     try {
       const [configsRes, paramsRes, tasksRes] = await Promise.all([
         apiClient.get<ApiResponse<PoolConfiguration[]>>(`/pool-configurations/by-pool/${poolId}`),
@@ -91,31 +93,44 @@ export function PoolDetailPage() {
 
   useEffect(() => {
     fetchData();
-    // TODO: Fetch pool details to show name and client in breadcrumbs
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [poolId]);
 
-  const handleOpenAddModal = (item: { id: string; name: string; }, type: 'parameter' | 'task') => {
-    setItemToAdd({ ...item, type });
-    configForm.reset();
+  const handleOpenModal = (config: PoolConfiguration | null, item: { id: string; name: string; } | null, type: 'parameter' | 'task' | null) => {
+    setEditingConfig(config);
+    setItemToAdd(item ? { ...item, type: type as 'parameter' | 'task' } : null);
+    
+    if (config) { // Estamos editando
+      configForm.setValues({
+        frequency: config.frequency,
+        minThreshold: config.minThreshold,
+        maxThreshold: config.maxThreshold,
+      });
+    } else { // Estamos creando
+      configForm.reset();
+    }
     openModal();
   };
 
   const handleConfigSubmit = async (values: typeof configForm.values) => {
-    if (!itemToAdd || !poolId) return;
-    const payload: any = {
-      poolId,
-      frequency: values.frequency,
-      ...(itemToAdd.type === 'parameter' && { parameterTemplateId: itemToAdd.id, minThreshold: values.minThreshold, maxThreshold: values.maxThreshold }),
-      ...(itemToAdd.type === 'task' && { taskTemplateId: itemToAdd.id }),
-    };
-
+    if (!poolId) return;
     try {
-      await apiClient.post('/pool-configurations', payload);
+      if (editingConfig) { // Lógica para actualizar
+        const payload = { frequency: values.frequency, minThreshold: values.minThreshold, maxThreshold: values.maxThreshold };
+        await apiClient.patch(`/pool-configurations/${editingConfig.id}`, payload);
+      } else if (itemToAdd) { // Lógica para crear
+        const payload = {
+          poolId,
+          frequency: values.frequency,
+          ...(itemToAdd.type === 'parameter' && { parameterTemplateId: itemToAdd.id, minThreshold: values.minThreshold, maxThreshold: values.maxThreshold }),
+          ...(itemToAdd.type === 'task' && { taskTemplateId: itemToAdd.id }),
+        };
+        await apiClient.post('/pool-configurations', payload);
+      }
       await fetchData();
       closeModal();
     } catch (err: any) {
-      configForm.setErrors({ frequency: err.response?.data?.message || 'Error al añadir la configuración' });
+      configForm.setErrors({ frequency: err.response?.data?.message || 'Error al guardar la configuración' });
     }
   };
   
@@ -124,15 +139,17 @@ export function PoolDetailPage() {
       try {
         await apiClient.delete(`/pool-configurations/${configId}`);
         await fetchData();
-      } catch (err) {
-        // TODO: Mostrar notificación de error
-      }
+      } catch (err) {}
     }
   };
 
   if (isLoading) return <Loader size="xl" />;
   if (error) return <Alert color="red" title="Error">{error}</Alert>;
 
+  const currentItem = editingConfig?.parameterTemplate || editingConfig?.taskTemplate || itemToAdd;
+  const modalTitle = editingConfig ? `Editar: ${currentItem?.name}` : `Añadir: ${currentItem?.name}`;
+  const isParameter = (editingConfig && editingConfig.parameterTemplate) || (itemToAdd?.type === 'parameter');
+  
   const breadcrumbs = (
     <Breadcrumbs>
       <Link to="/clients">Clientes</Link>
@@ -143,17 +160,17 @@ export function PoolDetailPage() {
 
   return (
     <>
-      <Modal opened={modalOpened} onClose={closeModal} title={`Añadir: ${itemToAdd?.name}`} centered>
+      <Modal opened={modalOpened} onClose={closeModal} title={modalTitle} centered>
         <form onSubmit={configForm.onSubmit(handleConfigSubmit)}>
           <Stack>
             <Select label="Frecuencia" required data={[...Frequencies]} {...configForm.getInputProps('frequency')} />
-            {itemToAdd?.type === 'parameter' && (
+            {isParameter && (
               <>
                 <NumberInput label="Umbral Mínimo (opcional)" {...configForm.getInputProps('minThreshold')} />
                 <NumberInput label="Umbral Máximo (opcional)" {...configForm.getInputProps('maxThreshold')} />
               </>
             )}
-            <Button type="submit" mt="md">Añadir a la Ficha</Button>
+            <Button type="submit" mt="md">{editingConfig ? 'Guardar Cambios' : 'Añadir a la Ficha'}</Button>
           </Stack>
         </form>
       </Modal>
@@ -173,7 +190,13 @@ export function PoolDetailPage() {
                       <Table.Td>{config.parameterTemplate?.name || config.taskTemplate?.name}</Table.Td>
                       <Table.Td>{config.frequency}</Table.Td>
                       <Table.Td>
-                        <Button variant="subtle" size="xs" color="red" onClick={() => handleConfigDelete(config.id)}>Quitar</Button>
+                        <Menu shadow="md" width={200}>
+                          <Menu.Target><Button variant="outline" size="xs">Acciones</Button></Menu.Target>
+                          <Menu.Dropdown>
+                            <Menu.Item onClick={() => handleOpenModal(config, null, null)}>Editar</Menu.Item>
+                            <Menu.Item color="red" onClick={() => handleConfigDelete(config.id)}>Quitar</Menu.Item>
+                          </Menu.Dropdown>
+                        </Menu>
                       </Table.Td>
                     </Table.Tr>
                   )) : <Table.Tr><Table.Td colSpan={3}>La ficha está vacía. Añade ítems desde los catálogos.</Table.Td></Table.Tr>}
@@ -189,7 +212,7 @@ export function PoolDetailPage() {
                 <Card key={param.id} shadow="sm" p="sm" mb="xs" withBorder>
                   <Group justify="space-between">
                     <Text>{param.name} {param.unit ? `(${param.unit})` : ''}</Text>
-                    <Button size="xs" onClick={() => handleOpenAddModal(param, 'parameter')}>Añadir</Button>
+                    <Button size="xs" onClick={() => handleOpenModal(null, param, 'parameter')}>Añadir</Button>
                   </Group>
                 </Card>
               ))}
@@ -200,7 +223,7 @@ export function PoolDetailPage() {
                 <Card key={task.id} shadow="sm" p="sm" mb="xs" withBorder>
                   <Group justify="space-between">
                     <Text>{task.name}</Text>
-                    <Button size="xs" onClick={() => handleOpenAddModal(task, 'task')}>Añadir</Button>
+                    <Button size="xs" onClick={() => handleOpenModal(null, task, 'task')}>Añadir</Button>
                   </Group>
                 </Card>
               ))}
