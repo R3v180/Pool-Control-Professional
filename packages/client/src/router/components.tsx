@@ -1,9 +1,106 @@
 // filename: packages/client/src/router/components.tsx
-// Version: 1.5.0 (Add TechnicianRoute and navigation link)
-import { AppShell, Burger, Group, NavLink, Title, Button } from '@mantine/core';
+// version: 1.6.4 (Add navigation link to Incidents History page)
+import { AppShell, Burger, Group, NavLink, Title, Button, Indicator, ActionIcon, Popover, Text, Stack } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Navigate, Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../providers/AuthProvider.js';
+import { useEffect, useState } from 'react';
+import apiClient from '../api/apiClient.js';
+
+// --- Tipos para la notificación ---
+interface Notification {
+  id: string;
+  message: string;
+  visitId: string | null;
+  isRead: boolean;
+}
+
+// --- Componente de Notificaciones (la campana y su lógica) ---
+const NotificationBell = () => {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [popoverOpened, setPopoverOpened] = useState(false);
+  const navigate = useNavigate();
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await apiClient.get<{ success: boolean; data: Notification[] }>('/notifications');
+      setNotifications(response.data.data);
+    } catch (error) {
+      console.error('Failed to fetch notifications', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleNotificationClick = async (notification: Notification) => {
+    if (!notification.isRead) {
+      setNotifications(current =>
+        current.map(n =>
+          n.id === notification.id ? { ...n, isRead: true } : n
+        )
+      );
+      try {
+        await apiClient.post(`/notifications/${notification.id}/read`);
+      } catch (error) {
+        console.error('Failed to mark notification as read', error);
+        fetchNotifications();
+      }
+    }
+    
+    if (notification.visitId) {
+      navigate(`/visits/${notification.visitId}`);
+    }
+    
+    setPopoverOpened(false);
+  };
+  
+  const hasUnread = notifications.some(n => !n.isRead);
+
+  return (
+    <Popover opened={popoverOpened} onChange={setPopoverOpened} width={300} position="bottom-end" withArrow shadow="md">
+      <Popover.Target>
+        <Indicator color="red" disabled={!hasUnread} withBorder processing>
+          <ActionIcon variant="default" size="lg" onClick={() => setPopoverOpened((o) => !o)}>
+            🔔
+          </ActionIcon>
+        </Indicator>
+      </Popover.Target>
+
+      <Popover.Dropdown>
+        <Stack>
+          <Text fw={500}>Notificaciones</Text>
+          {notifications.length > 0 ? (
+            notifications.map(notification => (
+              <Text
+                key={notification.id}
+                size="sm"
+                onClick={() => handleNotificationClick(notification)}
+                style={{
+                  cursor: 'pointer',
+                  padding: '5px',
+                  borderRadius: '4px',
+                  fontWeight: notification.isRead ? 400 : 700,
+                  color: notification.isRead ? 'gray' : 'black',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f1f3f5'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                {notification.message}
+              </Text>
+            ))
+          ) : (
+            <Text size="sm" c="dimmed">No hay notificaciones pendientes.</Text>
+          )}
+        </Stack>
+      </Popover.Dropdown>
+    </Popover>
+  );
+};
+
 
 /**
  * Componente de layout principal para las páginas autenticadas.
@@ -30,7 +127,10 @@ export const AppLayout = () => {
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
             <Title order={3}>Pool Control Professional</Title>
           </Group>
-          <Button variant="light" onClick={handleLogout}>Cerrar Sesión</Button>
+          <Group>
+            {user?.role === 'ADMIN' && <NotificationBell />}
+            <Button variant="light" onClick={handleLogout}>Cerrar Sesión</Button>
+          </Group>
         </Group>
       </AppShell.Header>
 
@@ -55,6 +155,13 @@ export const AppLayout = () => {
               component={Link}
               to="/clients"
               label="Clientes"
+              onClick={toggle}
+            />
+            {/* --- AÑADIR NUEVO ENLACE AQUÍ --- */}
+            <NavLink
+              component={Link}
+              to="/incidents-history"
+              label="Historial de Incidencias"
               onClick={toggle}
             />
             <NavLink label="Catálogos">

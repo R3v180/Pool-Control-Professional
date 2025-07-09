@@ -1,7 +1,7 @@
 // filename: packages/server/src/api/visits/visits.service.ts
-// Version: 1.7.7 (Clean up unused imports after frequency logic fix)
+// version: 1.8.1 (Ensure all notification fields are included in getVisitDetails)
 import { PrismaClient } from '@prisma/client';
-import type { Visit } from '@prisma/client'; // <-- Frequency eliminado
+import type { Visit } from '@prisma/client';
 import { 
   startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, startOfDay, endOfDay,
 } from 'date-fns';
@@ -18,8 +18,8 @@ export type WorkOrderInput = {
 
 
 export const getScheduledVisitsForWeek = async (tenantId: string, weekDate: Date): Promise<Visit[]> => {
-  const start = startOfWeek(weekDate, { weekStartsOn: 1 }); // Lunes
-  const end = endOfWeek(weekDate, { weekStartsOn: 1 });   // Domingo
+  const start = startOfWeek(weekDate, { weekStartsOn: 1 });
+  const end = endOfWeek(weekDate, { weekStartsOn: 1 });
   const weekDays = eachDayOfInterval({ start, end });
 
   const pools = await prisma.pool.findMany({
@@ -111,6 +111,8 @@ export const getVisitDetails = async (visitId: string) => {
   return prisma.visit.findUnique({
     where: { id: visitId },
     include: {
+      results: true, 
+      notifications: true,
       pool: {
         include: {
           client: true,
@@ -183,9 +185,11 @@ export const submitWorkOrder = async (visitId: string, data: WorkOrderInput) => 
         const technicianName = visit.technician ? visit.technician.name : 'Un técnico';
         await tx.notification.create({
           data: {
-            message: `Nueva incidencia reportada por ${technicianName} en la piscina ${visit.pool.name}.`,
+            message: `Incidencia en ${visit.pool.name} por ${technicianName}.`,
             tenantId: visit.pool.tenantId,
             userId: admin.id,
+            visitId: visit.id,
+            status: 'PENDING',
           },
         });
       }

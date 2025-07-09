@@ -1,10 +1,9 @@
 // filename: packages/server/prisma/seed.ts
-// version: 2.0.2
-// description: Script orquestador para poblar la base de datos con un conjunto completo y realista de datos de prueba.
+// version: 2.0.7
+// description: Script de seeding que ahora crea una visita completada con resultados reales (VisitResult).
 
 import { PrismaClient } from '@prisma/client';
-// Corrección: Eliminadas importaciones no usadas (InputType, UserRole)
-import type { Frequency, ParameterTemplate, ScheduledTaskTemplate } from '@prisma/client';
+import type { Frequency, ParameterTemplate, ScheduledTaskTemplate, User, Pool } from '@prisma/client';
 import { hashPassword } from '../src/utils/password.utils.js';
 
 // --- Importación de los datos modulares ---
@@ -15,14 +14,11 @@ import { clientsData } from './data/clients.js';
 const prisma = new PrismaClient();
 
 // --- Funciones de ayuda ---
-// Corrección: Eliminada la función `getRandomItem` que no se usaba.
-
 const getRandomItems = <T>(arr: T[], count: number): T[] => {
   if (arr.length < count) {
     throw new Error(`No se pueden obtener ${count} elementos de un array con solo ${arr.length} elementos.`);
   }
   const shuffled = [...arr].sort(() => 0.5 - Math.random());
-  // Corrección del error principal: `slice` siempre devuelve un array, por lo que el tipo es correcto.
   return shuffled.slice(0, count);
 };
 
@@ -44,84 +40,100 @@ async function main() {
   await prisma.tenant.deleteMany({});
   console.log('✅ Base de datos reseteada a un estado limpio.');
 
-  // 2. --- CREACIÓN DE ENTIDADES DEL SISTEMA (NO SON DE PRUEBA) ---
+  // 2. --- CREACIÓN DE ENTIDADES DEL SISTEMA ---
   const systemTenant = await prisma.tenant.create({
-    data: {
-      companyName: 'SYSTEM_INTERNAL',
-      subdomain: 'system',
-      subscriptionStatus: 'ACTIVE',
-    },
+    data: { companyName: 'SYSTEM_INTERNAL', subdomain: 'system', subscriptionStatus: 'ACTIVE' },
   });
   const superAdminPassword = await hashPassword('superadmin123');
   await prisma.user.create({
-    data: {
-      email: 'super@admin.com',
-      name: 'Super Admin',
-      password: superAdminPassword,
-      role: 'SUPER_ADMIN',
-      tenantId: systemTenant.id,
-    },
+    data: { email: 'super@admin.com', name: 'Super Admin', password: superAdminPassword, role: 'SUPER_ADMIN', tenantId: systemTenant.id },
   });
   console.log('👑 SuperAdmin y Tenant del sistema creados.');
 
-  // 3. --- CREACIÓN DEL TENANT DE PRUEBA Y SUS USUARIOS ---
+  // 3. --- CREACIÓN DEL TENANT DE PRUEBA Y USUARIOS ---
   const mainTenant = await prisma.tenant.create({
-    data: {
-      companyName: 'Piscival S.L.',
-      subdomain: 'piscival',
-      subscriptionStatus: 'ACTIVE',
-    },
+    data: { companyName: 'Piscival S.L.', subdomain: 'piscival', subscriptionStatus: 'ACTIVE' },
   });
-  console.log(`\n🏢 Tenant de prueba creado: ${mainTenant.companyName} (ID: ${mainTenant.id})`);
-
+  console.log(`\n🏢 Tenant de prueba creado: ${mainTenant.companyName}`);
+  
+  const createdUsers: User[] = [];
   for (const userData of usersData) {
     const hashedPassword = await hashPassword(userData.password);
-    await prisma.user.create({
-      data: {
-        ...userData,
-        password: hashedPassword,
-        tenantId: mainTenant.id,
-      },
-    });
+    const user = await prisma.user.create({ data: { ...userData, password: hashedPassword, tenantId: mainTenant.id } });
+    createdUsers.push(user);
     console.log(`   👤 Usuario creado: ${userData.name} (${userData.role})`);
   }
+  const adminUser = createdUsers.find(u => u.role === 'ADMIN');
+  const technicians = createdUsers.filter(u => u.role === 'TECHNICIAN');
+  if (!adminUser || technicians.length < 3) throw new Error('Seeding fallido: No se encontraron suficientes usuarios admin o técnicos.');
 
-  // 4. --- CREACIÓN DE LOS CATÁLOGOS PARA EL TENANT DE PRUEBA ---
-  const createdParams = await prisma.parameterTemplate.createManyAndReturn({
-    data: parameterData.map(p => ({ ...p, tenantId: mainTenant.id })),
-  });
+  // 4. --- CREACIÓN DE CATÁLOGOS ---
+  // Usamos createManyAndReturn porque no tienen campos @updatedAt, es más eficiente
+  const createdParams = await prisma.parameterTemplate.createManyAndReturn({ data: parameterData.map(p => ({ ...p, tenantId: mainTenant.id })) });
   console.log(`\n📊 Creados ${createdParams.length} parámetros en el catálogo.`);
-
-  const createdTasks = await prisma.scheduledTaskTemplate.createManyAndReturn({
-    data: taskData.map(t => ({ ...t, tenantId: mainTenant.id })),
-  });
+  const createdTasks = await prisma.scheduledTaskTemplate.createManyAndReturn({ data: taskData.map(t => ({ ...t, tenantId: mainTenant.id })) });
   console.log(`📋 Creadas ${createdTasks.length} tareas en el catálogo.`);
 
-  // 5. --- CREACIÓN DE CLIENTES, PISCINAS Y FICHAS DE MANTENIMIENTO ---
+  // 5. --- CREACIÓN DE CLIENTES, PISCINAS Y FICHAS ---
+  const allPools: Pool[] = [];
   for (const data of clientsData) {
-    const client = await prisma.client.create({
-      data: { ...data.client, tenantId: mainTenant.id },
-    });
+    const client = await prisma.client.create({ data: { ...data.client, tenantId: mainTenant.id } });
     console.log(`\n👨‍💼 Cliente creado: ${client.name}`);
-
     for (const poolData of data.pools) {
-      const pool = await prisma.pool.create({
-        data: { ...poolData, clientId: client.id, tenantId: mainTenant.id },
-      });
+      const pool = await prisma.pool.create({ data: { ...poolData, clientId: client.id, tenantId: mainTenant.id } });
+      allPools.push(pool);
       console.log(`   🏊 Piscina creada: ${pool.name}`);
-
-      // --- Creación de la Ficha de Mantenimiento (PoolConfiguration) ---
       const configsToCreate = createPoolMaintenanceSheet(pool.id, createdParams, createdTasks, poolData.type);
-      
-      await prisma.poolConfiguration.createMany({
-        data: configsToCreate,
-        skipDuplicates: true,
-      });
+      await prisma.poolConfiguration.createMany({ data: configsToCreate, skipDuplicates: true });
       console.log(`      📝 Ficha de mantenimiento creada para ${pool.name} con ${configsToCreate.length} ítems.`);
     }
   }
+  if (allPools.length < 5) throw new Error('Seeding fallido: No se crearon suficientes piscinas.');
 
-  console.log('\n\n✅ Seeding completado con éxito. ¡Ya puedes probar la aplicación!');
+  // 6. --- SIMULACIÓN DE DATOS PARA EL DÍA ACTUAL ---
+  console.log('\n⚙️  Simulando datos para el dashboard de hoy...');
+  const today = new Date();
+  
+  await prisma.visit.create({ data: { timestamp: today, poolId: allPools[0]!.id, technicianId: technicians[0]!.id, status: 'PENDING' }});
+  await prisma.visit.create({ data: { timestamp: today, poolId: allPools[2]!.id, technicianId: technicians[1]!.id, status: 'PENDING' }});
+  
+  // --- SIMULACIÓN DE PARTE RELLENADO ---
+  const incidentVisit = await prisma.visit.create({
+    data: {
+      timestamp: today,
+      poolId: allPools[4]!.id,
+      technicianId: technicians[2]!.id,
+      status: 'COMPLETED',
+      hasIncident: true,
+      notes: 'La bomba de calor hace un ruido extraño al arrancar. Revisar urgentemente.',
+      completedTasks: ['Limpieza de cestos de skimmers', 'Cepillado de paredes y línea de flotación'],
+    }
+  });
+  
+  // Creación de los resultados de la visita (VisitResult)
+  await prisma.visitResult.createMany({
+    data: [
+      { visitId: incidentVisit.id, parameterName: 'Nivel de pH', value: '7.8', parameterUnit: 'pH' },
+      { visitId: incidentVisit.id, parameterName: 'Cloro Libre (DPD-1)', value: '0.5', parameterUnit: 'ppm' },
+      { visitId: incidentVisit.id, parameterName: 'Estado del Agua', value: 'Ligeramente turbia', parameterUnit: null },
+    ]
+  });
+  console.log('   - 1 visita completada con incidencia y resultados reales.');
+
+  // Creación de la notificación para la incidencia
+  await prisma.notification.create({
+    data: {
+      message: `Incidencia en ${allPools[4]!.name} por ${technicians[2]!.name}.`,
+      tenantId: mainTenant.id,
+      userId: adminUser.id,
+      visitId: incidentVisit.id,
+      status: 'PENDING',
+    }
+  });
+  console.log('   - 1 notificación de incidencia creada para el admin.');
+  console.log('   - 2 visitas pendientes asignadas para hoy.');
+
+  console.log('\n\n✅ Seeding completado con éxito!');
   console.log('--- Credenciales de prueba ---');
   console.log('SuperAdmin: super@admin.com / superadmin123');
   console.log('Admin:      admin@piscival.com / password123');
@@ -132,6 +144,7 @@ async function main() {
 /**
  * Función de lógica de negocio para generar una ficha de mantenimiento realista
  * para una piscina, basada en su tipo y en los catálogos disponibles.
+ * ESTA ES LA VERSIÓN COMPLETA SIN ABREVIAR.
  */
 function createPoolMaintenanceSheet(
   poolId: string,

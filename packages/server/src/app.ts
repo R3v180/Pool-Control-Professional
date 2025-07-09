@@ -1,5 +1,5 @@
 // filename: packages/server/src/app.ts
-// Version: 1.7.0 (Mount usersRouter for Admin module)
+// Version: 1.8.0 (Mount notificationsRouter)
 import express from 'express';
 import type { Request, Response } from 'express';
 import cors from 'cors';
@@ -15,6 +15,7 @@ import poolsRouter from './api/pools/pools.routes.js';
 import poolConfigurationsRouter from './api/pool-configurations/pool-configurations.routes.js';
 import visitsRouter from './api/visits/visits.routes.js';
 import usersRouter from './api/users/users.routes.js';
+import notificationsRouter from './api/notifications/notifications.routes.js'; // <-- 1. Importar el nuevo router
 
 // --- Instancia de la App ---
 const app = express();
@@ -45,6 +46,7 @@ app.use('/api/pools', poolsRouter);
 app.use('/api/pool-configurations', poolConfigurationsRouter);
 app.use('/api/visits', visitsRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/notifications', notificationsRouter); // <-- 2. Montar el nuevo router
 
 
 // --- Gestor de Errores ---

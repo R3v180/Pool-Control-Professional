@@ -1,5 +1,5 @@
-// filename: packages/server/prisma/schema.prisma
-// Version: 1.3.0 (Add VisitStatus enum and status field to Visit model)
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
@@ -10,80 +10,89 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// =============================================
+// MODELOS DE AUTENTICACIÓN Y ESTRUCTURA
+// =============================================
+
 model Tenant {
-  id                 String                @id @default(cuid())
+  id                 String               @id @default(cuid())
   companyName        String
-  subdomain          String                @unique
-  subscriptionStatus SubscriptionStatus    @default(TRIAL)
-  nextPaymentDate    DateTime?
-  createdAt          DateTime              @default(now())
-  updatedAt          DateTime              @updatedAt
-  users              User[]
-  clients            Client[]
-  pools              Pool[]
-  products           Product[]
-  parameterTemplates ParameterTemplate[]
-  taskTemplates      ScheduledTaskTemplate[]
-  payments           Payment[]
-  notifications      Notification[]
-}
+  subdomain          String               @unique
+  subscriptionStatus SubscriptionStatus @default(TRIAL)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
 
-model Payment {
-  id          String   @id @default(cuid())
-  amount      Float
-  paymentDate DateTime
-  method      String
-  notes       String?
-  createdAt   DateTime @default(now())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-}
-
-model User {
-  id            String         @id @default(cuid())
-  email         String         @unique
-  name          String
-  password      String
-  role          UserRole
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  tenantId      String
-  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  visits        Visit[]
+  users         User[]
+  clients       Client[]
+  pools         Pool[]
+  paramTemplates ParameterTemplate[]
+  taskTemplates ScheduledTaskTemplate[]
   notifications Notification[]
 }
 
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      UserRole @default(TECHNICIAN)
+  tenantId  String
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignedVisits Visit[]
+  notifications Notification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+// =============================================
+// MODELOS DE NEGOCIO (ADMIN)
+// =============================================
+
 model Client {
-  id            String   @id @default(cuid())
+  id            String  @id @default(cuid())
   name          String
   contactPerson String?
   email         String?
   phone         String?
   address       String?
-  priceModifier Float    @default(1.0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  priceModifier Float   @default(1.0)
   tenantId      String
-  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  pools         Pool[]
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pools  Pool[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
 }
 
 model Pool {
-  id             String              @id @default(cuid())
-  name           String
-  address        String
-  qrCode         String              @unique @default(cuid())
-  volume         Float?
-  type           String?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-  clientId       String
+  id        String  @id @default(cuid())
+  name      String
+  address   String
+  volume    Float?
+  type      String? // e.g., "Cloro", "Sal"
+  clientId  String
+  tenantId  String
+
   client         Client              @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  tenantId       String
-  tenant         Tenant              @relation(fields: [tenantId], references: [id])
+  tenant         Tenant              @relation(fields: [tenantId], references: [id], onDelete: NoAction)
   configurations PoolConfiguration[]
   visits         Visit[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clientId])
+  @@index([tenantId])
 }
+
+// --- Catálogos de Plantillas ---
 
 model ParameterTemplate {
   id            String              @id @default(cuid())
@@ -91,110 +100,134 @@ model ParameterTemplate {
   unit          String?
   type          InputType           @default(NUMBER)
   selectOptions String[]
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
   tenantId      String
-  tenant        Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  tenant         Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   configurations PoolConfiguration[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([tenantId])
 }
 
 model ScheduledTaskTemplate {
-  id             String              @id @default(cuid())
-  name           String
-  description    String?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-  tenantId       String
+  id          String @id @default(cuid())
+  name        String
+  description String?
+  tenantId    String
+
   tenant         Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   configurations PoolConfiguration[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([tenantId])
 }
 
+// --- Modelo de Unión: Ficha de Mantenimiento ---
+
 model PoolConfiguration {
-  id                  String                 @id @default(cuid())
+  id                  String     @id @default(cuid())
+  poolId              String
   frequency           Frequency
   minThreshold        Float?
   maxThreshold        Float?
   lastCompleted       DateTime?
-  poolId              String
-  pool                Pool                   @relation(fields: [poolId], references: [id], onDelete: Cascade)
   parameterTemplateId String?
-  parameterTemplate   ParameterTemplate?     @relation(fields: [parameterTemplateId], references: [id], onDelete: Cascade)
   taskTemplateId      String?
-  taskTemplate        ScheduledTaskTemplate? @relation(fields: [taskTemplateId], references: [id], onDelete: Cascade)
+
+  pool              Pool                   @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  parameterTemplate ParameterTemplate?     @relation(fields: [parameterTemplateId], references: [id], onDelete: Cascade)
+  taskTemplate      ScheduledTaskTemplate? @relation(fields: [taskTemplateId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([poolId])
 }
+
+// =============================================
+// MODELOS OPERATIVOS (TÉCNICO)
+// =============================================
 
 model Visit {
   id             String        @id @default(cuid())
-  timestamp      DateTime      @default(now())
-  notes          String?
-  hasIncident    Boolean       @default(false)
-  status         VisitStatus   @default(PENDING) // <-- CAMPO AÑADIDO
+  timestamp      DateTime
   poolId         String
-  pool           Pool          @relation(fields: [poolId], references: [id], onDelete: Cascade)
   technicianId   String?
-  technician     User?         @relation(fields: [technicianId], references: [id])
-  results        VisitResult[]
-  consumptions   Consumption[]
+  status         VisitStatus   @default(PENDING)
+  notes          String?
   completedTasks String[]
+  hasIncident    Boolean       @default(false)
+  
+  pool           Pool          @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  technician     User?         @relation(fields: [technicianId], references: [id], onDelete: SetNull)
+  results        VisitResult[]
+  notifications  Notification[]
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([poolId])
+  @@index([technicianId])
 }
 
 model VisitResult {
   id            String  @id @default(cuid())
-  value         String
   visitId       String
-  visit         Visit   @relation(fields: [visitId], references: [id], onDelete: Cascade)
   parameterName String
   parameterUnit String?
-}
+  value         String
 
-model Product {
-  id        String   @id @default(cuid())
-  name      String
-  unit      String
-  basePrice Float
+  visit Visit @relation(fields: [visitId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-}
 
-model Consumption {
-  id          String @id @default(cuid())
-  quantity    Float
-  priceAtTime Float
-  visitId     String
-  visit       Visit  @relation(fields: [visitId], references: [id], onDelete: Cascade)
-  productName String
-  productUnit String
+  @@index([visitId])
 }
 
 model Notification {
   id        String   @id @default(cuid())
   message   String
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
+  isRead    Boolean  @default(false) // Lo mantenemos para la campana 
+  // --- NUEVOS CAMPOS ---
+  status            NotificationStatus @default(PENDING)
+  resolutionNotes   String?
+
   userId    String
+  tenantId  String
+  visitId   String?
+
+  visit     Visit?   @relation(fields: [visitId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: NoAction)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([tenantId])
 }
 
 
-// NUEVO ENUM
-enum VisitStatus {
+// =============================================
+// ENUMS
+// =============================================
+
+// --- NUEVO ENUM ---
+enum NotificationStatus {
   PENDING
-  COMPLETED
-  CANCELLED
+  RESOLVED
 }
 
 enum UserRole {
   SUPER_ADMIN
-  MANAGER
   ADMIN
+  MANAGER
   TECHNICIAN
-  CLIENT
 }
 
 enum SubscriptionStatus {
@@ -219,4 +252,10 @@ enum Frequency {
   TRIMESTRAL
   SEMESTRAL
   ANUAL
+}
+
+enum VisitStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
 }
