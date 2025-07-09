@@ -7,103 +7,95 @@ Este documento es la hoja de ruta arquitectónica y el registro de implementaci�
 ## ✅ FASE 0: Fundación del Entorno y Monorepo
 
 - **Estado:** `COMPLETADA`
-- **Objetivo:** Establecer una base de desarrollo robusta, consistente y escalable.
+- **Intención Arquitectónica:** Establecer una base de desarrollo moderna, escalable y mantenible, donde el backend y el frontend, aunque desacoplados, pudieran ser gestionados desde un único repositorio para agilizar el desarrollo.
 - **Entregables Clave:**
-  - **Monorepo con PNPM:** Configuración de `pnpm-workspace.yaml` para gestionar los paquetes `server` y `client` de forma centralizada.
-  - **Configuración Maestra de TypeScript:** `tsconfig.json` raíz con reglas estrictas y modernas (`strict: true`, `module: NodeNext`) que se heredan en todo el proyecto.
-  * **Gestión de Código Fuente:** `/.gitignore` configurado para excluir dependencias, variables de entorno y artefactos de compilación.
+  - **Monorepo con PNPM:** Se adoptó `pnpm` con `workspaces` para una gestión de dependencias ultra-eficiente y la capacidad de ejecutar scripts de forma centralizada.
+  - **Configuración Maestra de TypeScript:** Se definió un `tsconfig.json` raíz con reglas estrictas (`strict: true`) y configuración para ES Modules (`module: NodeNext`), forzando un código de alta calidad y moderno desde el inicio.
 
 ---
 
 ## ✅ FASE 1: Fundación del Backend
 
 - **Estado:** `COMPLETADA`
-- **Objetivo:** Construir un servidor API funcional, seguro y resiliente.
+- **Intención Arquitectónica:** Construir un servidor API robusto, seguro y preparado para crecer. El objetivo era tener una base sólida sobre la cual construir todos los módulos de negocio.
 - **Entregables Clave:**
-  - **Servidor Express.js:** `app.ts` y `server.ts` configurados para usar ES Modules, con middlewares esenciales (CORS, JSON, Cookie Parser).
-  - **Conexión a Base de Datos:** `schema.prisma` define el modelo de datos completo. Se ha realizado la migración inicial y la conexión con PostgreSQL es estable.
-  - **Script de Seeding:** `prisma/seed.ts` implementado para crear el `SUPER_ADMIN` y el tenant de sistema, garantizando un punto de partida consistente para el desarrollo y las pruebas.
-  - **Seguridad y Autenticación:**
-    - `auth.middleware.ts` y `jwt.utils.ts`: Sistema robusto de protección de rutas basado en tokens JWT en cookies `httpOnly`.
-    - `password.utils.ts`: Lógica de hashing y comparación de contraseñas aislada y segura.
-    - `auth.routes.ts`: Endpoints `login`, `logout`, `register` y `me` implementados y funcionales.
-  - **Gestión de Errores:** `error.middleware.ts` implementado como un "catch-all" para manejar excepciones de forma controlada y devolver respuestas de error estandarizadas.
+  - **Servidor Express.js:** Se montó un servidor con una estructura modular (`app.ts` para configuración, `server.ts` para arranque), usando ES Modules nativos.
+  - **Persistencia con Prisma:** Se definió el `schema.prisma` como la "única fuente de verdad" para el modelo de datos y se estableció la conexión con PostgreSQL.
+  - **Seguridad y Autenticación:** Se implementó un sistema de autenticación completo y seguro:
+    - **Middleware `protect`:** Un guardián para nuestras rutas, que verifica la validez de los tokens JWT enviados a través de cookies `httpOnly`.
+    - **Endpoints de Autenticación:** Se crearon las rutas `/api/auth/login`, `/logout`, `/register` y `/me`, que constituyen el portal de entrada a la aplicación.
+  - **Script de `seed`:** Se creó un script para poblar la base de datos con datos esenciales (como el `SUPER_ADMIN`), permitiendo un entorno de desarrollo consistente y eliminando la necesidad de creación manual de datos críticos.
 
 ---
 
 ## ✅ FASE 2: Fundación del Frontend
 
 - **Estado:** `COMPLETADA`
-- **Objetivo:** Construir una aplicación React cliente, conectada al backend y con una gestión de estado de autenticación sólida.
+- **Intención Arquitectónica:** Crear una aplicación de cliente reactiva, rápida y con una excelente experiencia de usuario, estableciendo los patrones de diseño que se usarían en todo el frontend.
 - **Entregables Clave:**
-  - **Aplicación React con Vite:** `vite.config.ts` configurado, incluyendo un proxy para las llamadas a la API que simplifica el desarrollo.
-  - **Gestión de Estado de Autenticación:** `AuthProvider.tsx` implementado usando React Context. Gestiona el estado del usuario y la sesión, persistiendo a través de recargas de página mediante el endpoint `/api/auth/me`.
-  - **Sistema de Enrutamiento:** `router/index.tsx` y `router/components.tsx` definen la estructura de navegación de la aplicación, implementando componentes de protección de rutas por rol (`ProtectedRoute`, `SuperAdminRoute`, `AdminRoute`).
-  - **UI y Estilo:** `theme.ts` define el tema base de Mantine UI, asegurando una estética consistente. La `AppLayout` provee la estructura visual principal (header, navbar).
+  - **Aplicación React con Vite:** Se eligió Vite por su velocidad y su excelente experiencia de desarrollo.
+  - **Gestión de Estado Global (`AuthProvider`):** Se implementó un `React Context` para gestionar el estado de autenticación del usuario. Este provider es el responsable de mantener la sesión activa entre recargas de página, comunicándose con el endpoint `/api/auth/me`.
+  - **Enrutamiento Protegido:** Se creó un sistema de enrutamiento con `react-router-dom`, definiendo el concepto de `ProtectedRoute` y rutas específicas por rol (`AdminRoute`, `SuperAdminRoute`), un pilar de la seguridad de la interfaz.
+  - **Base de UI con Mantine:** Se estableció Mantine UI como la librería de componentes y se configuró un `theme` personalizado para una estética coherente.
 
 ---
 
-## ✅ FASE 3: Módulos de Gestión (Admin y SuperAdmin)
+## ✅ FASE 3: Módulo de Gestión (SuperAdmin y Admin)
 
 - **Estado:** `COMPLETADA`
-- **Objetivo:** Implementar las funcionalidades de configuración y gestión que son el núcleo del panel de administración.
+- **Intención de Negocio:** Digitalizar y automatizar por completo las tareas de configuración y planificación, empoderando al `ADMIN` para que sea 100% autónomo.
 - **Entregables Clave:**
-  - **Módulo `SUPER_ADMIN` - Gestión de Tenants:**
-    - **Backend:** API CRUD completa en `/api/tenants`.
-    - **Frontend:** `TenantsPage.tsx` permite listar, crear, actualizar estado y eliminar tenants.
-  - **Módulo `ADMIN` - Gestión de Catálogos:**
-    - **Backend:** APIs CRUD para `/api/parameters` y `/api/tasks`.
-    - **Frontend:** `ParameterCatalogPage.tsx` y `TaskCatalogPage.tsx` permiten la gestión completa de las plantillas de parámetros y tareas.
-  - **Módulo `ADMIN` - Gestión de Clientes y Piscinas:**
-    - **Backend:** APIs CRUD para `/api/clients` y `/api/pools`.
-    - **Frontend:** `ClientsPage.tsx` y `ClientDetailPage.tsx` permiten la gestión de clientes y sus piscinas asociadas.
-  - **Módulo `ADMIN` - Constructor de Fichas de Mantenimiento:**
-    - **Backend:** API CRUD para `/api/pool-configurations`.
-    - **Frontend:** `PoolDetailPage.tsx` funciona como el constructor, permitiendo asociar ítems de los catálogos a una piscina.
-  - **Módulo `ADMIN` - Planificador de Rutas:**
-    - **Backend:** API en `/api/visits` para generar y asignar visitas.
-    - **Frontend:** `PlannerPage.tsx` implementa un planificador visual con `Drag and Drop`.
-  - **Módulo `TECHNICIAN` - "Mi Ruta de Hoy":**
-    - **Backend:** Endpoint `GET /api/visits/my-route` que filtra y devuelve las visitas del día para el técnico logueado.
-    - **Frontend:** `MyRoutePage.tsx` muestra las visitas del día de forma clara.
+  - **CRUD de Tenants (SuperAdmin):** API y UI para que el SuperAdmin gestione el ciclo de vida de sus clientes.
+  - **CRUD de Catálogos (Admin):** API y UI para que el Admin defina sus `Parámetros` y `Tareas` de servicio.
+  - **CRUD de Clientes y Piscinas (Admin):** API y UI para gestionar la cartera de clientes y sus piscinas.
+  - **Constructor de Fichas (Admin):** Lógica de negocio y UI para asociar ítems del catálogo a piscinas, definiendo `frecuencia` y `umbrales`.
+  - **Planificador de Rutas (Admin):** Una de las funcionalidades más complejas. Se implementó una lógica de backend que genera visitas y una interfaz `Drag and Drop` para la asignación a técnicos.
 
 ---
 
-## ▶️ FASE 4: Módulo de Ejecución (Técnico) - Parte de Trabajo
+## ✅ FASE 4: Módulo de Ejecución (Técnico)
+
+- **Estado:** `COMPLETADA`
+- **Intención de Negocio:** Optimizar al máximo el trabajo de campo del técnico, proporcionándole una herramienta clara, rápida y que elimina la necesidad de partes de trabajo en papel.
+- **Entregables Clave:**
+  - **"Mi Ruta de Hoy":** API y UI que presentan al técnico una lista clara de sus visitas pendientes para el día actual.
+  - **"Parte de Trabajo Dinámico":** La funcionalidad estrella.
+    - **Backend:** Se implementó la lógica `submitWorkOrder` dentro de una transacción de Prisma para garantizar la atomicidad de los datos. Guarda resultados, tareas completadas, notas, e incidencias.
+    - **Frontend:** La `WorkOrderPage` renderiza un formulario a medida para cada visita, basándose en la configuración definida por el `ADMIN`.
+  - **Reporte de Incidencias:** Se implementó el flujo completo, desde el `Checkbox` en el parte del técnico hasta la creación de un registro `Notification` en la base de datos.
+
+---
+
+## ▶️ FASE 5: Cierre de Bucles y Experiencia de Usuario
 
 - **Estado:** `EN CURSO`
-- **Objetivo:** Desarrollar la funcionalidad más crítica de la aplicación: el formulario donde el técnico registra los datos de su visita.
+- **Intención de Negocio:** Conectar los flujos de información y mejorar la interfaz para proporcionar una experiencia de usuario cohesiva y completa.
 - **Plan de Acción Detallado:**
-  1.  **Backend - Obtener Detalles de la Visita:**
-      - **Archivo:** `packages/server/src/api/visits/visits.service.ts`
-      - **Tarea:** Crear una nueva función `getVisitDetails(visitId)` que devuelva no solo la visita, sino también la `PoolConfiguration` asociada (con sus `ParameterTemplate` y `TaskTemplate` anidados). Esto es vital para que el frontend sepa qué formulario construir.
-      - **Archivo:** `packages/server/src/api/visits/visits.controller.ts` y `visits.routes.ts`
-      - **Tarea:** Exponer la nueva función de servicio a través de un nuevo endpoint `GET /api/visits/:id`.
-  2.  **Backend - Procesar el Parte de Trabajo:**
-      - **Schema:** Modificar `schema.prisma` para añadir `hasIncident: Boolean @default(false)` al modelo `Visit` y crear el nuevo modelo `Notification`. Ejecutar la migración.
-      - **Archivo:** `packages/server/src/api/visits/visits.service.ts`
-      - **Tarea:** Crear una función `submitWorkOrder(visitId, data)` que procese los datos del formulario, cree los `VisitResult`, actualice el estado de la visita, y cree una `Notification` si procede.
-      - **Archivo:** `packages/server/src/api/visits/visits.controller.ts` y `visits.routes.ts`
-      - **Tarea:** Exponer esta lógica a través de un endpoint `POST /api/visits/:id/complete`.
-  3.  **Frontend - Construir la Página del Parte de Trabajo:**
-      - **Archivo:** Crear `packages/client/src/features/technician/pages/WorkOrderPage.tsx`.
-      - **Tarea:** Esta página recibirá un `visitId` de la URL. Hará una llamada al nuevo endpoint `GET /api/visits/:id` para obtener los detalles.
-  4.  **Frontend - Renderizado Dinámico del Formulario:**
-      - **Archivo:** `WorkOrderPage.tsx`.
-      - **Tarea:** Basándose en los datos recibidos, la página renderizará dinámicamente los controles de formulario necesarios: `NumberInput` para parámetros numéricos, `Switch` para booleanos, `Checkbox` para tareas, etc. Se incluirá el `Checkbox` para "Reportar Incidencia".
-  5.  **Frontend - Envío de Datos:**
-      - **Archivo:** `WorkOrderPage.tsx`.
-      - **Tarea:** Implementar la lógica de envío del formulario, que llamará al endpoint `POST /api/visits/:id/complete` con todos los datos recopilados.
+  1.  **Sistema de Notificaciones (Admin):**
+      - **Propósito:** Hacer visibles las incidencias reportadas por los técnicos.
+      - **Tareas:**
+        - **Backend:** Crear la API CRUD para `/api/notifications`.
+        - **Frontend:** Añadir un componente "campana" en el `AppLayout` que muestre un indicador y un menú desplegable con las notificaciones.
+  2.  **Dashboard Principal (Admin):**
+      - **Propósito:** Dar al `ADMIN` una vista rápida del estado de la operativa diaria.
+      - **Tareas:** Reemplazar el `div` actual por un panel que muestre "Visitas de hoy" y "Últimas Incidencias".
+  3.  **Mejoras en el Planificador (Admin):**
+      - **Propósito:** Proporcionar más información visual al `ADMIN`.
+      - **Tareas:** Diferenciar visualmente las visitas `PENDING` de las `COMPLETED` en el planificador (ej. con colores o transparencia).
+  4.  **Gestión de Consumo de Productos (Técnico y Admin):**
+      - **Propósito:** Empezar a registrar los costes asociados a cada visita.
+      - **Tareas:**
+        - **Backend y Frontend:** Implementar el CRUD para el catálogo de `Product`.
+        - **Frontend:** Añadir una sección en el `WorkOrderPage` para que el técnico pueda registrar los productos consumidos.
+        - **Backend:** Modificar `submitWorkOrder` para guardar los registros `Consumption`.
 
 ---
 
-## 🔮 FASE 5 Y POSTERIORES: Funcionalidades Futuras
+## 🔮 FASE 6 Y POSTERIORES: Funcionalidades Avanzadas
 
 - **Estado:** `PLANIFICADO`
-- **Objetivo:** Mejorar la aplicación con funcionalidades de alto valor.
+- **Intención de Negocio:** Añadir capas de inteligencia de negocio y expandir las capacidades de la plataforma.
 - **Ideas Clave:**
-  - **Modo Offline (PWA):** Implementar Service Workers e IndexedDB.
-  - **Dashboard de Gerencia:** Desarrollar los KPIs y gráficos para el rol de `MANAGER`.
-  - **Gestión de Productos y Consumos:** Implementar la API y la UI para gestionar el catálogo de productos y registrar su consumo en cada visita.
-  - **Facturación:** Generar informes de consumo por cliente para facilitar la facturación.
-  - **Notificaciones en Tiempo Real:** Implementar un sistema de notificaciones push o WebSockets para el `ADMIN`.
+  - **Modo Offline (PWA):** Implementar la capacidad de trabajo sin conexión para el técnico.
+  - **Dashboard de Gerencia (`MANAGER`):** Desarrollar los KPIs y gráficos.
+  - **Sistema de Facturación:** Generar informes de consumo por cliente.

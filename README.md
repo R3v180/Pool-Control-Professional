@@ -1,4 +1,9 @@
-# Documento de Especificación Funcional v2.0: Sistema "Pool-Control Professional"
+# Documento de Especificación Funcional v2.1: Sistema "Pool-Control Professional"
+
+**Documentos del Proyecto:**
+[Ver Plan de Desarrollo](./DEVELOPMENT_PLAN.md) | [Ver Estado del Proyecto](./PROJECT_STATUS.md)
+
+---
 
 **Fecha:** 9 de julio de 2025
 **Proyecto:** Plataforma Integral de Gestión para Empresas de Mantenimiento de Piscinas.
@@ -22,12 +27,12 @@
 
 El sistema se estructura en torno a roles con permisos estrictos para garantizar la seguridad y la focalización de cada usuario en sus responsabilidades.
 
-| Rol                  | Misión Principal                                  | Capacidades Clave                                                                                                                                                                                                                                                                       |
-| -------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **SuperAdmin**       | Gestionar la plataforma y sus clientes (tenants). | CRUD completo sobre los **Tenants**. Gestión de suscripciones y ciclo de vida de las empresas que usan el software. No tiene visibilidad sobre los datos operativos (clientes, piscinas) de los tenants.                                                                                |
-| **Admin (Isa)**      | Configurar y dirigir la operativa de su empresa.  | Control absoluto sobre la configuración del tenant: **definir el catálogo de servicios**, gestionar clientes y piscinas, **diseñar las fichas de mantenimiento**, planificar rutas, y supervisar toda la operativa. Es el "arquitecto" del servicio.                                    |
-| **Técnico**          | Ejecutar el trabajo en campo de forma eficiente.  | Acceso exclusivo a su **ruta de trabajo del día**. Su única misión es ejecutar las visitas asignadas y rellenar los **partes de trabajo** con los datos requeridos. Interfaz 100% optimizada para móvil y diseñada para funcionar incluso en condiciones de baja conectividad (futuro). |
-| **Gerencia (Jorge)** | Supervisar la salud y rendimiento del negocio.    | Acceso de **solo lectura** a toda la configuración y datos operativos del `ADMIN`. Su objetivo es el análisis a través de dashboards y reportes, sin la capacidad de alterar ningún dato, garantizando la integridad de la información.                                                 |
+| Rol                  | Misión Principal                                  | Capacidades Clave                                                                                                                                                                                                                                                                                |
+| -------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **SuperAdmin**       | Gestionar la plataforma y sus clientes (tenants). | CRUD completo sobre los **Tenants**. Gestión de suscripciones y ciclo de vida de las empresas que usan el software. No tiene visibilidad sobre los datos operativos (clientes, piscinas) de los tenants.                                                                                         |
+| **Admin (Isa)**      | Configurar y dirigir la operativa de su empresa.  | Control absoluto sobre la configuración del tenant: **definir el catálogo de servicios**, gestionar clientes y piscinas, **diseñar las fichas de mantenimiento**, planificar rutas, y supervisar toda la operativa a través de un **centro de notificaciones**. Es el "arquitecto" del servicio. |
+| **Técnico**          | Ejecutar el trabajo en campo de forma eficiente.  | Acceso exclusivo a su **ruta de trabajo del día**. Su única misión es ejecutar las visitas asignadas y rellenar los **partes de trabajo** con los datos requeridos. Interfaz 100% optimizada para móvil y diseñada para funcionar incluso en condiciones de baja conectividad (futuro).          |
+| **Gerencia (Jorge)** | Supervisar la salud y rendimiento del negocio.    | Acceso de **solo lectura** a toda la configuración y datos operativos del `ADMIN`. Su objetivo es el análisis a través de dashboards y reportes, sin la capacidad de alterar ningún dato, garantizando la integridad de la información.                                                          |
 
 ---
 
@@ -43,75 +48,54 @@ Esta etapa es el corazón del sistema. El `ADMIN` define "el qué, cómo y cuán
 
 - **Propósito:** Crear una librería centralizada de todas las acciones y mediciones que la empresa puede realizar. Este es el primer paso y la base de todo.
 - **Funcionalidad:**
-  - **Gestión de Parámetros:** El `ADMIN` crea plantillas para cada medición (ej. "Nivel de pH", "Dureza del Agua"). Para cada una, define:
-    - `Nombre`: "Nivel de pH"
-    - `Unidad`: (opcional, ej. "ppm")
-    - `Tipo de Input`: Define cómo el técnico introducirá el dato (`NUMBER`, `BOOLEAN` para Sí/No, `TEXT` o `SELECT` con opciones predefinidas como "Verde", "Turbia", "Cristalina").
-  - **Gestión de Tareas:** El `ADMIN` crea plantillas para cada acción física (ej. "Limpieza de cestos de skimmers", "Cepillado de paredes").
+  - **Gestión de Parámetros:** El `ADMIN` crea plantillas para cada medición (ej. "Nivel de pH"). Para cada una, define su `Nombre`, `Unidad` y `Tipo de Input` (`NUMBER`, `BOOLEAN`, `TEXT` o `SELECT` con opciones).
+  - **Gestión de Tareas:** El `ADMIN` crea plantillas para cada acción física (ej. "Limpieza de cestos de skimmers").
 
 #### **Pantalla: Gestión de Clientes y Piscinas**
 
 - **Propósito:** Gestionar la cartera de clientes y sus activos (las piscinas).
 - **Funcionalidad:**
   - **CRUD de Clientes:** El `ADMIN` gestiona la base de datos de clientes.
-  - **CRUD de Piscinas:** Dentro de la ficha de cada cliente, el `ADMIN` puede añadir múltiples piscinas, cada una con su propia dirección y características (volumen, tipo, etc.). **Una piscina es el activo sobre el que se realizará el trabajo.**
+  - **CRUD de Piscinas:** Dentro de la ficha de cada cliente, el `ADMIN` puede añadir múltiples piscinas.
 
 #### **Pantalla: Constructor de Fichas de Mantenimiento (Pool Detail Page)**
 
-- **Propósito:** Definir el "contrato de servicio" específico y único para **cada piscina**. Aquí es donde se conectan los catálogos con los activos.
-- **Flujo de Trabajo:**
-  1.  El `ADMIN` selecciona una piscina.
-  2.  La interfaz le muestra los catálogos de parámetros y tareas disponibles.
-  3.  **El `ADMIN` "arrastra" o añade los ítems del catálogo a la ficha de esa piscina.** Por ejemplo, para la "Piscina Comunitaria", añade "Nivel de pH", "Nivel de Cloro" y "Limpieza de cestos".
-  4.  **Para cada ítem añadido, establece las reglas de negocio:**
-      - `Frecuencia`: ¿Cada cuánto se debe realizar esta medición/tarea? (`DIARIA`, `SEMANAL`, `MENSUAL`...).
-      - `Umbrales de Alerta` (para parámetros numéricos): ¿Cuál es el rango de valores aceptable? (ej. pH entre 7.2 y 7.6). Si el técnico introduce un valor fuera de este rango, el sistema lo marcará como una alerta.
-  - **Resultado:** Cada piscina del sistema tiene una `PoolConfiguration` única que dictará exactamente qué debe hacer el técnico en cada visita.
+- **Propósito:** Definir el "contrato de servicio" específico y único para **cada piscina**.
+- **Flujo de Trabajo:** El `ADMIN` asocia ítems de los catálogos a la ficha de esa piscina y, para cada uno, establece las reglas de negocio: `Frecuencia` (¿Cada cuánto?) y `Umbrales de Alerta` (¿Cuál es el rango aceptable?).
 
 ### **ETAPA 2: Planificación y Ejecución (Roles: Admin y Técnico)**
 
 #### **Pantalla: Planificador Semanal (Rol: Admin)**
 
 - **Propósito:** Organizar la carga de trabajo de la semana y asignarla al equipo.
-- **Flujo de Trabajo:**
-  1.  El sistema, basándose en las `frecuencias` definidas en las fichas de cada piscina, **genera automáticamente una lista de "Visitas Pendientes"** para la semana.
-  2.  El `ADMIN` ve una parrilla con los días de la semana y sus técnicos.
-  3.  Simplemente **arrastra cada visita pendiente y la suelta sobre el técnico** y el día deseado. La asignación queda guardada.
+- **Flujo de Trabajo:** El sistema genera automáticamente las visitas pendientes según la frecuencia. El `ADMIN` las arrastra y suelta sobre el técnico y día deseado.
 
 #### **Pantalla: Mi Ruta de Hoy (Rol: Técnico)**
 
-- **Propósito:** Proporcionar al técnico un plan de acción diario, claro, conciso y sin distracciones. **(FUNCIONALIDAD IMPLEMENTADA)**.
-- **Flujo de Trabajo:**
-  1.  El técnico inicia sesión en su móvil.
-  2.  La aplicación le presenta una lista ordenada de las visitas que el `ADMIN` le ha asignado para el día de hoy.
-  3.  Cada visita muestra la información esencial: nombre de la piscina y cliente.
-  4.  La dirección es un enlace directo que **abre Google Maps/Apple Maps** con la ruta ya calculada.
-  5.  Cada tarjeta de visita será un enlace para iniciar el "Parte de Trabajo".
+- **Propósito:** Proporcionar al técnico un plan de acción diario, claro y directo.
+- **Estado de Implementación:** `COMPLETADA Y OPERATIVA`.
+- **Flujo de Trabajo:** Al iniciar sesión, el técnico ve una lista ordenada de sus visitas `PENDIENTES` para el día. La dirección es un enlace a Google Maps/Apple Maps y cada tarjeta de visita conduce al "Parte de Trabajo".
 
 #### **Pantalla: Parte de Trabajo Dinámico (Rol: Técnico)**
 
 - **Propósito:** Registrar los datos de la visita de forma rápida, estructurada y a prueba de errores.
+- **Estado de Implementación:** `COMPLETADA Y OPERATIVA`.
 - **Flujo de Trabajo:**
-  1.  Al hacer clic en una visita, se abre el parte. **Este formulario se construye dinámicamente** basándose en la `PoolConfiguration` de esa piscina. Si la ficha tiene 3 parámetros y 1 tarea, el técnico verá exactamente esos 4 campos.
-  2.  El técnico rellena los valores. Si un valor está fuera de los `umbrales` definidos, la UI le dará feedback visual inmediato (ej. un borde rojo).
-  3.  **Reporte de Incidencias:** Junto al campo de "Observaciones", habrá un **checkbox "Reportar como Incidencia"**. Si el técnico lo marca, al guardar el parte se generará una notificación interna para el `ADMIN`.
-  4.  Al finalizar, el técnico guarda el parte. Los datos se envían a la API y se almacenan de forma inmutable.
-- **Futuro (Modo Offline):** Se planifica que este formulario pueda ser rellenado sin conexión. Los datos se guardarían en el dispositivo y se sincronizarían automáticamente al recuperar la señal.
+  1.  Al entrar, la página construye un **formulario dinámico** basado en la configuración de la piscina.
+  2.  El técnico rellena los valores. La UI le proporciona feedback instantáneo si un valor está fuera de los umbrales.
+  3.  **Reporte de Incidencias:** Junto a un campo de "Observaciones", el técnico dispone de un **checkbox "Reportar como Incidencia"**. Si lo marca, al guardar el parte se generará una notificación interna automática para el `ADMIN`, informándole del problema.
+  4.  Al guardar, los datos se envían a la API, la visita se marca como `COMPLETED` y desaparece de la lista de tareas pendientes del técnico.
+- **Mejora Futura Planificada:** Implementación de un **Modo Offline** (PWA) que permitirá rellenar y guardar el parte sin conexión a internet, sincronizándose automáticamente al recuperar la señal.
 
 ### **ETAPA 3: Supervisión y Análisis (Roles: Admin y Gerencia)**
 
-#### **Pantalla: Historial de Visitas y Alertas (Rol: Admin)**
+#### **Pantalla: Centro de Notificaciones (Rol: Admin)**
 
-- **Propósito:** Permitir al `ADMIN` consultar el trabajo realizado y atender las incidencias reportadas.
-- **Funcionalidad:**
-  - El `ADMIN` podrá ver el historial de partes de trabajo de cualquier piscina.
-  - Tendrá un "Centro de Notificaciones" donde aparecerán las incidencias reportadas por los técnicos, para poder gestionarlas.
+- **Propósito:** Centralizar y gestionar las incidencias reportadas por los técnicos.
+- **Estado de Implementación:** `EN DESARROLLO`.
+- **Funcionalidad Prevista:** El `ADMIN` tendrá un icono de "campana" en la interfaz. Un indicador le avisará de nuevas notificaciones. Al hacer clic, podrá ver una lista de las incidencias, acceder a los detalles de la visita asociada y marcarlas como leídas o gestionadas.
 
 #### **Pantalla: Dashboards y Reportes (Rol: Gerencia)**
 
 - **Propósito:** Ofrecer una visión de alto nivel para la toma de decisiones estratégicas.
-- **Funcionalidad:** Jorge, en modo **solo lectura**, accederá a paneles con KPIs como:
-  - Rentabilidad por cliente.
-  - Coste de productos consumidos vs. facturación.
-  - Número de incidencias por mes.
-  - Rendimiento y cumplimiento de los técnicos.
+- **Funcionalidad Prevista:** Jorge, en modo **solo lectura**, accederá a paneles con KPIs sobre rentabilidad, costes, incidencias y rendimiento de los técnicos.

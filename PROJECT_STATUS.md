@@ -1,77 +1,72 @@
 # Estado del Proyecto: Pool-Control Professional
 
-_Última actualización: 9 de julio de 2025, 09:15 CEST_
+_Última actualización: 9 de julio de 2025, 11:30 CEST_
 
 ---
 
 ## 1. Resumen Ejecutivo
 
-El proyecto se encuentra en una fase de madurez avanzada, habiendo superado con éxito la construcción de su infraestructura fundamental y la implementación de los módulos de gestión para los roles de `SUPER_ADMIN` y `ADMIN`. La aplicación es actualmente capaz de gestionar el ciclo de vida completo de tenants, clientes, piscinas y catálogos de servicios.
+El proyecto ha alcanzado un hito crítico: la finalización del **flujo operativo principal completo**. Desde la configuración inicial por parte del Administrador hasta la ejecución en campo por parte del Técnico, la aplicación ahora soporta el ciclo de vida completo de una visita de mantenimiento. Se ha validado con éxito la creación, asignación, ejecución y finalización de tareas, incluyendo el reporte de incidencias.
 
-Recientemente, se ha completado la primera funcionalidad clave para el rol de `TECHNICIAN` ("Mi Ruta de Hoy"), validando el flujo de asignación de trabajo desde el planificador del `ADMIN` hasta la visualización en el dispositivo del técnico.
+La infraestructura de backend y frontend ha demostrado ser robusta y escalable. Los módulos de `SUPER_ADMIN` y `ADMIN` están completos, y el módulo de `TECHNICIAN` tiene su funcionalidad esencial implementada.
 
-El enfoque actual se centra en el desarrollo de la funcionalidad más crítica de la aplicación: el **Parte de Trabajo Dinámico**, que permitirá a los técnicos registrar los datos de sus visitas. En esta fase, se han planteado y se integrarán dos conceptos de alto valor: un sistema de **reporte de incidencias** y la planificación a futuro de un **modo de trabajo offline (PWA)**.
-
-El proyecto avanza a buen ritmo, sin bloqueos técnicos y con una hoja de ruta clara para las próximas funcionalidades.
+Con el "camino feliz" del flujo de trabajo ya construido, el proyecto entra en una nueva fase centrada en **enriquecer la experiencia del usuario y cerrar los bucles de comunicación**, comenzando por el desarrollo del sistema de notificaciones para el Administrador.
 
 ---
 
 ## 2. Hitos Completados y Entregables
 
-### ✅ Módulo `SUPER_ADMIN`: Gestión de Tenants
+### ✅ **Módulo de Ejecución (Técnico): Parte de Trabajo**
 
 - **Estado:** `COMPLETADO Y VALIDADO`.
-- **Descripción:** Se ha implementado un CRUD completo para la gestión de empresas clientes (tenants). La API y la interfaz de usuario permiten al SuperAdmin crear nuevos tenants (con su usuario Administrador inicial), listar todos los existentes, modificar el estado de sus suscripciones (TRIAL, ACTIVE, etc.) y eliminarlos de forma segura. La funcionalidad ha sido probada end-to-end.
+- **Descripción Detallada:** Se ha construido la funcionalidad más importante de la aplicación, que permite al técnico registrar su trabajo de forma digital.
+  - **API de Soporte:** Se implementaron los endpoints necesarios en el backend (`GET /api/visits/:id` para obtener los detalles y `POST /api/visits/:id/complete` para guardar el trabajo).
+  - **Página del Parte de Trabajo:** Se creó la `WorkOrderPage.tsx`, que se enlaza desde la ruta del día.
+  - **Renderizado Dinámico:** La página es "inteligente": lee la configuración específica de la piscina (definida por el `ADMIN`) y construye el formulario sobre la marcha, mostrando únicamente los parámetros y tareas que corresponden.
+  - **Gestión de Estado:** Se utiliza el hook `useForm` de Mantine para gestionar de forma eficiente todos los datos introducidos por el técnico.
+  - **Lógica de Finalización:** Al guardar, la API procesa todos los datos, crea los registros de `VisitResult` en la base de datos, actualiza el estado de la `Visit` a `COMPLETED` y, crucialmente, la visita desaparece de la lista de tareas pendientes del técnico, confirmando que el ciclo se ha cerrado correctamente.
 
-### ✅ Módulo `ADMIN`: Panel de Control
-
-- **Estado:** `COMPLETADO Y VALIDADO`.
-- **Descripción:** Se ha construido el núcleo del panel de administración, proporcionando una autonomía total al gestor del tenant. Las funcionalidades implementadas incluyen:
-  - **Gestión de Catálogos:** CRUD completo para `Parámetros` (con tipos de input) y `Tareas`, permitiendo al Admin crear una librería de servicios totalmente personalizada.
-  - **Gestión de Clientes y Piscinas:** Flujo de trabajo completo para dar de alta clientes y asociarles múltiples piscinas, cada una con sus datos específicos.
-  - **Constructor de Fichas:** Implementada la lógica que permite, desde la ficha de una piscina, asociar ítems de los catálogos y definir reglas de negocio clave como la `frecuencia` y los `umbrales` de alerta.
-  - **Planificador de Rutas:** Se ha desarrollado una interfaz de `Drag and Drop` que permite al Admin asignar visualmente las visitas pendientes a los técnicos disponibles, creando la planificación semanal.
-
-### ✅ Módulo `TECHNICIAN`: "Mi Ruta de Hoy"
+### ✅ **Sistema de Reporte de Incidencias (Backend)**
 
 - **Estado:** `COMPLETADO Y VALIDADO`.
-- **Descripción:** Se ha implementado la primera vista para el técnico. La API (`GET /api/visits/my-route`) filtra y devuelve correctamente las visitas asignadas para el día actual. El frontend muestra esta información en un formato de tarjetas claras y concisas, con un enlace directo a la aplicación de mapas para la navegación.
+- **Descripción Detallada:** Se ha implementado la mecánica para que un técnico pueda escalar un problema al administrador.
+  - **Modificación del Schema:** Se añadió el campo `hasIncident` al modelo `Visit` y se creó el nuevo modelo `Notification`.
+  - **Lógica en el Servidor:** La función `submitWorkOrder` ahora comprueba si el `Checkbox` de incidencia fue marcado. Si es `true`, crea un nuevo registro en la tabla `Notification` asignado al `ADMIN` de ese tenant, con un mensaje descriptivo.
+  - **Próximos Pasos:** La creación de la notificación funciona, pero el `ADMIN` todavía no tiene una forma de verla en la interfaz.
+
+### ✅ **Refactorización de la Lógica del Planificador**
+
+- **Estado:** `COMPLETADO Y VALIDADO`.
+- **Descripción Detallada:** Tras detectar inconsistencias en la generación de visitas, se ha reescrito por completo la lógica del servicio `getScheduledVisitsForWeek`. El nuevo sistema es más robusto y predecible:
+  - **Generación Proactiva:** El sistema ahora crea registros `Visit` con estado `PENDING` si detecta que una visita debería ocurrir en un día de la semana y aún no existe un registro para ella.
+  - **Consistencia:** Esto asegura que tanto el Planificador del `ADMIN` como la "Ruta de Hoy" del `TECHNICIAN` operen sobre la misma fuente de datos (la tabla `Visit`), eliminando la fuente de errores anterior. Se ha validado que ahora el planificador muestra la semana completa correctamente.
 
 ---
 
 ## 3. Decisiones Arquitectónicas y Funcionales Clave
 
-- **Modo Offline (PWA) - Planificado:** Se ha decidido arquitectónicamente que la funcionalidad de trabajo sin conexión se implementará utilizando tecnologías de **Progressive Web App (PWA)**. El plan contempla el uso de **Service Workers** para el cacheo de la aplicación y los datos de la ruta, y de **IndexedDB** para crear una cola de sincronización que guarde los partes de trabajo offline y los envíe automáticamente al recuperar la conexión. Esta es una funcionalidad mayor que se abordará en una fase posterior.
-
-- **Reporte de Incidencias - En Diseño:** Se ha aprobado la inclusión de un sistema de reporte de incidencias.
-  - **Modelo de Datos:** Se ha optado por la solución más ágil para empezar: añadir un campo `hasIncident: Boolean` al modelo `Visit` en `schema.prisma`.
-  - **Flujo de Notificación:** Se ha decidido implementar un sistema de notificaciones interno. Al recibir un parte con una incidencia, la API creará un registro en una nueva tabla `Notification` asignada al `ADMIN` del tenant, en lugar de depender de sistemas externos como el email. El `ADMIN` será notificado visualmente dentro de la aplicación.
+- **Flujo de Datos del Planificador:** Se ha decidido que el Planificador no solo "visualiza" eventos futuros, sino que **materializa las visitas** creando registros en la base de datos con estado `PENDING`. Esto simplifica enormemente la lógica de asignación y seguimiento.
+- **Modelo de Notificaciones:** Se optó por un sistema de notificaciones **interno y basado en la base de datos**, en lugar de depender de servicios externos como el email. Esto nos da un control total sobre el flujo y la presentación de las alertas.
+- **Modo Offline (PWA):** Sigue siendo una funcionalidad clave planificada para una fase posterior, utilizando Service Workers e IndexedDB.
 
 ---
 
-## 4. Próximo Paso Inmediato: El Parte de Trabajo (Work Order)
+## 4. Próximo Paso Inmediato: Interfaz de Notificaciones
 
-La siguiente tarea es la más crítica y central del proyecto.
+La siguiente tarea es cerrar el bucle del "Reporte de Incidencias", haciendo que sean visibles para el `ADMIN`.
 
-- **Objetivo:** Construir la API y la interfaz para que el técnico pueda rellenar el parte de trabajo de una visita.
-- **Próximo Archivo:** `packages/server/src/api/visits/visits.service.ts` (v1.4.0).
-- **Funciones a Implementar en el Backend:**
-
-  1.  **`getVisitDetails(visitId)`:** Una nueva función de servicio que devolverá los datos de una visita específica, incluyendo la `PoolConfiguration` asociada. Esto es esencial para que el frontend sepa qué campos de formulario debe renderizar.
-  2.  **`submitWorkOrder(visitId, data)`:** La función que recibirá los datos del parte (resultados de parámetros, tareas completadas, consumo de productos, observaciones y el nuevo check de incidencia). Se encargará de:
-      - Crear los registros `VisitResult` y `Consumption`.
-      - Actualizar el estado de la `Visit` a "COMPLETED".
-      - Actualizar el campo `lastCompleted` en la `PoolConfiguration`.
-      - Crear una `Notification` si `hasIncident` es `true`.
-
-- **Funcionalidades a Implementar en el Frontend:**
-  1.  Crear una nueva página `WorkOrderPage.tsx`.
-  2.  Hacer que las tarjetas de la `MyRoutePage` sean enlaces a esta nueva página.
-  3.  En `WorkOrderPage`, renderizar dinámicamente los campos del formulario basándose en la información recibida de la API.
-  4.  Añadir el `Checkbox` para reportar incidencias.
+- **Objetivo:** Añadir un indicador visual de notificaciones en la interfaz del `ADMIN` y una vista para leerlas.
+- **Plan de Acción:**
+  1.  **Backend - API para Notificaciones:**
+      - **Archivo:** Crear `packages/server/src/api/notifications/notifications.service.ts` y sus correspondientes controlador y rutas.
+      - **Tarea:** Implementar un endpoint `GET /api/notifications` que devuelva las notificaciones del usuario logueado. Implementar otro endpoint `POST /api/notifications/:id/read` para marcarlas como leídas.
+  2.  **Frontend - Componente de Notificaciones:**
+      - **Archivo:** Modificar `packages/client/src/router/components.tsx` (`AppLayout`).
+      - **Tarea:** Añadir un icono de "campana" en la cabecera. Este icono hará una llamada a la API de notificaciones y mostrará un punto rojo si hay notificaciones sin leer.
+      - **Tarea:** Al hacer clic en la campana, se mostrará un `Popover` o `Menu` con la lista de mensajes. Al hacer clic en un mensaje, se marcará como leído.
 
 ---
 
 ## 5. Bloqueos Actuales
 
-- **Ninguno.** El proyecto está completamente desbloqueado y listo para comenzar el desarrollo del "Parte de Trabajo".
+- **Ninguno.** El proyecto está completamente desbloqueado y en un estado excelente para continuar.
