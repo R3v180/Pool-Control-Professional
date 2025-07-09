@@ -1,3 +1,6 @@
+// filename: packages/server/prisma/schema.prisma
+// Version: 1.1.0 (Make technicianId optional in Visit model)
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -124,8 +127,11 @@ model Visit {
   notes          String?
   poolId         String
   pool           Pool          @relation(fields: [poolId], references: [id], onDelete: Cascade)
-  technicianId   String
-  technician     User          @relation(fields: [technicianId], references: [id])
+  
+  // -- CAMBIO IMPORTANTE AQUÍ --
+  technicianId   String? // <-- Hacemos este campo opcional
+  technician     User?         @relation(fields: [technicianId], references: [id])
+
   results        VisitResult[]
   consumptions   Consumption[]
   completedTasks String[]

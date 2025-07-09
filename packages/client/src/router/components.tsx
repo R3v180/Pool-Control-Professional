@@ -1,8 +1,8 @@
 // filename: packages/client/src/router/components.tsx
-// Version: 1.4.0 (Add Planner link to navbar)
-import { AppShell, Burger, Group, NavLink, Title } from '@mantine/core';
+// Version: 1.4.1 (Add Logout button to navbar)
+import { AppShell, Burger, Group, NavLink, Title, Button } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { Navigate, Outlet, Link } from 'react-router-dom';
+import { Navigate, Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../providers/AuthProvider.js';
 
 /**
@@ -10,7 +10,13 @@ import { useAuth } from '../providers/AuthProvider.js';
  */
 export const AppLayout = () => {
   const [opened, { toggle }] = useDisclosure();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   return (
     <AppShell
@@ -19,9 +25,12 @@ export const AppLayout = () => {
       padding="md"
     >
       <AppShell.Header>
-        <Group h="100%" px="md">
-          <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-          <Title order={3}>Pool Control Professional</Title>
+        <Group h="100%" px="md" justify="space-between">
+          <Group>
+            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            <Title order={3}>Pool Control Professional</Title>
+          </Group>
+          <Button variant="light" onClick={handleLogout}>Cerrar Sesión</Button>
         </Group>
       </AppShell.Header>
 
@@ -109,7 +118,6 @@ export const SuperAdminRoute = () => {
 export const AdminRoute = () => {
   const { user, isLoading } = useAuth();
   if (isLoading) return <div>Cargando...</div>;
-  // Permitimos acceso si el rol es ADMIN o SUPER_ADMIN (que puede verlo todo)
   if (user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN') {
     return <Navigate to="/" replace />;
   }

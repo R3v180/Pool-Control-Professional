@@ -1,5 +1,5 @@
 // filename: packages/server/src/app.ts
-// Version: 1.6.0 (Mount visitsRouter for Admin module)
+// Version: 1.7.0 (Mount usersRouter for Admin module)
 import express from 'express';
 import type { Request, Response } from 'express';
 import cors from 'cors';
@@ -14,6 +14,7 @@ import clientsRouter from './api/clients/clients.routes.js';
 import poolsRouter from './api/pools/pools.routes.js';
 import poolConfigurationsRouter from './api/pool-configurations/pool-configurations.routes.js';
 import visitsRouter from './api/visits/visits.routes.js';
+import usersRouter from './api/users/users.routes.js';
 
 // --- Instancia de la App ---
 const app = express();
@@ -43,6 +44,7 @@ app.use('/api/clients', clientsRouter);
 app.use('/api/pools', poolsRouter);
 app.use('/api/pool-configurations', poolConfigurationsRouter);
 app.use('/api/visits', visitsRouter);
+app.use('/api/users', usersRouter);
 
 
 // --- Gestor de Errores ---
