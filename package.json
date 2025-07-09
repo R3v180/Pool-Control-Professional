@@ -10,7 +10,7 @@
     "dev:client": "pnpm --filter @pool-control/client dev",
     "build": "pnpm --filter \"./packages/**\" build",
     "prisma:generate": "pnpm --filter @pool-control/server prisma:generate",
-    "prisma:migrate": "pnpm --filter @pool-control/server prisma:migrate",
+    "prisma:migrate": "pnpm --filter @pool-control/server prisma:migrate --",
     "prisma:studio": "pnpm --filter @pool-control/server prisma:studio"
   },
   "devDependencies": {

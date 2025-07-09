@@ -16,336 +16,342 @@
 14. packages/client/src/features/admin/pages/pools/PoolDetailPage.tsx
 15. packages/client/src/features/auth/pages/LoginPage.tsx
 16. packages/client/src/features/superadmin/pages/TenantsPage.tsx
-17. packages/client/src/main.tsx
-18. packages/client/src/providers/AuthProvider.tsx
-19. packages/client/src/router/components.tsx
-20. packages/client/src/router/index.tsx
-21. packages/client/src/styles/theme.ts
-22. packages/client/tsconfig.json
-23. packages/client/tsconfig.node.json
-24. packages/client/vite.config.ts
-25. packages/server/package.json
-26. packages/server/prisma/seed.ts
-27. packages/server/src/api/auth/auth.controller.ts
-28. packages/server/src/api/auth/auth.routes.ts
-29. packages/server/src/api/auth/auth.service.ts
-30. packages/server/src/api/clients/clients.controller.ts
-31. packages/server/src/api/clients/clients.routes.ts
-32. packages/server/src/api/clients/clients.service.ts
-33. packages/server/src/api/parameters/parameters.controller.ts
-34. packages/server/src/api/parameters/parameters.routes.ts
-35. packages/server/src/api/parameters/parameters.service.ts
-36. packages/server/src/api/pool-configurations/pool-configurations.controller.ts
-37. packages/server/src/api/pool-configurations/pool-configurations.routes.ts
-38. packages/server/src/api/pool-configurations/pool-configurations.service.ts
-39. packages/server/src/api/pools/pools.controller.ts
-40. packages/server/src/api/pools/pools.routes.ts
-41. packages/server/src/api/pools/pools.service.ts
-42. packages/server/src/api/tasks/tasks.controller.ts
-43. packages/server/src/api/tasks/tasks.routes.ts
-44. packages/server/src/api/tasks/tasks.service.ts
-45. packages/server/src/api/tenants/tenants.controller.ts
-46. packages/server/src/api/tenants/tenants.routes.ts
-47. packages/server/src/api/tenants/tenants.service.ts
-48. packages/server/src/api/users/users.controller.ts
-49. packages/server/src/api/users/users.routes.ts
-50. packages/server/src/api/users/users.service.ts
-51. packages/server/src/api/visits/visits.controller.ts
-52. packages/server/src/api/visits/visits.routes.ts
-53. packages/server/src/api/visits/visits.service.ts
-54. packages/server/src/app.ts
-55. packages/server/src/config/index.ts
-56. packages/server/src/middleware/auth.middleware.ts
-57. packages/server/src/middleware/error.middleware.ts
-58. packages/server/src/server.ts
-59. packages/server/src/utils/jwt.utils.ts
-60. packages/server/src/utils/password.utils.ts
-61. packages/server/tsconfig.json
-62. tsconfig.json
+17. packages/client/src/features/technician/pages/MyRoutePage.tsx
+18. packages/client/src/features/technician/pages/WorkOrderPage.tsx
+19. packages/client/src/main.tsx
+20. packages/client/src/providers/AuthProvider.tsx
+21. packages/client/src/router/components.tsx
+22. packages/client/src/router/index.tsx
+23. packages/client/src/styles/theme.ts
+24. packages/client/tsconfig.json
+25. packages/client/tsconfig.node.json
+26. packages/client/vite.config.ts
+27. packages/server/package.json
+28. packages/server/prisma/seed.ts
+29. packages/server/src/api/auth/auth.controller.ts
+30. packages/server/src/api/auth/auth.routes.ts
+31. packages/server/src/api/auth/auth.service.ts
+32. packages/server/src/api/clients/clients.controller.ts
+33. packages/server/src/api/clients/clients.routes.ts
+34. packages/server/src/api/clients/clients.service.ts
+35. packages/server/src/api/parameters/parameters.controller.ts
+36. packages/server/src/api/parameters/parameters.routes.ts
+37. packages/server/src/api/parameters/parameters.service.ts
+38. packages/server/src/api/pool-configurations/pool-configurations.controller.ts
+39. packages/server/src/api/pool-configurations/pool-configurations.routes.ts
+40. packages/server/src/api/pool-configurations/pool-configurations.service.ts
+41. packages/server/src/api/pools/pools.controller.ts
+42. packages/server/src/api/pools/pools.routes.ts
+43. packages/server/src/api/pools/pools.service.ts
+44. packages/server/src/api/tasks/tasks.controller.ts
+45. packages/server/src/api/tasks/tasks.routes.ts
+46. packages/server/src/api/tasks/tasks.service.ts
+47. packages/server/src/api/tenants/tenants.controller.ts
+48. packages/server/src/api/tenants/tenants.routes.ts
+49. packages/server/src/api/tenants/tenants.service.ts
+50. packages/server/src/api/users/users.controller.ts
+51. packages/server/src/api/users/users.routes.ts
+52. packages/server/src/api/users/users.service.ts
+53. packages/server/src/api/visits/visits.controller.ts
+54. packages/server/src/api/visits/visits.routes.ts
+55. packages/server/src/api/visits/visits.service.ts
+56. packages/server/src/app.ts
+57. packages/server/src/config/index.ts
+58. packages/server/src/middleware/auth.middleware.ts
+59. packages/server/src/middleware/error.middleware.ts
+60. packages/server/src/server.ts
+61. packages/server/src/utils/jwt.utils.ts
+62. packages/server/src/utils/password.utils.ts
+63. packages/server/tsconfig.json
+64. tsconfig.json
 
 
 # CONTENIDO DE ARCHIVOS
 
 
 // ====== [1] DEVELOPMENT_PLAN.md ======
-# Plan de Desarrollo Secuencial Detallado
+# Plan de Desarrollo y Arquitectura: Pool-Control Professional
 
-Este documento es la hoja de ruta arquitectónica y de implementación para **Pool-Control Professional**. Cada paso está descrito con el máximo detalle para servir como guía técnica durante el desarrollo, asegurando que cada componente se construya con un propósito claro y se integre correctamente en el ecosistema del proyecto.
-
----
-
-## FASE 0: Configuración del Monorepo
-
-El objetivo de esta fase es establecer una base de proyecto robusta, escalable y con herramientas de desarrollo modernas.
-
-- **1. `/package.json` (Raíz):**
-
-  - **Propósito:** Definir el proyecto como un monorepo y centralizar la gestión de scripts.
-  - **Detalles:** Se configura `private: true` para indicar que el paquete raíz no se publica. La clave `workspaces` (gestionada a través de `pnpm-workspace.yaml`) define la estructura del monorepo. Los `scripts` aquí definidos (ej. `pnpm dev:server`) actúan como atajos que delegan la ejecución a los paquetes específicos usando el flag `--filter` de pnpm.
-
-- **2. `/pnpm-workspace.yaml`:**
-
-  - **Propósito:** Declarar la ubicación de los sub-proyectos (workspaces).
-  - **Detalles:** Este archivo contiene una única directiva (`packages: ['packages/*']`) que le indica a pnpm que cualquier subdirectorio dentro de `packages/` debe ser tratado como un proyecto individual, permitiendo la gestión centralizada de dependencias.
-
-- **3. `/tsconfig.json` (Raíz):**
-
-  - **Propósito:** Servir como la configuración "maestra" de TypeScript para todo el proyecto.
-  - **Detalles:** Establece las reglas de compilación más estrictas y modernas para garantizar la calidad del código (`strict: true`, `verbatimModuleSyntax: true`). Configura la resolución de módulos para ESM con Node.js (`module: NodeNext`, `moduleResolution: NodeNext`), que es la base de nuestra arquitectura de backend.
-
-- **4. `/.gitignore` (Raíz):**
-  - **Propósito:** Prevenir que archivos sensibles o innecesarios sean subidos al repositorio de Git.
-  - **Detalles:** Se configuran reglas para ignorar sistemáticamente directorios de dependencias (`node_modules`), archivos de entorno (`.env`), artefactos de compilación (`dist/`, `build/`) y archivos de configuración específicos de IDEs (`.vscode/`, `.idea/`).
+Este documento es la hoja de ruta arquitectónica y el registro de implementación para el proyecto. Sirve tanto de guía para el trabajo futuro como de crónica de las decisiones tomadas, garantizando un entendimiento profundo del sistema en cualquier punto de su ciclo de vida.
 
 ---
 
-## FASE 1: Fundación del Backend y Base de Datos
+## ✅ FASE 0: Fundación del Entorno y Monorepo
 
-Esta fase construye el esqueleto completo y funcional del servidor, incluyendo la base de datos, la autenticación y la gestión de errores.
-
-- **5. `packages/server/package.json`:**
-
-  - **Propósito:** Gestionar las dependencias y scripts exclusivos del backend.
-  - **Detalles:** Se añade `"type": "module"` para habilitar la sintaxis de ES Modules de forma nativa en Node.js. Se listan las dependencias de producción (`express`, `@prisma/client`, `jsonwebtoken`, `bcryptjs`, `cors`, `cookie-parser`) y de desarrollo (`tsx`, `@types/*`, `prisma`).
-
-- **6. `packages/server/tsconfig.json`:**
-
-  - **Propósito:** Especializar la configuración de TypeScript para el servidor.
-  - **Detalles:** Utiliza la directiva `extends` para heredar toda la configuración del `tsconfig.json` raíz. Su única adición es `"outDir": "./dist"`, que le indica al compilador dónde debe colocar los archivos JavaScript compilados.
-
-- **7. `packages/server/.env.example`:**
-
-  - **Propósito:** Servir como plantilla y documentación de las variables de entorno requeridas.
-  - **Detalles:** Define las claves que el servidor espera encontrar para funcionar: `DATABASE_URL` (la cadena de conexión a PostgreSQL), `PORT` (el puerto del servidor), `JWT_SECRET` (la clave secreta para firmar tokens) y `JWT_EXPIRES_IN` (la duración de los tokens en segundos).
-
-- **8. `packages/server/prisma/schema.prisma`:**
-
-  - **Propósito:** Es el corazón de la persistencia de datos. Define toda la arquitectura de la base de datos.
-  - **Detalles:** Este archivo es la "única fuente de verdad" para los modelos de datos. Describe cada tabla (`model`), sus columnas (campos) y tipos, y, fundamentalmente, las `relation` entre ellas. Al ejecutar `pnpm prisma:migrate`, Prisma lee este archivo para generar y aplicar las migraciones SQL correspondientes.
-
-- **9. `packages/server/src/config/index.ts`:**
-
-  - **Propósito:** Cargar, validar y centralizar el acceso a las variables de entorno de forma segura.
-  - **Detalles:** Este módulo utiliza `dotenv` para cargar el archivo `.env`. Implementa una lógica que verifica que todas las variables requeridas estén presentes, lanzando un error si falta alguna. Parsea los valores a sus tipos correctos (ej. `parseInt` para `PORT`) y exporta un único objeto `config` inmutable y tipado para su uso en el resto de la aplicación.
-
-- **10. `packages/server/src/utils/password.utils.ts`:**
-
-  - **Propósito:** Abstraer y centralizar la lógica de manejo de contraseñas.
-  - **Detalles:** Exportará dos funciones asíncronas: `hashPassword` (que encapsula a `bcrypt.hash`) y `comparePassword` (que encapsula a `bcrypt.compare`). Esto evita la dispersión de la lógica de hashing y facilita futuras actualizaciones (ej. cambiar el número de rondas de salting).
-
-- **11. `packages/server/src/utils/jwt.utils.ts`:**
-
-  - **Propósito:** Abstraer y centralizar la creación y verificación de JSON Web Tokens.
-  - **Detalles:** Exportará dos funciones: `signToken` (que usa el `JWT_SECRET` y `JWT_EXPIRES_IN` del `config` para crear un token a partir de un payload) y `verifyToken` (que valida un token y devuelve su payload decodificado o `null` si es inválido).
-
-- **12. `packages/server/src/middleware/error.middleware.ts`:**
-
-  - **Propósito:** Implementar un gestor de errores global ("catch-all").
-  - **Detalles:** Se define una función con la firma especial de 4 argumentos de Express (`err, req, res, next`). Este middleware se colocará al final de la cadena de middlewares y será responsable de atrapar cualquier error lanzado en las rutas (tanto síncronos como asíncronos), registrarlo en la consola y enviar al cliente una respuesta JSON limpia y estandarizada, evitando que el servidor se caiga por una excepción no controlada.
-
-- **13. `packages/server/src/api/auth/auth.service.ts`:**
-
-  - **Propósito:** Contener la lógica de negocio pura y desacoplada para la autenticación.
-  - **Detalles:** Este archivo se comunica directamente con la base de datos a través del Prisma Client. Contendrá funciones como `loginUser`, que buscará un usuario por email, usará `password.utils` para comparar la contraseña y, si es exitoso, devolverá los datos del usuario. No sabe nada sobre HTTP, cookies o `Request`/`Response`.
-
-- **14. `packages/server/src/api/auth/auth.controller.ts`:**
-
-  - **Propósito:** Orquestar el flujo de las peticiones de autenticación.
-  - **Detalles:** Actúa como un "controlador de tráfico". Sus funciones reciben `req` y `res`. Extraen datos del `req.body` (email, password), llaman a los métodos correspondientes en `auth.service.ts`, y con el resultado, construyen la respuesta HTTP. Por ejemplo, en un login exitoso, llamará a `jwt.utils.signToken`, establecerá una cookie `httpOnly` en el `res`, y enviará los datos del usuario como JSON.
-
-- **15. `packages/server/src/api/auth/auth.routes.ts`:**
-
-  - **Propósito:** Definir los endpoints de la API de autenticación.
-  - **Detalles:** Utiliza `express.Router()` para crear un mini-enrutador. Define las rutas (`POST /login`, `POST /register`, etc.) y las asocia con las funciones del controlador (`auth.controller.ts`) que las manejarán.
-
-- **16. `packages/server/src/app.ts`:**
-
-  - **Propósito:** Ensamblar la aplicación Express.
-  - **Detalles:** Crea la instancia de `express()`. Es responsable de configurar la secuencia de middlewares globales en el orden correcto: `cors` para permitir peticiones del frontend, `express.json` para parsear bodies JSON, `cookieParser` para parsear cookies. Luego, monta el enrutador de autenticación (`auth.routes.ts`) bajo un prefijo base como `/api/auth`. Finalmente, y de forma crucial, registra el `errorHandler` como el último middleware de la pila. Exporta la instancia `app` configurada.
-
-- **17. `packages/server/src/server.ts`:**
-  - **Propósito:** Iniciar el servidor web.
-  - **Detalles:** Es el punto de entrada ejecutable. Importa la instancia `app` desde `app.ts` y el objeto `config` desde `config/index.ts`. Su única responsabilidad es llamar a `app.listen()` usando el `PORT` de la configuración y mostrar un mensaje en consola para confirmar que el servidor está en línea y escuchando.
+- **Estado:** `COMPLETADA`
+- **Intención Arquitectónica:** Establecer una base de desarrollo moderna, escalable y mantenible, donde el backend y el frontend, aunque desacoplados, pudieran ser gestionados desde un único repositorio para agilizar el desarrollo.
+- **Entregables Clave:**
+  - **Monorepo con PNPM:** Se adoptó `pnpm` con `workspaces` para una gestión de dependencias ultra-eficiente y la capacidad de ejecutar scripts de forma centralizada.
+  - **Configuración Maestra de TypeScript:** Se definió un `tsconfig.json` raíz con reglas estrictas (`strict: true`) y configuración para ES Modules (`module: NodeNext`), forzando un código de alta calidad y moderno desde el inicio.
 
 ---
 
-## FASE 2: Fundación del Frontend y Conexión
+## ✅ FASE 1: Fundación del Backend
 
-Esta fase establece la base de la aplicación React, la configura y crea la primera funcionalidad de cara al usuario: el login.
+- **Estado:** `COMPLETADA`
+- **Intención Arquitectónica:** Construir un servidor API robusto, seguro y preparado para crecer. El objetivo era tener una base sólida sobre la cual construir todos los módulos de negocio.
+- **Entregables Clave:**
+  - **Servidor Express.js:** Se montó un servidor con una estructura modular (`app.ts` para configuración, `server.ts` para arranque), usando ES Modules nativos.
+  - **Persistencia con Prisma:** Se definió el `schema.prisma` como la "única fuente de verdad" para el modelo de datos y se estableció la conexión con PostgreSQL.
+  - **Seguridad y Autenticación:** Se implementó un sistema de autenticación completo y seguro:
+    - **Middleware `protect`:** Un guardián para nuestras rutas, que verifica la validez de los tokens JWT enviados a través de cookies `httpOnly`.
+    - **Endpoints de Autenticación:** Se crearon las rutas `/api/auth/login`, `/logout`, `/register` y `/me`, que constituyen el portal de entrada a la aplicación.
+  - **Script de `seed`:** Se creó un script para poblar la base de datos con datos esenciales (como el `SUPER_ADMIN`), permitiendo un entorno de desarrollo consistente y eliminando la necesidad de creación manual de datos críticos.
 
-- **18-21. Archivos de Configuración (`package.json`, `tsconfig.json`, `vite.config.ts`, `theme.ts`):** Configuración inicial del proyecto de React con Vite, incluyendo dependencias (`react`, `mantine`), configuración de TypeScript y definición del tema visual de la UI.
-- **22. `packages/client/src/api/apiClient.ts`:** Creación de una instancia de `axios` preconfigurada con la `baseURL` del API del backend y la opción `withCredentials: true` para asegurar que las cookies de autenticación se envíen en cada petición.
-- **23. `packages/client/src/providers/AuthProvider.tsx`:** Implementación de un React Context Provider para gestionar el estado de autenticación (`usuario`, `isLoggedIn`). Expondrá funciones como `login` y `logout` que el resto de la app podrá usar.
-- **24-26. `router/index.ts`, `App.tsx`, `main.tsx`:** Configuración del enrutador de la aplicación (`react-router-dom`), definiendo rutas públicas y privadas. El componente `App.tsx` envolverá toda la aplicación con el `AuthProvider` y el `MantineProvider`.
-- **27. `packages/client/src/features/auth/pages/LoginPage.tsx`:** Desarrollo de la primera pantalla interactiva. Este componente contendrá el formulario de login, gestionará su estado, y al enviarse, llamará a la función `login` del `AuthProvider`, que a su vez usará el `apiClient` para realizar la petición `POST /api/auth/login` al backend.
+---
+
+## ✅ FASE 2: Fundación del Frontend
+
+- **Estado:** `COMPLETADA`
+- **Intención Arquitectónica:** Crear una aplicación de cliente reactiva, rápida y con una excelente experiencia de usuario, estableciendo los patrones de diseño que se usarían en todo el frontend.
+- **Entregables Clave:**
+  - **Aplicación React con Vite:** Se eligió Vite por su velocidad y su excelente experiencia de desarrollo.
+  - **Gestión de Estado Global (`AuthProvider`):** Se implementó un `React Context` para gestionar el estado de autenticación del usuario. Este provider es el responsable de mantener la sesión activa entre recargas de página, comunicándose con el endpoint `/api/auth/me`.
+  - **Enrutamiento Protegido:** Se creó un sistema de enrutamiento con `react-router-dom`, definiendo el concepto de `ProtectedRoute` y rutas específicas por rol (`AdminRoute`, `SuperAdminRoute`), un pilar de la seguridad de la interfaz.
+  - **Base de UI con Mantine:** Se estableció Mantine UI como la librería de componentes y se configuró un `theme` personalizado para una estética coherente.
+
+---
+
+## ✅ FASE 3: Módulo de Gestión (SuperAdmin y Admin)
+
+- **Estado:** `COMPLETADA`
+- **Intención de Negocio:** Digitalizar y automatizar por completo las tareas de configuración y planificación, empoderando al `ADMIN` para que sea 100% autónomo.
+- **Entregables Clave:**
+  - **CRUD de Tenants (SuperAdmin):** API y UI para que el SuperAdmin gestione el ciclo de vida de sus clientes.
+  - **CRUD de Catálogos (Admin):** API y UI para que el Admin defina sus `Parámetros` y `Tareas` de servicio.
+  - **CRUD de Clientes y Piscinas (Admin):** API y UI para gestionar la cartera de clientes y sus piscinas.
+  - **Constructor de Fichas (Admin):** Lógica de negocio y UI para asociar ítems del catálogo a piscinas, definiendo `frecuencia` y `umbrales`.
+  - **Planificador de Rutas (Admin):** Una de las funcionalidades más complejas. Se implementó una lógica de backend que genera visitas y una interfaz `Drag and Drop` para la asignación a técnicos.
+
+---
+
+## ✅ FASE 4: Módulo de Ejecución (Técnico)
+
+- **Estado:** `COMPLETADA`
+- **Intención de Negocio:** Optimizar al máximo el trabajo de campo del técnico, proporcionándole una herramienta clara, rápida y que elimina la necesidad de partes de trabajo en papel.
+- **Entregables Clave:**
+  - **"Mi Ruta de Hoy":** API y UI que presentan al técnico una lista clara de sus visitas pendientes para el día actual.
+  - **"Parte de Trabajo Dinámico":** La funcionalidad estrella.
+    - **Backend:** Se implementó la lógica `submitWorkOrder` dentro de una transacción de Prisma para garantizar la atomicidad de los datos. Guarda resultados, tareas completadas, notas, e incidencias.
+    - **Frontend:** La `WorkOrderPage` renderiza un formulario a medida para cada visita, basándose en la configuración definida por el `ADMIN`.
+  - **Reporte de Incidencias:** Se implementó el flujo completo, desde el `Checkbox` en el parte del técnico hasta la creación de un registro `Notification` en la base de datos.
+
+---
+
+## ▶️ FASE 5: Cierre de Bucles y Experiencia de Usuario
+
+- **Estado:** `EN CURSO`
+- **Intención de Negocio:** Conectar los flujos de información y mejorar la interfaz para proporcionar una experiencia de usuario cohesiva y completa.
+- **Plan de Acción Detallado:**
+  1.  **Sistema de Notificaciones (Admin):**
+      - **Propósito:** Hacer visibles las incidencias reportadas por los técnicos.
+      - **Tareas:**
+        - **Backend:** Crear la API CRUD para `/api/notifications`.
+        - **Frontend:** Añadir un componente "campana" en el `AppLayout` que muestre un indicador y un menú desplegable con las notificaciones.
+  2.  **Dashboard Principal (Admin):**
+      - **Propósito:** Dar al `ADMIN` una vista rápida del estado de la operativa diaria.
+      - **Tareas:** Reemplazar el `div` actual por un panel que muestre "Visitas de hoy" y "Últimas Incidencias".
+  3.  **Mejoras en el Planificador (Admin):**
+      - **Propósito:** Proporcionar más información visual al `ADMIN`.
+      - **Tareas:** Diferenciar visualmente las visitas `PENDING` de las `COMPLETED` en el planificador (ej. con colores o transparencia).
+  4.  **Gestión de Consumo de Productos (Técnico y Admin):**
+      - **Propósito:** Empezar a registrar los costes asociados a cada visita.
+      - **Tareas:**
+        - **Backend y Frontend:** Implementar el CRUD para el catálogo de `Product`.
+        - **Frontend:** Añadir una sección en el `WorkOrderPage` para que el técnico pueda registrar los productos consumidos.
+        - **Backend:** Modificar `submitWorkOrder` para guardar los registros `Consumption`.
+
+---
+
+## 🔮 FASE 6 Y POSTERIORES: Funcionalidades Avanzadas
+
+- **Estado:** `PLANIFICADO`
+- **Intención de Negocio:** Añadir capas de inteligencia de negocio y expandir las capacidades de la plataforma.
+- **Ideas Clave:**
+  - **Modo Offline (PWA):** Implementar la capacidad de trabajo sin conexión para el técnico.
+  - **Dashboard de Gerencia (`MANAGER`):** Desarrollar los KPIs y gráficos.
+  - **Sistema de Facturación:** Generar informes de consumo por cliente.
 
 
 
 // ====== [2] PROJECT_STATUS.md ======
 # Estado del Proyecto: Pool-Control Professional
 
-_Última actualización: 8 de julio de 2025, 23:12 CEST_
+_Última actualización: 9 de julio de 2025, 11:30 CEST_
 
 ---
 
 ## 1. Resumen Ejecutivo
 
-El proyecto ha completado exitosamente toda su fase de fundación. La infraestructura del backend (API, base de datos, autenticación) y la del frontend (React, enrutador, gestión de estado) están 100% operativas y conectadas. La aplicación ahora soporta un ciclo de login completo.
+El proyecto ha alcanzado un hito crítico: la finalización del **flujo operativo principal completo**. Desde la configuración inicial por parte del Administrador hasta la ejecución en campo por parte del Técnico, la aplicación ahora soporta el ciclo de vida completo de una visita de mantenimiento. Se ha validado con éxito la creación, asignación, ejecución y finalización de tareas, incluyendo el reporte de incidencias.
 
-Con la base ya construida, el proyecto entra oficialmente en la **FASE 3: Desarrollo por Módulos**. El foco se desplaza de la infraestructura al desarrollo de las funcionalidades específicas para cada rol, comenzando por el `SUPER_ADMIN`.
+La infraestructura de backend y frontend ha demostrado ser robusta y escalable. Los módulos de `SUPER_ADMIN` y `ADMIN` están completos, y el módulo de `TECHNICIAN` tiene su funcionalidad esencial implementada.
+
+Con el "camino feliz" del flujo de trabajo ya construido, el proyecto entra en una nueva fase centrada en **enriquecer la experiencia del usuario y cerrar los bucles de comunicación**, comenzando por el desarrollo del sistema de notificaciones para el Administrador.
 
 ---
 
 ## 2. Hitos Completados y Entregables
 
-### ✅ Fase 0: Configuración del Monorepo
+### ✅ **Módulo de Ejecución (Técnico): Parte de Trabajo**
 
-- **Entregable:** Estructura de proyecto robusta con `pnpm` workspaces y configuración de TypeScript consistente.
+- **Estado:** `COMPLETADO Y VALIDADO`.
+- **Descripción Detallada:** Se ha construido la funcionalidad más importante de la aplicación, que permite al técnico registrar su trabajo de forma digital.
+  - **API de Soporte:** Se implementaron los endpoints necesarios en el backend (`GET /api/visits/:id` para obtener los detalles y `POST /api/visits/:id/complete` para guardar el trabajo).
+  - **Página del Parte de Trabajo:** Se creó la `WorkOrderPage.tsx`, que se enlaza desde la ruta del día.
+  - **Renderizado Dinámico:** La página es "inteligente": lee la configuración específica de la piscina (definida por el `ADMIN`) y construye el formulario sobre la marcha, mostrando únicamente los parámetros y tareas que corresponden.
+  - **Gestión de Estado:** Se utiliza el hook `useForm` de Mantine para gestionar de forma eficiente todos los datos introducidos por el técnico.
+  - **Lógica de Finalización:** Al guardar, la API procesa todos los datos, crea los registros de `VisitResult` en la base de datos, actualiza el estado de la `Visit` a `COMPLETED` y, crucialmente, la visita desaparece de la lista de tareas pendientes del técnico, confirmando que el ciclo se ha cerrado correctamente.
 
-### ✅ Fase 1: Fundación del Backend y Base de Datos
+### ✅ **Sistema de Reporte de Incidencias (Backend)**
 
-- **Entregable:** Una API de backend completamente funcional con Express.js, conectada a una base de datos PostgreSQL mediante Prisma. Incluye un sistema de autenticación por JWT/cookies y un gestor de errores global.
+- **Estado:** `COMPLETADO Y VALIDADO`.
+- **Descripción Detallada:** Se ha implementado la mecánica para que un técnico pueda escalar un problema al administrador.
+  - **Modificación del Schema:** Se añadió el campo `hasIncident` al modelo `Visit` y se creó el nuevo modelo `Notification`.
+  - **Lógica en el Servidor:** La función `submitWorkOrder` ahora comprueba si el `Checkbox` de incidencia fue marcado. Si es `true`, crea un nuevo registro en la tabla `Notification` asignado al `ADMIN` de ese tenant, con un mensaje descriptivo.
+  - **Próximos Pasos:** La creación de la notificación funciona, pero el `ADMIN` todavía no tiene una forma de verla en la interfaz.
 
-### ✅ Fase 2: Fundación del Frontend y Conexión
+### ✅ **Refactorización de la Lógica del Planificador**
 
-- **Entregable:** Una aplicación de React (`create-vite-app`) funcional. Se ha configurado el enrutamiento (`react-router-dom`), la gestión de estado de autenticación (`React Context`), la estilización con Mantine UI y la conexión con el backend a través de un cliente de API (`axios`). Se ha construido y validado el flujo de login completo.
+- **Estado:** `COMPLETADO Y VALIDADO`.
+- **Descripción Detallada:** Tras detectar inconsistencias en la generación de visitas, se ha reescrito por completo la lógica del servicio `getScheduledVisitsForWeek`. El nuevo sistema es más robusto y predecible:
+  - **Generación Proactiva:** El sistema ahora crea registros `Visit` con estado `PENDING` si detecta que una visita debería ocurrir en un día de la semana y aún no existe un registro para ella.
+  - **Consistencia:** Esto asegura que tanto el Planificador del `ADMIN` como la "Ruta de Hoy" del `TECHNICIAN` operen sobre la misma fuente de datos (la tabla `Visit`), eliminando la fuente de errores anterior. Se ha validado que ahora el planificador muestra la semana completa correctamente.
 
 ---
 
-## 3. Decisiones Arquitectónicas Clave Tomadas
+## 3. Decisiones Arquitectónicas y Funcionales Clave
 
-- **Monorepo con PNPM:** Selección de `pnpm` por su eficiencia en la gestión de dependencias en workspaces.
-- **TypeScript Estricto con ES Modules:** Adopción de una configuración moderna para maximizar la seguridad de tipos y alinearse con los estándares actuales de Node.js.
-- **Gestión de `JWT_EXPIRES_IN`:** Se define la duración de los tokens como un número de segundos en el `.env` para evitar conflictos de tipado con el toolchain.
-- **Estrategia de Documentación:** `README.md` describe QUÉ hace el producto; un futuro `SETUP_GUIDE.md` describirá CÓMO se instala.
+- **Flujo de Datos del Planificador:** Se ha decidido que el Planificador no solo "visualiza" eventos futuros, sino que **materializa las visitas** creando registros en la base de datos con estado `PENDING`. Esto simplifica enormemente la lógica de asignación y seguimiento.
+- **Modelo de Notificaciones:** Se optó por un sistema de notificaciones **interno y basado en la base de datos**, en lugar de depender de servicios externos como el email. Esto nos da un control total sobre el flujo y la presentación de las alertas.
+- **Modo Offline (PWA):** Sigue siendo una funcionalidad clave planificada para una fase posterior, utilizando Service Workers e IndexedDB.
 
 ---
 
-## 4. Próximo Paso Inmediato: Inicio del Módulo `SuperAdmin`
+## 4. Próximo Paso Inmediato: Interfaz de Notificaciones
 
-La siguiente tarea inicia la FASE 3. Construiremos la primera pieza de lógica de negocio para la gestión de Tenants.
+La siguiente tarea es cerrar el bucle del "Reporte de Incidencias", haciendo que sean visibles para el `ADMIN`.
 
-- **Archivo:** `packages/server/src/api/tenants/tenants.service.ts`
-- **Objetivo:** Crear el servicio que contendrá la lógica de negocio para las operaciones CRUD (Crear, Leer, Actualizar, Borrar) sobre el modelo `Tenant`.
-- **Funciones a Implementar:**
-  - `createTenant(data)`: Creará un nuevo tenant y su primer usuario `ADMIN`.
-  - `getAllTenants()`: Devolverá un listado de todos los tenants.
-  - `getTenantById(id)`: Buscará un tenant por su ID.
-  - `updateTenantStatus(id, status)`: Actualizará el estado de la suscripción de un tenant.
+- **Objetivo:** Añadir un indicador visual de notificaciones en la interfaz del `ADMIN` y una vista para leerlas.
+- **Plan de Acción:**
+  1.  **Backend - API para Notificaciones:**
+      - **Archivo:** Crear `packages/server/src/api/notifications/notifications.service.ts` y sus correspondientes controlador y rutas.
+      - **Tarea:** Implementar un endpoint `GET /api/notifications` que devuelva las notificaciones del usuario logueado. Implementar otro endpoint `POST /api/notifications/:id/read` para marcarlas como leídas.
+  2.  **Frontend - Componente de Notificaciones:**
+      - **Archivo:** Modificar `packages/client/src/router/components.tsx` (`AppLayout`).
+      - **Tarea:** Añadir un icono de "campana" en la cabecera. Este icono hará una llamada a la API de notificaciones y mostrará un punto rojo si hay notificaciones sin leer.
+      - **Tarea:** Al hacer clic en la campana, se mostrará un `Popover` o `Menu` con la lista de mensajes. Al hacer clic en un mensaje, se marcará como leído.
 
 ---
 
 ## 5. Bloqueos Actuales
 
-- **Ninguno.** El proyecto está completamente desbloqueado y listo para continuar.
+- **Ninguno.** El proyecto está completamente desbloqueado y en un estado excelente para continuar.
 
 
 
 // ====== [3] README.md ======
-# Documento de Especificación Funcional v1.0: Sistema "Pool-Control Professional"
+# Documento de Especificación Funcional v2.1: Sistema "Pool-Control Professional"
 
-**Fecha:** 8 de julio de 2025
-**Autor:** Pool-Control Professional Team
+**Documentos del Proyecto:**
+[Ver Plan de Desarrollo](./DEVELOPMENT_PLAN.md) | [Ver Estado del Proyecto](./PROJECT_STATUS.md)
+
+---
+
+**Fecha:** 9 de julio de 2025
 **Proyecto:** Plataforma Integral de Gestión para Empresas de Mantenimiento de Piscinas.
 
 ---
 
-## 1. Introducción y Objetivos
+## 1. Visión y Objetivos de Negocio
 
-Este documento detalla las funcionalidades y especificaciones técnicas del sistema **"Pool-Control Professional"**. El objetivo es crear una plataforma SaaS (Software as a Service) multi-tenant, centralizada y accesible desde cualquier dispositivo, que permita la gestión integral de las operaciones de una empresa de mantenimiento de piscinas.
+**Pool-Control Professional** es una plataforma SaaS multi-tenant diseñada para ser el sistema nervioso central de una empresa de mantenimiento de piscinas. Su propósito es erradicar la ineficiencia, eliminar el papel, controlar los costes y elevar la calidad del servicio a través de la digitalización y automatización de todos los procesos operativos.
 
-### Objetivos Clave:
+#### Objetivos Clave:
 
-- **Maximizar la Eficiencia Operativa:** Automatizar la planificación de rutas y la generación de partes de trabajo para reducir drásticamente el tiempo de gestión en la oficina y de registro de datos en campo.
-- **Incrementar la Rentabilidad:** Controlar de forma exhaustiva el consumo de productos químicos, optimizar la política de precios por cliente y facilitar una facturación precisa.
-- **Mejorar la Calidad del Servicio:** Estandarizar los procedimientos de mantenimiento para cada piscina, asegurando el cumplimiento de tareas y garantizando la calidad del agua mediante un sistema de alertas proactivo.
-- **Aumentar la Transparencia y Control:** Ofrecer datos claros y precisos a la gerencia para la toma de decisiones estratégicas y, en futuras versiones, ofrecer un portal de cliente para total transparencia.
-
----
-
-## 2. Arquitectura Tecnológica
-
-- **Frontend:** Aplicación web de una sola página (SPA) desarrollada en **React con Vite y TypeScript** para garantizar un código robusto y escalable. La interfaz de usuario se construirá con la librería de componentes **Mantine UI**, con un diseño 100% responsivo (mobile-first).
-- **Backend:** API RESTful construida con **Node.js y Express.js**, utilizando TypeScript. La interacción con la base de datos se gestionará a través de **Prisma ORM** por su seguridad de tipos y eficiencia.
-- **Base de Datos:** **PostgreSQL**, elegido por su fiabilidad, escalabilidad y robustez en el manejo de relaciones complejas.
-- **Autenticación:** Sistema basado en **Tokens JWT** almacenados en cookies `httpOnly` para una gestión de sesiones segura y moderna.
-- **Estructura:** **Monorepo** gestionado con `pnpm` workspaces para un desarrollo cohesivo y centralizado del frontend y el backend.
+- **Eficiencia Operativa Absoluta:** Transformar horas de trabajo administrativo en minutos. La planificación de rutas, la generación de partes de trabajo y la recopilación de datos deben ser procesos automáticos o semi-automáticos.
+- **Control Total de la Rentabilidad:** Proporcionar una visión clara y en tiempo real del consumo de productos por visita, por piscina y por cliente, permitiendo un control de costes y una facturación precisa.
+- **Calidad de Servicio Estandarizada y Proactiva:** Garantizar que cada técnico realice exactamente los mismos procedimientos definidos para cada piscina y que cualquier desviación o incidencia sea notificada al instante, pasando de un modelo reactivo a uno proactivo.
+- **Toma de Decisiones Basada en Datos:** Ofrecer a la gerencia KPIs y métricas fiables sobre la operativa del negocio para identificar puntos de mejora, clientes más rentables y técnicos más eficientes.
 
 ---
 
-## 3. Definición de Roles y Permisos
+## 2. Definición de Roles y Flujos de Autorización
 
-| Rol                      | Descripción                                                                         | Permisos Clave                                                                                                                         |
-| ------------------------ | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| **SuperAdmin**           | Administrador de la plataforma SaaS. Gestiona los tenants.                          | Crear/Editar/Eliminar Tenants. Activar/desactivar suscripciones. Registrar pagos de suscripción.                                       |
-| **Administración (Isa)** | Usuario principal del tenant. Configura y gestiona toda la operativa de su empresa. | CRUD completo sobre: Clientes, Piscinas, Catálogo de Tareas y Parámetros, Productos, Precios y Planificación de Rutas.                 |
-| **Técnico**              | Usuario de campo. Su interacción es 100% a través del móvil o tablet.               | Ver su ruta asignada del día. Rellenar y guardar partes de trabajo. No puede ver datos de otros técnicos ni información de precios.    |
-| **Gerencia (Jorge)**     | Supervisor del negocio. Acceso de solo lectura a toda la información del tenant.    | Ver todos los datos, informes y configuraciones. **NO PUEDE** crear, editar ni eliminar nada, garantizando la integridad de los datos. |
+El sistema se estructura en torno a roles con permisos estrictos para garantizar la seguridad y la focalización de cada usuario en sus responsabilidades.
+
+| Rol                  | Misión Principal                                  | Capacidades Clave                                                                                                                                                                                                                                                                                |
+| -------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **SuperAdmin**       | Gestionar la plataforma y sus clientes (tenants). | CRUD completo sobre los **Tenants**. Gestión de suscripciones y ciclo de vida de las empresas que usan el software. No tiene visibilidad sobre los datos operativos (clientes, piscinas) de los tenants.                                                                                         |
+| **Admin (Isa)**      | Configurar y dirigir la operativa de su empresa.  | Control absoluto sobre la configuración del tenant: **definir el catálogo de servicios**, gestionar clientes y piscinas, **diseñar las fichas de mantenimiento**, planificar rutas, y supervisar toda la operativa a través de un **centro de notificaciones**. Es el "arquitecto" del servicio. |
+| **Técnico**          | Ejecutar el trabajo en campo de forma eficiente.  | Acceso exclusivo a su **ruta de trabajo del día**. Su única misión es ejecutar las visitas asignadas y rellenar los **partes de trabajo** con los datos requeridos. Interfaz 100% optimizada para móvil y diseñada para funcionar incluso en condiciones de baja conectividad (futuro).          |
+| **Gerencia (Jorge)** | Supervisar la salud y rendimiento del negocio.    | Acceso de **solo lectura** a toda la configuración y datos operativos del `ADMIN`. Su objetivo es el análisis a través de dashboards y reportes, sin la capacidad de alterar ningún dato, garantizando la integridad de la información.                                                          |
 
 ---
 
-## 4. Especificación Funcional por Rol y Pantalla
+## 3. Flujo de Trabajo y Especificación Funcional Detallada
 
-### 4.1. Rol: Administración (Isa)
+El sistema está diseñado como un ciclo continuo donde la configuración define la ejecución y la ejecución retroalimenta la supervisión.
 
-- **Pantalla: Dashboard Principal**
+### **ETAPA 1: Configuración del Servicio (Rol: Admin)**
 
-  - **Vista:** Al iniciar sesión, Isa ve un resumen del estado del negocio: "Visitas Programadas para Hoy" (con estado: pendiente/completada), "Alertas de Calidad Recientes" (listado de mediciones fuera de rango de las últimas 24h) y accesos directos a las funciones más utilizadas: "Planificar Rutas" y "Gestión de Clientes".
-  - **Funciones:** Navegación rápida a las secciones principales del panel de administración.
+Esta etapa es el corazón del sistema. El `ADMIN` define "el qué, cómo y cuándo" del servicio que ofrece su empresa.
 
-- **Pantalla: Gestión de Clientes y Piscinas**
+#### **Pantalla: Catálogo de Servicios (Parámetros y Tareas)**
 
-  - **Vista:** Un listado maestro de todos los clientes de la empresa. Un buscador potente permite encontrar clientes por nombre, CIF o dirección.
-  - **Funciones:**
-    - **Crear Cliente:** Un formulario simple para dar de alta un nuevo cliente con sus datos de contacto y facturación, y un campo clave: **Modificador de Precio** (ej. 1.0 por defecto, 0.9 para un 10% de descuento).
-    - **Ficha de Cliente:** Al hacer clic en un cliente, se accede a su ficha detallada, donde se listan las piscinas asociadas a él.
-    - **Crear/Editar Piscina:** Dentro de la ficha del cliente, Isa puede añadir nuevas piscinas, especificando su dirección, nombre (ej. "Piscina Principal"), volumen en m³, tipo (cloro/sal), etc.
-    - Por cada piscina listada, hay dos botones de acción clave: **"Configurar Ficha"** y **"Generar QR"**.
+- **Propósito:** Crear una librería centralizada de todas las acciones y mediciones que la empresa puede realizar. Este es el primer paso y la base de todo.
+- **Funcionalidad:**
+  - **Gestión de Parámetros:** El `ADMIN` crea plantillas para cada medición (ej. "Nivel de pH"). Para cada una, define su `Nombre`, `Unidad` y `Tipo de Input` (`NUMBER`, `BOOLEAN`, `TEXT` o `SELECT` con opciones).
+  - **Gestión de Tareas:** El `ADMIN` crea plantillas para cada acción física (ej. "Limpieza de cestos de skimmers").
 
-- **Pantalla: Constructor de Fichas de Mantenimiento (El Corazón del Sistema)**
+#### **Pantalla: Gestión de Clientes y Piscinas**
 
-  - **Vista:** Una interfaz de dos columnas. A la izquierda, la "Librería de Parámetros y Tareas" del tenant. A la derecha, la "Ficha de Configuración" de la piscina seleccionada.
-  - **Funciones:**
-    - **Librería Dinámica:** Isa puede añadir, editar o eliminar plantillas de parámetros (ej. "pH", "Alcalinidad") y tareas (ej. "Limpiar cestos de skimmers", "Comprobar presión del filtro"). Al crear un parámetro, define su tipo de input (Número, Sí/No, Texto, Selección Múltiple).
-    - **Configuración por Arrastre:** Isa arrastra ítems de la librería a la ficha de la piscina para construir su plan de mantenimiento personalizado.
-    - **Reglas de Negocio:** Para cada ítem añadido a la ficha, Isa define su **frecuencia** (Diaria, Semanal, Mensual...). Para los parámetros numéricos, establece los **rangos Mín/Máx** que activarán una alerta si el técnico introduce un valor fuera de ellos.
+- **Propósito:** Gestionar la cartera de clientes y sus activos (las piscinas).
+- **Funcionalidad:**
+  - **CRUD de Clientes:** El `ADMIN` gestiona la base de datos de clientes.
+  - **CRUD de Piscinas:** Dentro de la ficha de cada cliente, el `ADMIN` puede añadir múltiples piscinas.
 
-- **Pantalla: Planificador de Rutas Semanales**
+#### **Pantalla: Constructor de Fichas de Mantenimiento (Pool Detail Page)**
 
-  - **Vista:** Una cuadrícula visual con los días de la semana en las columnas y los técnicos en las filas. Una barra lateral muestra una lista de "Visitas Pendientes", generadas automáticamente por el sistema según la frecuencia configurada en las fichas de cada piscina.
-  - **Funciones:** Isa **arrastra una visita pendiente y la suelta** en la casilla del técnico y día correspondientes. Puede mover las visitas entre técnicos y días para balancear la carga de trabajo. El sistema marca visualmente las rutas sobrecargadas.
+- **Propósito:** Definir el "contrato de servicio" específico y único para **cada piscina**.
+- **Flujo de Trabajo:** El `ADMIN` asocia ítems de los catálogos a la ficha de esa piscina y, para cada uno, establece las reglas de negocio: `Frecuencia` (¿Cada cuánto?) y `Umbrales de Alerta` (¿Cuál es el rango aceptable?).
 
-- **Pantalla: Gestión de Catálogo y Precios de Productos**
-  - **Vista:** Una tabla con todos los productos químicos que usa la empresa (hipoclorito, reductor de pH, etc.).
-  - **Funciones:** Permite hacer un CRUD completo sobre los productos, definiendo su nombre, unidad (L, Kg) y su **Precio Base de Venta**. Este precio, combinado con el "Modificador de Precio" del cliente, calculará el precio final en cada consumo.
+### **ETAPA 2: Planificación y Ejecución (Roles: Admin y Técnico)**
 
-### 4.2. Rol: Técnico
+#### **Pantalla: Planificador Semanal (Rol: Admin)**
 
-- **Pantalla: Mi Ruta de Hoy**
+- **Propósito:** Organizar la carga de trabajo de la semana y asignarla al equipo.
+- **Flujo de Trabajo:** El sistema genera automáticamente las visitas pendientes según la frecuencia. El `ADMIN` las arrastra y suelta sobre el técnico y día deseado.
 
-  - **Vista:** Al iniciar sesión en su móvil, el técnico ve una lista vertical, simple y clara con las visitas del día, ordenadas por proximidad u horario. Cada tarjeta de visita muestra: Nombre del Cliente, Dirección y un botón grande: **"INICIAR VISITA"**.
-  - **Funciones:** Tocar la dirección abre Google Maps/Apple Maps con la ruta trazada. El flujo de trabajo está diseñado para ser lineal y sin distracciones.
+#### **Pantalla: Mi Ruta de Hoy (Rol: Técnico)**
 
-- **Pantalla: Parte de Trabajo Dinámico**
-  - **Vista:** Al iniciar la visita (opcionalmente escaneando el QR de la piscina), la pantalla se transforma en el parte de trabajo. **Este formulario no es estático**, se genera dinámicamente basándose en la configuración que Isa creó en el "Constructor de Fichas".
-    - **Sección "Mediciones":** Controles optimizados para la rapidez. Si el pH tiene un rango de 7.2-7.6, al introducir 7.8, el campo se pondrá en rojo brillante al instante.
-    - **Sección "Tareas Programadas":** SOLO si para esa visita toca "Limpiar cestos de skimmers", aparecerá un checkbox para marcarlo como hecho.
-    - **Sección "Consumo de Productos":** Una lista de los productos más comunes con botones `+` y `-` para añadir la cantidad usada de forma rápida.
-  - **Funciones:** Rellenar los campos. El botón **"GUARDAR Y FINALIZAR"** al final envía toda la información al sistema, la cual es **inmutable** y genera un registro histórico.
+- **Propósito:** Proporcionar al técnico un plan de acción diario, claro y directo.
+- **Estado de Implementación:** `COMPLETADA Y OPERATIVA`.
+- **Flujo de Trabajo:** Al iniciar sesión, el técnico ve una lista ordenada de sus visitas `PENDIENTES` para el día. La dirección es un enlace a Google Maps/Apple Maps y cada tarjeta de visita conduce al "Parte de Trabajo".
 
-### 4.3. Rol: Gerencia (Jorge)
+#### **Pantalla: Parte de Trabajo Dinámico (Rol: Técnico)**
 
-- **Pantalla: Dashboard de Gerencia**
+- **Propósito:** Registrar los datos de la visita de forma rápida, estructurada y a prueba de errores.
+- **Estado de Implementación:** `COMPLETADA Y OPERATIVA`.
+- **Flujo de Trabajo:**
+  1.  Al entrar, la página construye un **formulario dinámico** basado en la configuración de la piscina.
+  2.  El técnico rellena los valores. La UI le proporciona feedback instantáneo si un valor está fuera de los umbrales.
+  3.  **Reporte de Incidencias:** Junto a un campo de "Observaciones", el técnico dispone de un **checkbox "Reportar como Incidencia"**. Si lo marca, al guardar el parte se generará una notificación interna automática para el `ADMIN`, informándole del problema.
+  4.  Al guardar, los datos se envían a la API, la visita se marca como `COMPLETED` y desaparece de la lista de tareas pendientes del técnico.
+- **Mejora Futura Planificada:** Implementación de un **Modo Offline** (PWA) que permitirá rellenar y guardar el parte sin conexión a internet, sincronizándose automáticamente al recuperar la señal.
 
-  - **Vista:** Un panel de alto nivel con los KPIs clave para la salud del negocio: Facturación por Consumo de Producto del último mes, Margen de Beneficio por Cliente, Nº de Alertas de Calidad generadas, Ranking de Rendimiento de Técnicos (visitas/día).
-  - **Funciones:** Todo es visual, con gráficos interactivos pero sin capacidad de edición. Permite filtrar por rangos de fecha.
+### **ETAPA 3: Supervisión y Análisis (Roles: Admin y Gerencia)**
 
-- **Navegación en Modo "Solo Lectura"**
-  - **Funcionalidad:** Jorge puede acceder a las mismas pantallas que Isa (planificador, fichas de clientes, precios), pero todos los botones de "Crear", "Editar", "Guardar" o "Eliminar" están desactivados o directamente no son visibles. Su rol es de supervisión y análisis estratégico, no de ejecución.
+#### **Pantalla: Centro de Notificaciones (Rol: Admin)**
 
-### 4.4. Rol: SuperAdmin
+- **Propósito:** Centralizar y gestionar las incidencias reportadas por los técnicos.
+- **Estado de Implementación:** `EN DESARROLLO`.
+- **Funcionalidad Prevista:** El `ADMIN` tendrá un icono de "campana" en la interfaz. Un indicador le avisará de nuevas notificaciones. Al hacer clic, podrá ver una lista de las incidencias, acceder a los detalles de la visita asociada y marcarlas como leídas o gestionadas.
 
-- **Funcionalidad:** El SuperAdmin no interactúa con la operativa de las piscinas, sino con la plataforma en sí. Su panel es mucho más simple y se centra en la gestión de los tenants (las empresas suscritas al servicio). Permite crear nuevas cuentas, definir sus subdominios, y gestionar su estado de suscripción y ciclo de pagos.
+#### **Pantalla: Dashboards y Reportes (Rol: Gerencia)**
+
+- **Propósito:** Ofrecer una visión de alto nivel para la toma de decisiones estratégicas.
+- **Funcionalidad Prevista:** Jorge, en modo **solo lectura**, accederá a paneles con KPIs sobre rentabilidad, costes, incidencias y rendimiento de los técnicos.
 
 
 
@@ -1245,7 +1251,7 @@ export function ClientsPage() {
 
 // ====== [13] packages/client/src/features/admin/pages/planner/PlannerPage.tsx ======
 // filename: packages/client/src/features/admin/pages/planner/PlannerPage.tsx
-// Version: 1.2.2 (Connect Drag and Drop to the backend API)
+// Version: 1.4.1 (Fix typing errors and clean up unused variables)
 import { useEffect, useState } from 'react';
 import {
   Container,
@@ -1259,53 +1265,41 @@ import {
   Group,
   ActionIcon,
   Stack,
+  Badge,
 } from '@mantine/core';
 import { useAuth } from '../../../../providers/AuthProvider.js';
 import apiClient from '../../../../api/apiClient.js';
-import { startOfWeek, format, addDays, subDays } from 'date-fns';
+import { startOfWeek, endOfWeek, format, addDays, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DndContext, useDraggable, useDroppable } from '@dnd-kit/core';
 import type { DragEndEvent } from '@dnd-kit/core';
 
 // --- Tipos ---
-interface ScheduledVisit {
+interface Visit {
   id: string;
-  date: string;
-  poolId: string;
-  poolName: string;
-  clientName: string;
+  timestamp: string;
+  status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
+  pool: { name: string; client: { name: string; }; };
   technicianId: string | null;
 }
-
-interface Technician {
-  id: string;
-  name: string;
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-}
+interface Technician { id: string; name: string; }
+interface ApiResponse<T> { success: boolean; data: T; }
 
 // --- Componentes de Drag and Drop ---
-
-function DraggableVisit({ visit }: { visit: ScheduledVisit }) {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: visit.id,
-    data: visit,
-  });
-
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-    zIndex: 100,
-  } : undefined;
+function DraggableVisit({ visit }: { visit: Visit }) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: visit.id, data: visit });
+  const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 100 } : undefined;
+  const visitDate = new Date(visit.timestamp);
 
   return (
     <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
       <Card shadow="sm" p="xs" withBorder>
-        <Text fw={500}>{visit.poolName}</Text>
-        <Text size="sm" c="dimmed">{visit.clientName}</Text>
-        <Text size="xs" mt={4}>{format(new Date(visit.date), 'eeee d', { locale: es })}</Text>
+        <Group justify="space-between">
+          <Text fw={500}>{visit.pool.name}</Text>
+          {visit.status === 'COMPLETED' && <Badge size="sm" color="green">OK</Badge>}
+        </Group>
+        <Text size="sm" c="dimmed">{visit.pool.client.name}</Text>
+        <Text size="xs" mt={4}>{format(visitDate, 'eeee d', { locale: es })}</Text>
       </Card>
     </div>
   );
@@ -1314,124 +1308,99 @@ function DraggableVisit({ visit }: { visit: ScheduledVisit }) {
 function DroppableArea({ id, children, title }: { id: string; children: React.ReactNode; title: string }) {
   const { setNodeRef, isOver } = useDroppable({ id });
   return (
-    <Paper 
-      ref={setNodeRef} 
-      withBorder 
-      p="sm" 
-      style={{ 
-        height: '100%', 
-        backgroundColor: isOver ? '#e7f5ff' : '#f1f3f5',
-        transition: 'background-color 0.2s ease'
-      }}
-    >
+    <Paper ref={setNodeRef} withBorder p="sm" style={{ minHeight: 400, backgroundColor: isOver ? '#e7f5ff' : '#f1f3f5', transition: 'background-color 0.2s ease' }}>
       <Title order={5} ta="center" mb="md">{title}</Title>
       <Stack>{children}</Stack>
     </Paper>
   );
 }
 
-
 // --- Componente Principal ---
 export function PlannerPage() {
   const { user } = useAuth();
-  const [visits, setVisits] = useState<ScheduledVisit[]>([]);
+  const [visits, setVisits] = useState<Visit[]>([]);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
 
   const fetchData = async () => {
     if (!user) return;
     setIsLoading(true);
-    setError(null);
     try {
       const [visitsRes, techsRes] = await Promise.all([
-        apiClient.get<ApiResponse<ScheduledVisit[]>>('/visits/scheduled', {
-          params: { date: currentDate.toISOString() },
-        }),
+        apiClient.get<ApiResponse<Visit[]>>('/visits/scheduled', { params: { date: currentDate.toISOString() } }),
         apiClient.get<ApiResponse<Technician[]>>('/users/technicians'),
       ]);
-      
       setVisits(visitsRes.data.data);
       setTechnicians(techsRes.data.data);
-    } catch (err) {
-      setError('No se pudo cargar la planificación.');
-    } finally {
-      setIsLoading(false);
-    }
+    } catch (err) { setError('No se pudo cargar la planificación.'); } finally { setIsLoading(false); }
   };
 
-  useEffect(() => {
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchData(); // eslint-disable-next-line
   }, [currentDate, user]);
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { over, active } = event;
     if (!over) return;
 
-    const visit = active.data.current as ScheduledVisit;
-    const targetTechnicianId = over.id === 'unassigned' ? null : String(over.id);
+    const visitId = active.id as string;
+    const targetId = String(over.id);
+    const [type, id] = targetId.split('-');
 
-    // Evitar llamadas a la API si no hay cambio
-    if (visit.technicianId === targetTechnicianId) return;
+    let technicianId: string | null = null;
+    
+    // CORRECCIÓN: Aseguramos que technicianId sea siempre string o null.
+    if (type === 'tech' && id) {
+        technicianId = id;
+    }
 
-    // Actualización optimista de la UI
-    setVisits(prevVisits => 
-      prevVisits.map(v => 
-        v.id === visit.id ? { ...v, technicianId: targetTechnicianId } : v
-      )
-    );
+    const originalVisits = [...visits];
+    const visitToUpdate = visits.find(v => v.id === visitId);
+    if (!visitToUpdate || visitToUpdate.technicianId === technicianId) return;
+
+    setVisits(prev => prev.map(v => v.id === visitId ? { ...v, technicianId } : v));
 
     try {
-      // Llamada a la API para persistir el cambio
-      await apiClient.post('/visits/assign', {
-        poolId: visit.poolId,
-        date: visit.date,
-        technicianId: targetTechnicianId,
-      });
+      await apiClient.post('/visits/assign', { visitId, technicianId });
     } catch (err) {
-      setError('No se pudo asignar la visita. Reintentando...');
-      // En caso de error, revertimos la UI volviendo a cargar los datos del servidor
-      await fetchData();
+      setError('No se pudo asignar la visita.');
+      setVisits(originalVisits);
     }
   };
 
   if (isLoading) return <Loader size="xl" />;
   
-  const goToPreviousWeek = () => setCurrentDate(subDays(currentDate, 7));
-  const goToNextWeek = () => setCurrentDate(addDays(currentDate, 7));
+  const weekRange = `${format(weekStart, 'd')} - ${format(weekEnd, 'd MMMM yyyy', { locale: es })}`;
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
       <Container fluid>
-        {error && <Alert color="red" title="Error" withCloseButton onClose={() => setError(null)} mb="md">{error}</Alert>}
+        {error && <Alert color="red" title="Error" mb="md">{error}</Alert>}
         <Group justify="space-between" align="center">
           <Title order={2} my="lg">Planificador Semanal</Title>
           <Group>
-            <ActionIcon variant="default" onClick={goToPreviousWeek}>{'<'}</ActionIcon>
-            <Text size="lg" fw={500}>{format(weekStart, 'd MMMM yyyy', { locale: es })}</Text>
-            <ActionIcon variant="default" onClick={goToNextWeek}>{'>'}</ActionIcon>
+            <ActionIcon variant="default" onClick={() => setCurrentDate(subDays(currentDate, 7))}>{'<'}</ActionIcon>
+            <Text size="lg" fw={500}>{weekRange}</Text>
+            <ActionIcon variant="default" onClick={() => setCurrentDate(addDays(currentDate, 7))}>{'<'}</ActionIcon>
           </Group>
         </Group>
 
         <Grid grow>
-          <Grid.Col span={{ base: 12, md: 3 }}>
-            <DroppableArea id="unassigned" title="Visitas Pendientes">
-              {visits
-                .filter(v => v.technicianId === null)
-                .map(visit => <DraggableVisit key={visit.id} visit={visit} />)
-              }
+          <Grid.Col span={{ base: 12, md: 2 }}>
+            <DroppableArea id="tech-null" title="Visitas Pendientes">
+              {visits.filter(v => !v.technicianId).map(visit => <DraggableVisit key={visit.id} visit={visit} />)}
             </DroppableArea>
           </Grid.Col>
 
-          <Grid.Col span={{ base: 12, md: 9 }}>
+          <Grid.Col span={{ base: 12, md: 10 }}>
             <Grid>
               {technicians.map(tech => (
-                <Grid.Col key={tech.id} span={{ base: 12, lg: 6, xl: 4 }}>
-                   <DroppableArea id={tech.id} title={tech.name}>
+                <Grid.Col key={tech.id} span={{ base: 12, md: 6, lg: 4 }}>
+                   <DroppableArea id={`tech-${tech.id}`} title={tech.name}>
                     {visits
                       .filter(v => v.technicianId === tech.id)
                       .map(visit => <DraggableVisit key={visit.id} visit={visit} />)
@@ -1959,7 +1928,310 @@ export function TenantsPage() {
 }
 
 
-// ====== [17] packages/client/src/main.tsx ======
+// ====== [17] packages/client/src/features/technician/pages/MyRoutePage.tsx ======
+// filename: packages/client/src/features/technician/pages/MyRoutePage.tsx
+// Version: 1.1.1 (Fix invalid HTML nesting and implement state-based refresh)
+import { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import {
+  Container,
+  Title,
+  Loader,
+  Alert,
+  Stack,
+  Card,
+  Text,
+  Group,
+  Anchor,
+  ThemeIcon,
+} from '@mantine/core';
+import apiClient from '../../../api/apiClient';
+
+// --- Tipos ---
+interface Visit {
+  id: string;
+  timestamp: string;
+  pool: {
+    id: string;
+    name: string;
+    address: string;
+    client: {
+      name: string;
+    };
+  };
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
+// --- Componente ---
+export function MyRoutePage() {
+  const [visits, setVisits] = useState<Visit[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const location = useLocation(); // Hook para detectar cambios en la navegación
+
+  const fetchMyRoute = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await apiClient.get<ApiResponse<Visit[]>>('/visits/my-route');
+      setVisits(response.data.data);
+    } catch (err) {
+      setError('No se pudo cargar tu ruta del día.');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Este useEffect ahora se ejecutará al cargar la página Y cada vez que volvamos a ella
+  // desde otra ruta, gracias a que "location.key" cambia.
+  useEffect(() => {
+    fetchMyRoute();
+  }, [location.key]);
+
+  if (isLoading) {
+    return (
+      <Container style={{ textAlign: 'center', paddingTop: '50px' }}>
+        <Loader size="xl" />
+        <Text mt="md">Cargando tu ruta...</Text>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return <Alert color="red" title="Error">{error}</Alert>;
+  }
+
+  const visitCards = visits.map((visit) => (
+    // CORRECCIÓN: La Card es un div, y el contenido principal un Link para evitar anidamiento <a> en <a>.
+    <Card key={visit.id} shadow="sm" padding="lg" radius="md" withBorder>
+      <Link to={`/visits/${visit.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+        <Group justify="space-between" mt="md" mb="xs">
+          <Text fw={500} size="lg">{visit.pool.name}</Text>
+          <ThemeIcon variant="light" radius="md" size="lg">
+            <span>📍</span>
+          </ThemeIcon>
+        </Group>
+        <Text size="sm" c="dimmed">
+          Cliente: {visit.pool.client.name}
+        </Text>
+      </Link>
+      <Anchor
+        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(visit.pool.address)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        size="sm"
+        mt="sm"
+      >
+        {visit.pool.address}
+      </Anchor>
+    </Card>
+  ));
+
+  return (
+    <Container>
+      <Title order={2} my="lg">Mi Ruta de Hoy</Title>
+      {visits.length > 0 ? (
+        <Stack gap="md">{visitCards}</Stack>
+      ) : (
+        <Text>No tienes visitas asignadas para hoy.</Text>
+      )}
+    </Container>
+  );
+}
+
+
+// ====== [18] packages/client/src/features/technician/pages/WorkOrderPage.tsx ======
+// filename: packages/client/src/features/technician/pages/WorkOrderPage.tsx
+// Version: 1.2.2 (Remove window.location.reload and rely on router state)
+import { useEffect, useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import {
+  Container,
+  Title,
+  Loader,
+  Alert,
+  Paper,
+  Text,
+  Breadcrumbs,
+  Button,
+  Stack,
+  Checkbox,
+  NumberInput,
+  Switch,
+  TextInput,
+  Select,
+  Textarea,
+} from '@mantine/core';
+import { useForm } from '@mantine/form';
+import apiClient from '../../../api/apiClient';
+
+// --- Tipos ---
+interface ParameterConfig {
+  id: string;
+  name: string;
+  unit: string | null;
+  type: 'NUMBER' | 'BOOLEAN' | 'TEXT' | 'SELECT';
+  selectOptions: string[];
+}
+interface TaskConfig {
+  id: string;
+  name: string;
+}
+interface VisitDetails {
+  id: string;
+  pool: {
+    configurations: {
+      id: string;
+      parameterTemplate?: ParameterConfig;
+      taskTemplate?: TaskConfig;
+    }[];
+    name: string;
+    address: string;
+    client: { name: string };
+  };
+}
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
+// --- Componente ---
+export function WorkOrderPage() {
+  const { visitId } = useParams<{ visitId: string }>();
+  const navigate = useNavigate();
+  const [visit, setVisit] = useState<VisitDetails | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const form = useForm({
+    initialValues: {
+      results: {} as Record<string, string | number | boolean>,
+      completedTasks: {} as Record<string, boolean>,
+      notes: '',
+      hasIncident: false,
+    },
+  });
+
+  useEffect(() => {
+    if (!visitId) {
+      setError('No se ha proporcionado un ID de visita.');
+      setIsLoading(false);
+      return;
+    }
+    const fetchVisitDetails = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await apiClient.get<ApiResponse<VisitDetails>>(`/visits/${visitId}`);
+        const visitData = response.data.data;
+        setVisit(visitData);
+        
+        form.setInitialValues({
+          results: visitData.pool.configurations
+            .filter(c => c.parameterTemplate)
+            .reduce((acc, c) => ({ ...acc, [c.id]: '' }), {}),
+          completedTasks: visitData.pool.configurations
+            .filter(c => c.taskTemplate)
+            .reduce((acc, c) => ({ ...acc, [c.id]: false }), {}),
+          notes: '',
+          hasIncident: false,
+        });
+        form.reset();
+      } catch (err) {
+        setError('No se pudo cargar la información de la visita.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchVisitDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visitId]);
+
+  const handleSubmit = async (values: typeof form.values) => {
+    if (!visitId) return;
+    setIsSubmitting(true);
+    try {
+      await apiClient.post(`/visits/${visitId}/complete`, values);
+      // Simplemente navegamos de vuelta.
+      navigate('/my-route');
+    } catch (err) {
+      console.error('Error submitting work order', err);
+      setIsSubmitting(false);
+    }
+  };
+
+  if (isLoading) return <Container style={{ textAlign: 'center', paddingTop: '50px' }}><Loader size="xl" /></Container>;
+  if (error) return <Alert color="red" title="Error">{error}</Alert>;
+  if (!visit) return <Alert color="yellow" title="Aviso">Visita no encontrada.</Alert>;
+  
+  const breadcrumbs = (
+    <Breadcrumbs>
+      <Link to="/my-route">Mi Ruta</Link>
+      <Text>{visit.pool.name}</Text>
+    </Breadcrumbs>
+  );
+
+  const parametersToMeasure = visit.pool.configurations.filter(c => c.parameterTemplate);
+  const tasksToComplete = visit.pool.configurations.filter(c => c.taskTemplate);
+
+  const renderParameterInput = (config: typeof parametersToMeasure[0]) => {
+    const { parameterTemplate: param } = config;
+    if (!param) return null;
+    const label = `${param.name}${param.unit ? ` (${param.unit})` : ''}`;
+
+    switch (param.type) {
+      case 'NUMBER': return <NumberInput label={label} {...form.getInputProps(`results.${config.id}`)} />;
+      case 'BOOLEAN': return <Switch mt="md" label={label} {...form.getInputProps(`results.${config.id}`, { type: 'checkbox' })} />;
+      case 'TEXT': return <TextInput label={label} {...form.getInputProps(`results.${config.id}`)} />;
+      case 'SELECT': return <Select label={label} data={param.selectOptions} {...form.getInputProps(`results.${config.id}`)} />;
+      default: return <Text c="red">Tipo de parámetro no soportado: {param.type}</Text>;
+    }
+  };
+
+  return (
+    <Container>
+      {breadcrumbs}
+      <Title order={2} my="lg">Parte de Trabajo: {visit.pool.name}</Title>
+      <Text c="dimmed">{visit.pool.client.name} - {visit.pool.address}</Text>
+
+      <Paper withBorder p="md" mt="xl">
+        <form onSubmit={form.onSubmit(handleSubmit)}>
+          <Stack>
+            {parametersToMeasure.length > 0 && (
+              <div>
+                <Title order={4} mb="sm">Mediciones de Parámetros</Title>
+                <Stack>{parametersToMeasure.map(p => <div key={p.id}>{renderParameterInput(p)}</div>)}</Stack>
+              </div>
+            )}
+            {tasksToComplete.length > 0 && (
+              <div>
+                <Title order={4} mt="lg" mb="sm">Tareas a Realizar</Title>
+                <Stack>{tasksToComplete.map(t => <Checkbox key={t.id} label={t.taskTemplate?.name} {...form.getInputProps(`completedTasks.${t.id}`, { type: 'checkbox' })} />)}</Stack>
+              </div>
+            )}
+            
+            <Title order={4} mt="lg" mb="sm">Observaciones e Incidencias</Title>
+            <Textarea label="Notas de la visita (opcional)" placeholder="Cualquier observación relevante..." {...form.getInputProps('notes')} />
+            <Checkbox label="Reportar como Incidencia" description="Marca esta casilla si hay un problema que requiera la atención del administrador." {...form.getInputProps('hasIncident', { type: 'checkbox' })} />
+            
+            <Button type="submit" mt="xl" size="lg" loading={isSubmitting}>
+              Guardar y Finalizar Visita
+            </Button>
+          </Stack>
+        </form>
+      </Paper>
+    </Container>
+  );
+}
+
+
+// ====== [19] packages/client/src/main.tsx ======
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.js';
@@ -1971,7 +2243,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 );
 
 
-// ====== [18] packages/client/src/providers/AuthProvider.tsx ======
+// ====== [20] packages/client/src/providers/AuthProvider.tsx ======
 import {
   createContext,
   useContext,
@@ -2060,9 +2332,9 @@ export const useAuth = (): AuthContextType => {
 };
 
 
-// ====== [19] packages/client/src/router/components.tsx ======
+// ====== [21] packages/client/src/router/components.tsx ======
 // filename: packages/client/src/router/components.tsx
-// Version: 1.4.1 (Add Logout button to navbar)
+// Version: 1.5.0 (Add TechnicianRoute and navigation link)
 import { AppShell, Burger, Group, NavLink, Title, Button } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Navigate, Outlet, Link, useNavigate } from 'react-router-dom';
@@ -2137,6 +2409,16 @@ export const AppLayout = () => {
           </>
         )}
 
+        {/* Enlaces solo para el rol TECHNICIAN */}
+        {user?.role === 'TECHNICIAN' && (
+          <NavLink
+            component={Link}
+            to="/my-route"
+            label="Mi Ruta de Hoy"
+            onClick={toggle}
+          />
+        )}
+
         {/* Enlaces solo para el rol SUPER_ADMIN */}
         {user?.role === 'SUPER_ADMIN' && (
            <NavLink 
@@ -2187,10 +2469,23 @@ export const AdminRoute = () => {
   return <Outlet />;
 };
 
+/**
+ * Componente que protege rutas específicas para el rol TECHNICIAN.
+ */
+export const TechnicianRoute = () => {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <div>Cargando...</div>;
+  // Solo permite acceso si el rol es TECHNICIAN
+  if (user?.role !== 'TECHNICIAN') {
+    return <Navigate to="/" replace />;
+  }
+  return <Outlet />;
+};
 
-// ====== [20] packages/client/src/router/index.tsx ======
+
+// ====== [22] packages/client/src/router/index.tsx ======
 // filename: packages/client/src/router/index.tsx
-// Version: 1.6.0 (Add /planner route for Admin)
+// Version: 1.8.0 (Add WorkOrderPage route for Technician)
 import { createBrowserRouter } from 'react-router-dom';
 import { LoginPage } from '../features/auth/pages/LoginPage.js';
 import { TenantsPage } from '../features/superadmin/pages/TenantsPage.js';
@@ -2200,11 +2495,14 @@ import { ClientsPage } from '../features/admin/pages/clients/ClientsPage.js';
 import { ClientDetailPage } from '../features/admin/pages/clients/ClientDetailPage.js';
 import { PoolDetailPage } from '../features/admin/pages/pools/PoolDetailPage.js';
 import { PlannerPage } from '../features/admin/pages/planner/PlannerPage.js';
+import { MyRoutePage } from '../features/technician/pages/MyRoutePage.js';
+import { WorkOrderPage } from '../features/technician/pages/WorkOrderPage.js'; // <-- Importamos la nueva página
 import {
   AppLayout,
   ProtectedRoute,
   SuperAdminRoute,
   AdminRoute,
+  TechnicianRoute,
 } from './components.js';
 
 export const router = createBrowserRouter([
@@ -2283,6 +2581,27 @@ export const router = createBrowserRouter([
               },
             ],
           },
+          // --- Sección de Técnico ---
+          {
+            path: 'my-route',
+            element: <TechnicianRoute />,
+            children: [
+              {
+                index: true,
+                element: <MyRoutePage />,
+              },
+            ],
+          },
+          {
+            path: 'visits/:visitId', // <-- Añadimos la nueva ruta
+            element: <TechnicianRoute />,
+            children: [
+              {
+                index: true,
+                element: <WorkOrderPage />,
+              },
+            ],
+          },
         ],
       },
     ],
@@ -2290,7 +2609,7 @@ export const router = createBrowserRouter([
 ]);
 
 
-// ====== [21] packages/client/src/styles/theme.ts ======
+// ====== [23] packages/client/src/styles/theme.ts ======
 import { createTheme } from '@mantine/core';
 import type { MantineColorsTuple } from '@mantine/core';
 
@@ -2323,7 +2642,7 @@ export const theme = createTheme({
 });
 
 
-// ====== [22] packages/client/tsconfig.json ======
+// ====== [24] packages/client/tsconfig.json ======
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
@@ -2348,7 +2667,7 @@ export const theme = createTheme({
 }
 
 
-// ====== [23] packages/client/tsconfig.node.json ======
+// ====== [25] packages/client/tsconfig.node.json ======
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
@@ -2362,7 +2681,7 @@ export const theme = createTheme({
 }
 
 
-// ====== [24] packages/client/vite.config.ts ======
+// ====== [26] packages/client/vite.config.ts ======
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -2384,7 +2703,7 @@ export default defineConfig({
 });
 
 
-// ====== [25] packages/server/package.json ======
+// ====== [27] packages/server/package.json ======
 {
   "name": "@pool-control/server",
   "version": "1.0.0",
@@ -2426,7 +2745,7 @@ export default defineConfig({
 }
 
 
-// ====== [26] packages/server/prisma/seed.ts ======
+// ====== [28] packages/server/prisma/seed.ts ======
 import { PrismaClient } from '@prisma/client';
 import { hashPassword } from '../src/utils/password.utils.js';
 
@@ -2481,7 +2800,7 @@ main()
   });
 
 
-// ====== [27] packages/server/src/api/auth/auth.controller.ts ======
+// ====== [29] packages/server/src/api/auth/auth.controller.ts ======
 import type { Response, NextFunction } from 'express';
 import { register, login } from './auth.service.js';
 import { signToken } from '../../utils/jwt.utils.js';
@@ -2549,7 +2868,7 @@ export const getMeHandler = (req: AuthRequest, res: Response) => {
 };
 
 
-// ====== [28] packages/server/src/api/auth/auth.routes.ts ======
+// ====== [30] packages/server/src/api/auth/auth.routes.ts ======
 import { Router } from 'express';
 import type { Response } from 'express';
 import {
@@ -2600,7 +2919,7 @@ authRouter.post('/logout', (_req, res: Response) => {
 export default authRouter;
 
 
-// ====== [29] packages/server/src/api/auth/auth.service.ts ======
+// ====== [31] packages/server/src/api/auth/auth.service.ts ======
 import { PrismaClient } from '@prisma/client';
 import type { User } from '@prisma/client';
 import { hashPassword, comparePassword } from '../../utils/password.utils.js';
@@ -2681,7 +3000,7 @@ export const login = async (input: LoginUserInput): Promise<Omit<User, 'password
 };
 
 
-// ====== [30] packages/server/src/api/clients/clients.controller.ts ======
+// ====== [32] packages/server/src/api/clients/clients.controller.ts ======
 // filename: packages/server/src/api/clients/clients.controller.ts
 // Version: 1.0.0 (Initial creation of the controller for Client management)
 import type { Response, NextFunction } from 'express';
@@ -2813,7 +3132,7 @@ export const deleteClientHandler = async (
 };
 
 
-// ====== [31] packages/server/src/api/clients/clients.routes.ts ======
+// ====== [33] packages/server/src/api/clients/clients.routes.ts ======
 // filename: packages/server/src/api/clients/clients.routes.ts
 // Version: 1.0.0 (Initial creation of routes for Client management)
 import { Router } from 'express';
@@ -2845,7 +3164,7 @@ clientsRouter.route('/:id')
 export default clientsRouter;
 
 
-// ====== [32] packages/server/src/api/clients/clients.service.ts ======
+// ====== [34] packages/server/src/api/clients/clients.service.ts ======
 // filename: packages/server/src/api/clients/clients.service.ts
 // Version: 1.0.0 (Initial creation of the service for Client management)
 import { PrismaClient } from '@prisma/client';
@@ -2928,7 +3247,7 @@ export const deleteClient = async (id: string): Promise<Client> => {
 };
 
 
-// ====== [33] packages/server/src/api/parameters/parameters.controller.ts ======
+// ====== [35] packages/server/src/api/parameters/parameters.controller.ts ======
 // filename: packages/server/src/api/parameters/parameters.controller.ts
 // Version: 1.0.0 (Initial creation of the controller for Parameter Templates)
 import type { Response, NextFunction } from 'express';
@@ -3021,7 +3340,7 @@ next(error);
 };
 
 
-// ====== [34] packages/server/src/api/parameters/parameters.routes.ts ======
+// ====== [36] packages/server/src/api/parameters/parameters.routes.ts ======
 // filename: packages/server/src/api/parameters/parameters.routes.ts
 // Version: 1.0.0 (Initial creation of routes for Parameter Templates)
 import { Router } from 'express';
@@ -3052,7 +3371,7 @@ parametersRouter.route('/:id')
 export default parametersRouter;
 
 
-// ====== [35] packages/server/src/api/parameters/parameters.service.ts ======
+// ====== [37] packages/server/src/api/parameters/parameters.service.ts ======
 // filename: packages/server/src/api/parameters/parameters.service.ts
 // Version: 1.0.0 (Initial creation of the service with CRUD functions)
 import { PrismaClient } from '@prisma/client';
@@ -3132,7 +3451,7 @@ export const deleteParameterTemplate = async (
 };
 
 
-// ====== [36] packages/server/src/api/pool-configurations/pool-configurations.controller.ts ======
+// ====== [38] packages/server/src/api/pool-configurations/pool-configurations.controller.ts ======
 // filename: packages/server/src/api/pool-configurations/pool-configurations.controller.ts
 // Version: 1.1.0 (Add handler for update functionality)
 import type { Response, NextFunction } from 'express';
@@ -3227,7 +3546,7 @@ export const deletePoolConfigurationHandler = async (
 };
 
 
-// ====== [37] packages/server/src/api/pool-configurations/pool-configurations.routes.ts ======
+// ====== [39] packages/server/src/api/pool-configurations/pool-configurations.routes.ts ======
 // filename: packages/server/src/api/pool-configurations/pool-configurations.routes.ts
 // Version: 1.1.0 (Add PATCH route for update functionality)
 import { Router } from 'express';
@@ -3258,7 +3577,7 @@ poolConfigurationsRouter.route('/:id')
 export default poolConfigurationsRouter;
 
 
-// ====== [38] packages/server/src/api/pool-configurations/pool-configurations.service.ts ======
+// ====== [40] packages/server/src/api/pool-configurations/pool-configurations.service.ts ======
 // filename: packages/server/src/api/pool-configurations/pool-configurations.service.ts
 // Version: 1.1.0 (Add update functionality)
 import { PrismaClient } from '@prisma/client';
@@ -3339,7 +3658,7 @@ export const deletePoolConfiguration = async (id: string): Promise<PoolConfigura
 };
 
 
-// ====== [39] packages/server/src/api/pools/pools.controller.ts ======
+// ====== [41] packages/server/src/api/pools/pools.controller.ts ======
 // filename: packages/server/src/api/pools/pools.controller.ts
 // Version: 1.0.0 (Initial creation of the controller for Pool management)
 import type { Response, NextFunction } from 'express';
@@ -3414,7 +3733,7 @@ export const deletePoolHandler = async (
 };
 
 
-// ====== [40] packages/server/src/api/pools/pools.routes.ts ======
+// ====== [42] packages/server/src/api/pools/pools.routes.ts ======
 // filename: packages/server/src/api/pools/pools.routes.ts
 // Version: 1.0.0 (Initial creation of routes for Pool management)
 import { Router } from 'express';
@@ -3444,7 +3763,7 @@ poolsRouter.route('/:id')
 export default poolsRouter;
 
 
-// ====== [41] packages/server/src/api/pools/pools.service.ts ======
+// ====== [43] packages/server/src/api/pools/pools.service.ts ======
 // filename: packages/server/src/api/pools/pools.service.ts
 // Version: 1.0.0 (Initial creation of the service for Pool management)
 import { PrismaClient } from '@prisma/client';
@@ -3496,7 +3815,7 @@ export const deletePool = async (id: string): Promise<Pool> => {
 };
 
 
-// ====== [42] packages/server/src/api/tasks/tasks.controller.ts ======
+// ====== [44] packages/server/src/api/tasks/tasks.controller.ts ======
 // filename: packages/server/src/api/tasks/tasks.controller.ts
 // Version: 1.0.0 (Initial creation of the controller for Scheduled Tasks)
 import type { Response, NextFunction } from 'express';
@@ -3596,7 +3915,7 @@ export const deleteTaskTemplateHandler = async (
 };
 
 
-// ====== [43] packages/server/src/api/tasks/tasks.routes.ts ======
+// ====== [45] packages/server/src/api/tasks/tasks.routes.ts ======
 // filename: packages/server/src/api/tasks/tasks.routes.ts
 // Version: 1.0.0 (Initial creation of routes for Scheduled Tasks)
 import { Router } from 'express';
@@ -3626,7 +3945,7 @@ tasksRouter.route('/:id')
 export default tasksRouter;
 
 
-// ====== [44] packages/server/src/api/tasks/tasks.service.ts ======
+// ====== [46] packages/server/src/api/tasks/tasks.service.ts ======
 // filename: packages/server/src/api/tasks/tasks.service.ts
 // Version: 1.0.0 (Initial creation of the service for Scheduled Tasks)
 import { PrismaClient } from '@prisma/client';
@@ -3704,7 +4023,7 @@ export const deleteTaskTemplate = async (
 };
 
 
-// ====== [45] packages/server/src/api/tenants/tenants.controller.ts ======
+// ====== [47] packages/server/src/api/tenants/tenants.controller.ts ======
 import type { Request, Response, NextFunction } from 'express';
 import {
   createTenant,
@@ -3821,7 +4140,7 @@ export const deleteTenantHandler = async (
 };
 
 
-// ====== [46] packages/server/src/api/tenants/tenants.routes.ts ======
+// ====== [48] packages/server/src/api/tenants/tenants.routes.ts ======
 import { Router } from 'express';
 import {
   createTenantHandler,
@@ -3873,7 +4192,7 @@ tenantsRouter.delete('/:id', deleteTenantHandler);
 export default tenantsRouter;
 
 
-// ====== [47] packages/server/src/api/tenants/tenants.service.ts ======
+// ====== [49] packages/server/src/api/tenants/tenants.service.ts ======
 import { PrismaClient } from '@prisma/client';
 import type { Tenant, SubscriptionStatus } from '@prisma/client';
 import { hashPassword } from '../../utils/password.utils.js';
@@ -3993,7 +4312,7 @@ export const deleteTenant = async (id: string): Promise<Tenant> => {
 };
 
 
-// ====== [48] packages/server/src/api/users/users.controller.ts ======
+// ====== [50] packages/server/src/api/users/users.controller.ts ======
 // filename: packages/server/src/api/users/users.controller.ts
 // Version: 1.0.0 (Initial creation of the controller for User queries)
 import type { Response, NextFunction } from 'express';
@@ -4022,7 +4341,7 @@ export const getTechniciansByTenantHandler = async (
 };
 
 
-// ====== [49] packages/server/src/api/users/users.routes.ts ======
+// ====== [51] packages/server/src/api/users/users.routes.ts ======
 // filename: packages/server/src/api/users/users.routes.ts
 // Version: 1.0.0 (Initial creation of routes for User queries)
 import { Router } from 'express';
@@ -4047,7 +4366,7 @@ usersRouter.get('/technicians', getTechniciansByTenantHandler);
 export default usersRouter;
 
 
-// ====== [50] packages/server/src/api/users/users.service.ts ======
+// ====== [52] packages/server/src/api/users/users.service.ts ======
 // filename: packages/server/src/api/users/users.service.ts
 // Version: 1.0.0 (Initial creation of the service for User queries)
 import { PrismaClient } from '@prisma/client';
@@ -4086,15 +4405,17 @@ export const getTechniciansByTenant = async (
 };
 
 
-// ====== [51] packages/server/src/api/visits/visits.controller.ts ======
+// ====== [53] packages/server/src/api/visits/visits.controller.ts ======
 // filename: packages/server/src/api/visits/visits.controller.ts
-// Version: 1.2.0 (Add handler to get a technician's daily route)
+// Version: 1.7.0 (Adapt assignTechnicianHandler to new logic)
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
 import { 
   getScheduledVisitsForWeek, 
   assignTechnicianToVisit,
   getVisitsForTechnicianOnDate,
+  getVisitDetails,
+  submitWorkOrder,
 } from './visits.service.js';
 
 /**
@@ -4134,18 +4455,14 @@ export const assignTechnicianHandler = async (
   next: NextFunction
 ) => {
   try {
-    const tenantId = req.user?.tenantId;
-    if (!tenantId) {
-      return res.status(403).json({ message: 'Acción no permitida.' });
-    }
-
-    const { poolId, technicianId, date } = req.body;
-    if (!poolId || !date) {
-      return res.status(400).json({ message: 'poolId y date son requeridos.' });
+    const { visitId, technicianId } = req.body;
+    if (!visitId) {
+      return res.status(400).json({ message: 'visitId es requerido.' });
     }
     
-    const visitDate = new Date(date);
-    const assignedVisit = await assignTechnicianToVisit(poolId, technicianId, visitDate);
+    // TODO: Verificar que la visita pertenece al tenant del admin
+    
+    const assignedVisit = await assignTechnicianToVisit(visitId, technicianId);
     
     res.status(200).json({ success: true, data: assignedVisit });
   } catch (error) {
@@ -4167,7 +4484,6 @@ export const getMyRouteHandler = async (
       return res.status(403).json({ message: 'Acceso denegado.' });
     }
     
-    // Por simplicidad, siempre obtenemos la ruta para el día de hoy.
     const today = new Date();
     const visits = await getVisitsForTechnicianOnDate(technicianId, today);
     
@@ -4177,15 +4493,65 @@ export const getMyRouteHandler = async (
   }
 };
 
+/**
+ * Maneja la obtención de los detalles de una visita específica.
+ */
+export const getVisitDetailsHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ message: 'El ID de la visita es requerido.' });
+    }
+    
+    const visitDetails = await getVisitDetails(id);
+    if (!visitDetails) {
+      return res.status(404).json({ message: 'Visita no encontrada.' });
+    }
 
-// ====== [52] packages/server/src/api/visits/visits.routes.ts ======
+    res.status(200).json({ success: true, data: visitDetails });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Maneja el envío de un parte de trabajo.
+ */
+export const submitWorkOrderHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ message: 'El ID de la visita es requerido.' });
+    }
+    
+    await submitWorkOrder(id, req.body);
+
+    res.status(200).json({ success: true, message: 'Parte de trabajo guardado con éxito.' });
+  } catch (error) {
+    console.error('ERROR AL PROCESAR PARTE DE TRABAJO:', error); 
+    next(error);
+  }
+};
+
+
+// ====== [54] packages/server/src/api/visits/visits.routes.ts ======
 // filename: packages/server/src/api/visits/visits.routes.ts
-// Version: 1.2.0 (Add route for a technician to get their daily route)
+// Version: 1.4.4 (Clean up unused imports and finalize route order)
 import { Router } from 'express';
 import { 
   getScheduledVisitsForWeekHandler,
   assignTechnicianHandler,
   getMyRouteHandler,
+  getVisitDetailsHandler,
+  submitWorkOrderHandler,
 } from './visits.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
 
@@ -4193,159 +4559,111 @@ const visitsRouter = Router();
 
 visitsRouter.use(protect);
 
-/**
- * @route   GET /api/visits/scheduled
- * @desc    Obtiene las visitas programadas para una semana (ADMIN)
- * @access  Private (Admin)
- */
+// --- Rutas para ADMIN ---
 visitsRouter.get('/scheduled', getScheduledVisitsForWeekHandler);
-
-/**
- * @route   POST /api/visits/assign
- * @desc    Asigna un técnico a una visita (ADMIN)
- * @access  Private (Admin)
- */
 visitsRouter.post('/assign', assignTechnicianHandler);
 
-/**
- * @route   GET /api/visits/my-route
- * @desc    Obtiene la ruta del día para el técnico logueado (TECHNICIAN)
- * @access  Private (Technician)
- */
+// --- Rutas para TECHNICIAN ---
 visitsRouter.get('/my-route', getMyRouteHandler);
 
+/**
+ * @route   POST /api/visits/:id/complete
+ * @desc    Envía y procesa los datos de un Parte de Trabajo.
+ * @access  Private (Technician)
+ */
+visitsRouter.post('/:id/complete', submitWorkOrderHandler);
+
+/**
+ * @route   GET /api/visits/:id
+ * @desc    Obtiene los detalles de una visita específica (para el Parte de Trabajo)
+ * @access  Private (Technician/Admin)
+ */
+visitsRouter.get('/:id', getVisitDetailsHandler);
 
 export default visitsRouter;
 
 
-// ====== [53] packages/server/src/api/visits/visits.service.ts ======
+// ====== [55] packages/server/src/api/visits/visits.service.ts ======
 // filename: packages/server/src/api/visits/visits.service.ts
-// Version: 1.2.1 (Remove unused addDays import)
+// Version: 1.7.7 (Clean up unused imports after frequency logic fix)
 import { PrismaClient } from '@prisma/client';
-import type { Frequency, Visit } from '@prisma/client';
-import { startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, startOfDay, endOfDay } from 'date-fns';
+import type { Visit } from '@prisma/client'; // <-- Frequency eliminado
+import { 
+  startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, startOfDay, endOfDay,
+} from 'date-fns';
 
 const prisma = new PrismaClient();
 
 // --- Tipos ---
-interface ScheduledVisit {
-  id: string; 
-  date: Date;
-  poolId: string;
-  poolName: string;
-  clientName: string;
-  technicianId: string | null;
-}
+export type WorkOrderInput = {
+  results: Record<string, string | number | boolean>;
+  completedTasks: Record<string, boolean>;
+  notes?: string;
+  hasIncident?: boolean;
+};
 
-// --- Lógica de Frecuencia ---
-function shouldOccurOnDate(
-  frequency: Frequency,
-  lastCompleted: Date | null,
-  targetDate: Date,
-  weekStart: Date
-): boolean {
-  if (!lastCompleted) return true;
-  switch (frequency) {
-    case 'DIARIA':
-      return true;
-    case 'SEMANAL':
-      return targetDate.getDay() === weekStart.getDay();
-    default:
-      return targetDate.getDay() === weekStart.getDay();
-  }
-}
 
-// --- Funciones del Servicio ---
-export const getScheduledVisitsForWeek = async (
-  tenantId: string,
-  weekDate: Date
-): Promise<ScheduledVisit[]> => {
-  const start = startOfWeek(weekDate, { weekStartsOn: 1 });
-  const end = endOfWeek(weekDate, { weekStartsOn: 1 });
+export const getScheduledVisitsForWeek = async (tenantId: string, weekDate: Date): Promise<Visit[]> => {
+  const start = startOfWeek(weekDate, { weekStartsOn: 1 }); // Lunes
+  const end = endOfWeek(weekDate, { weekStartsOn: 1 });   // Domingo
   const weekDays = eachDayOfInterval({ start, end });
 
-  const [poolsWithConfigs, existingVisits] = await Promise.all([
-    prisma.pool.findMany({
-      where: { tenantId, configurations: { some: {} } },
-      include: { client: true, configurations: true },
-    }),
-    prisma.visit.findMany({
-      where: {
-        pool: { tenantId },
-        timestamp: { gte: start, lte: end },
-      },
-    }),
-  ]);
+  const pools = await prisma.pool.findMany({
+    where: { tenantId, configurations: { some: {} } },
+    include: { configurations: true },
+  });
 
-  const scheduledVisitsMap = new Map<string, ScheduledVisit>();
+  const existingVisits = await prisma.visit.findMany({
+    where: { pool: { tenantId }, timestamp: { gte: start, lte: end } },
+  });
+
+  const visitsToCreate: { poolId: string; timestamp: Date }[] = [];
 
   for (const day of weekDays) {
-    for (const pool of poolsWithConfigs) {
-      const shouldVisit = pool.configurations.some(config =>
-        shouldOccurOnDate(config.frequency, config.lastCompleted, day, start)
-      );
+    for (const pool of pools) {
       
-      if (shouldVisit) {
-        const visitKey = `${pool.id}-${day.toISOString().split('T')[0]}`;
-        
-        if (!scheduledVisitsMap.has(visitKey)) {
-          const existingVisit = existingVisits.find(
-            v => v.poolId === pool.id && isSameDay(v.timestamp, day)
-          );
+      const shouldVisitToday = pool.configurations.some(config => {
+        if (config.frequency === 'DIARIA') return true;
+        if (config.frequency === 'SEMANAL' && day.getDay() === 1) return true;
+        return false;
+      });
 
-          scheduledVisitsMap.set(visitKey, {
-            id: existingVisit ? existingVisit.id : visitKey,
-            date: day,
-            poolId: pool.id,
-            poolName: pool.name,
-            clientName: pool.client.name,
-            technicianId: existingVisit ? existingVisit.technicianId : null,
-          });
+      if (shouldVisitToday) {
+        const alreadyExists = existingVisits.some(
+          (v) => v.poolId === pool.id && isSameDay(v.timestamp, day)
+        );
+        const alreadyInQueue = visitsToCreate.some(
+          (v) => v.poolId === pool.id && isSameDay(v.timestamp, day)
+        );
+
+        if (!alreadyExists && !alreadyInQueue) {
+          visitsToCreate.push({ poolId: pool.id, timestamp: day });
         }
       }
     }
   }
-  
-  return Array.from(scheduledVisitsMap.values());
-};
 
-export const assignTechnicianToVisit = async (
-  poolId: string,
-  technicianId: string | null,
-  date: Date
-) => {
-  const dayStart = startOfDay(date);
-  const dayEnd = endOfDay(date);
-
-  const visit = await prisma.visit.findFirst({
-    where: {
-      poolId,
-      timestamp: { gte: dayStart, lt: dayEnd }
-    }
-  });
-
-  if (visit) {
-    return prisma.visit.update({
-      where: { id: visit.id },
-      data: { technicianId },
-    });
-  } else {
-    return prisma.visit.create({
-      data: {
-        poolId,
-        technicianId,
-        timestamp: date,
-      },
+  if (visitsToCreate.length > 0) {
+    await prisma.visit.createMany({
+      data: visitsToCreate.map(v => ({ ...v, status: 'PENDING' })),
+      skipDuplicates: true,
     });
   }
+
+  return prisma.visit.findMany({
+    where: { pool: { tenantId }, timestamp: { gte: start, lte: end } },
+    include: { pool: { include: { client: true } } },
+    orderBy: { timestamp: 'asc' },
+  });
 };
 
-/**
- * Obtiene las visitas asignadas a un técnico en una fecha específica.
- * @param technicianId - El ID del técnico.
- * @param date - La fecha de interés.
- * @returns Un array de visitas.
- */
+export const assignTechnicianToVisit = async (visitId: string, technicianId: string | null) => {
+    return prisma.visit.update({
+        where: { id: visitId },
+        data: { technicianId },
+    });
+};
+
 export const getVisitsForTechnicianOnDate = async (
   technicianId: string,
   date: Date
@@ -4356,15 +4674,16 @@ export const getVisitsForTechnicianOnDate = async (
   return prisma.visit.findMany({
     where: {
       technicianId,
+      status: 'PENDING',
       timestamp: {
         gte: dayStart,
-        lt: dayEnd,
+        lte: dayEnd,
       },
     },
     include: {
       pool: {
         include: {
-          client: true, // Para mostrar el nombre del cliente
+          client: true,
         },
       },
     },
@@ -4374,8 +4693,102 @@ export const getVisitsForTechnicianOnDate = async (
   });
 };
 
+export const getVisitDetails = async (visitId: string) => {
+  return prisma.visit.findUnique({
+    where: { id: visitId },
+    include: {
+      pool: {
+        include: {
+          client: true,
+          configurations: {
+            include: {
+              parameterTemplate: true,
+              taskTemplate: true,
+            },
+          },
+        },
+      },
+    },
+  });
+};
 
-// ====== [54] packages/server/src/app.ts ======
+export const submitWorkOrder = async (visitId: string, data: WorkOrderInput) => {
+  return prisma.$transaction(async (tx) => {
+    const visit = await tx.visit.findUnique({
+      where: { id: visitId },
+      include: { 
+        pool: { 
+          include: { 
+            configurations: { include: { parameterTemplate: true, taskTemplate: true } } 
+          } 
+        },
+        technician: true
+      },
+    });
+    if (!visit) throw new Error('Visita no encontrada');
+    
+    const { results, completedTasks, notes, hasIncident } = data;
+
+    for (const [configId, value] of Object.entries(results)) {
+      if(value === '' || value === null) continue;
+      const config = visit.pool.configurations.find(c => c.id === configId);
+      if (config?.parameterTemplate) {
+        await tx.visitResult.create({
+          data: {
+            visitId,
+            value: String(value),
+            parameterName: config.parameterTemplate.name,
+            parameterUnit: config.parameterTemplate.unit,
+          },
+        });
+      }
+    }
+    
+    const completedTaskNames = Object.entries(completedTasks)
+      .filter(([, completed]) => completed)
+      .map(([configId]) => {
+        const config = visit.pool.configurations.find(c => c.id === configId);
+        return config?.taskTemplate?.name || 'Tarea desconocida';
+      });
+    
+    await tx.visit.update({
+      where: { id: visitId },
+      data: {
+        notes,
+        hasIncident: hasIncident || false,
+        completedTasks: completedTaskNames,
+        status: 'COMPLETED',
+      },
+    });
+
+    if (hasIncident) {
+      const admin = await tx.user.findFirst({
+        where: { tenantId: visit.pool.tenantId, role: 'ADMIN' },
+      });
+      if (admin) {
+        const technicianName = visit.technician ? visit.technician.name : 'Un técnico';
+        await tx.notification.create({
+          data: {
+            message: `Nueva incidencia reportada por ${technicianName} en la piscina ${visit.pool.name}.`,
+            tenantId: visit.pool.tenantId,
+            userId: admin.id,
+          },
+        });
+      }
+    }
+    
+    const configIdsToUpdate = [...Object.keys(results).filter(k => results[k] !== ''), ...Object.keys(completedTasks).filter(k => completedTasks[k])];
+    if(configIdsToUpdate.length > 0) {
+        await tx.poolConfiguration.updateMany({
+            where: { id: { in: configIdsToUpdate } },
+            data: { lastCompleted: new Date() },
+        });
+    }
+  });
+};
+
+
+// ====== [56] packages/server/src/app.ts ======
 // filename: packages/server/src/app.ts
 // Version: 1.7.0 (Mount usersRouter for Admin module)
 import express from 'express';
@@ -4431,7 +4844,7 @@ app.use(errorHandler);
 export default app;
 
 
-// ====== [55] packages/server/src/config/index.ts ======
+// ====== [57] packages/server/src/config/index.ts ======
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -4461,7 +4874,7 @@ const config = {
 export default config;
 
 
-// ====== [56] packages/server/src/middleware/auth.middleware.ts ======
+// ====== [58] packages/server/src/middleware/auth.middleware.ts ======
 import type { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import type { User } from '@prisma/client';
@@ -4527,7 +4940,7 @@ export const protect = async (
 };
 
 
-// ====== [57] packages/server/src/middleware/error.middleware.ts ======
+// ====== [59] packages/server/src/middleware/error.middleware.ts ======
 import type { Request, Response, NextFunction } from 'express';
 
 // Interfaz para asegurar que nuestros errores puedan tener un código de estado
@@ -4555,7 +4968,7 @@ export const errorHandler = (
 };
 
 
-// ====== [58] packages/server/src/server.ts ======
+// ====== [60] packages/server/src/server.ts ======
 import app from './app.js';
 import config from './config/index.js';
 
@@ -4566,7 +4979,7 @@ app.listen(PORT, () => {
 });
 
 
-// ====== [59] packages/server/src/utils/jwt.utils.ts ======
+// ====== [61] packages/server/src/utils/jwt.utils.ts ======
 import jwt from 'jsonwebtoken';
 import type { SignOptions } from 'jsonwebtoken';
 import config from '../config/index.js';
@@ -4600,7 +5013,7 @@ export const verifyToken = <T>(token: string): T | null => {
 };
 
 
-// ====== [60] packages/server/src/utils/password.utils.ts ======
+// ====== [62] packages/server/src/utils/password.utils.ts ======
 import bcrypt from 'bcryptjs';
 
 const SALT_ROUNDS = 12;
@@ -4625,7 +5038,7 @@ export const comparePassword = (password: string, hash: string): Promise<boolean
 };
 
 
-// ====== [61] packages/server/tsconfig.json ======
+// ====== [63] packages/server/tsconfig.json ======
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
@@ -4636,7 +5049,7 @@ export const comparePassword = (password: string, hash: string): Promise<boolean
 }
 
 
-// ====== [62] tsconfig.json ======
+// ====== [64] tsconfig.json ======
 {
   "compilerOptions": {
     /* Base Options */
