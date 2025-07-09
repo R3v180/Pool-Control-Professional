@@ -1,5 +1,5 @@
 // filename: packages/client/src/features/admin/pages/planner/PlannerPage.tsx
-// Version: 1.2.2 (Connect Drag and Drop to the backend API)
+// Version: 1.4.1 (Fix typing errors and clean up unused variables)
 import { useEffect, useState } from 'react';
 import {
   Container,
@@ -13,53 +13,41 @@ import {
   Group,
   ActionIcon,
   Stack,
+  Badge,
 } from '@mantine/core';
 import { useAuth } from '../../../../providers/AuthProvider.js';
 import apiClient from '../../../../api/apiClient.js';
-import { startOfWeek, format, addDays, subDays } from 'date-fns';
+import { startOfWeek, endOfWeek, format, addDays, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DndContext, useDraggable, useDroppable } from '@dnd-kit/core';
 import type { DragEndEvent } from '@dnd-kit/core';
 
 // --- Tipos ---
-interface ScheduledVisit {
+interface Visit {
   id: string;
-  date: string;
-  poolId: string;
-  poolName: string;
-  clientName: string;
+  timestamp: string;
+  status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
+  pool: { name: string; client: { name: string; }; };
   technicianId: string | null;
 }
-
-interface Technician {
-  id: string;
-  name: string;
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-}
+interface Technician { id: string; name: string; }
+interface ApiResponse<T> { success: boolean; data: T; }
 
 // --- Componentes de Drag and Drop ---
-
-function DraggableVisit({ visit }: { visit: ScheduledVisit }) {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: visit.id,
-    data: visit,
-  });
-
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-    zIndex: 100,
-  } : undefined;
+function DraggableVisit({ visit }: { visit: Visit }) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: visit.id, data: visit });
+  const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 100 } : undefined;
+  const visitDate = new Date(visit.timestamp);
 
   return (
     <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
       <Card shadow="sm" p="xs" withBorder>
-        <Text fw={500}>{visit.poolName}</Text>
-        <Text size="sm" c="dimmed">{visit.clientName}</Text>
-        <Text size="xs" mt={4}>{format(new Date(visit.date), 'eeee d', { locale: es })}</Text>
+        <Group justify="space-between">
+          <Text fw={500}>{visit.pool.name}</Text>
+          {visit.status === 'COMPLETED' && <Badge size="sm" color="green">OK</Badge>}
+        </Group>
+        <Text size="sm" c="dimmed">{visit.pool.client.name}</Text>
+        <Text size="xs" mt={4}>{format(visitDate, 'eeee d', { locale: es })}</Text>
       </Card>
     </div>
   );
@@ -68,124 +56,99 @@ function DraggableVisit({ visit }: { visit: ScheduledVisit }) {
 function DroppableArea({ id, children, title }: { id: string; children: React.ReactNode; title: string }) {
   const { setNodeRef, isOver } = useDroppable({ id });
   return (
-    <Paper 
-      ref={setNodeRef} 
-      withBorder 
-      p="sm" 
-      style={{ 
-        height: '100%', 
-        backgroundColor: isOver ? '#e7f5ff' : '#f1f3f5',
-        transition: 'background-color 0.2s ease'
-      }}
-    >
+    <Paper ref={setNodeRef} withBorder p="sm" style={{ minHeight: 400, backgroundColor: isOver ? '#e7f5ff' : '#f1f3f5', transition: 'background-color 0.2s ease' }}>
       <Title order={5} ta="center" mb="md">{title}</Title>
       <Stack>{children}</Stack>
     </Paper>
   );
 }
 
-
 // --- Componente Principal ---
 export function PlannerPage() {
   const { user } = useAuth();
-  const [visits, setVisits] = useState<ScheduledVisit[]>([]);
+  const [visits, setVisits] = useState<Visit[]>([]);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
 
   const fetchData = async () => {
     if (!user) return;
     setIsLoading(true);
-    setError(null);
     try {
       const [visitsRes, techsRes] = await Promise.all([
-        apiClient.get<ApiResponse<ScheduledVisit[]>>('/visits/scheduled', {
-          params: { date: currentDate.toISOString() },
-        }),
+        apiClient.get<ApiResponse<Visit[]>>('/visits/scheduled', { params: { date: currentDate.toISOString() } }),
         apiClient.get<ApiResponse<Technician[]>>('/users/technicians'),
       ]);
-      
       setVisits(visitsRes.data.data);
       setTechnicians(techsRes.data.data);
-    } catch (err) {
-      setError('No se pudo cargar la planificación.');
-    } finally {
-      setIsLoading(false);
-    }
+    } catch (err) { setError('No se pudo cargar la planificación.'); } finally { setIsLoading(false); }
   };
 
-  useEffect(() => {
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchData(); // eslint-disable-next-line
   }, [currentDate, user]);
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { over, active } = event;
     if (!over) return;
 
-    const visit = active.data.current as ScheduledVisit;
-    const targetTechnicianId = over.id === 'unassigned' ? null : String(over.id);
+    const visitId = active.id as string;
+    const targetId = String(over.id);
+    const [type, id] = targetId.split('-');
 
-    // Evitar llamadas a la API si no hay cambio
-    if (visit.technicianId === targetTechnicianId) return;
+    let technicianId: string | null = null;
+    
+    // CORRECCIÓN: Aseguramos que technicianId sea siempre string o null.
+    if (type === 'tech' && id) {
+        technicianId = id;
+    }
 
-    // Actualización optimista de la UI
-    setVisits(prevVisits => 
-      prevVisits.map(v => 
-        v.id === visit.id ? { ...v, technicianId: targetTechnicianId } : v
-      )
-    );
+    const originalVisits = [...visits];
+    const visitToUpdate = visits.find(v => v.id === visitId);
+    if (!visitToUpdate || visitToUpdate.technicianId === technicianId) return;
+
+    setVisits(prev => prev.map(v => v.id === visitId ? { ...v, technicianId } : v));
 
     try {
-      // Llamada a la API para persistir el cambio
-      await apiClient.post('/visits/assign', {
-        poolId: visit.poolId,
-        date: visit.date,
-        technicianId: targetTechnicianId,
-      });
+      await apiClient.post('/visits/assign', { visitId, technicianId });
     } catch (err) {
-      setError('No se pudo asignar la visita. Reintentando...');
-      // En caso de error, revertimos la UI volviendo a cargar los datos del servidor
-      await fetchData();
+      setError('No se pudo asignar la visita.');
+      setVisits(originalVisits);
     }
   };
 
   if (isLoading) return <Loader size="xl" />;
   
-  const goToPreviousWeek = () => setCurrentDate(subDays(currentDate, 7));
-  const goToNextWeek = () => setCurrentDate(addDays(currentDate, 7));
+  const weekRange = `${format(weekStart, 'd')} - ${format(weekEnd, 'd MMMM yyyy', { locale: es })}`;
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
       <Container fluid>
-        {error && <Alert color="red" title="Error" withCloseButton onClose={() => setError(null)} mb="md">{error}</Alert>}
+        {error && <Alert color="red" title="Error" mb="md">{error}</Alert>}
         <Group justify="space-between" align="center">
           <Title order={2} my="lg">Planificador Semanal</Title>
           <Group>
-            <ActionIcon variant="default" onClick={goToPreviousWeek}>{'<'}</ActionIcon>
-            <Text size="lg" fw={500}>{format(weekStart, 'd MMMM yyyy', { locale: es })}</Text>
-            <ActionIcon variant="default" onClick={goToNextWeek}>{'>'}</ActionIcon>
+            <ActionIcon variant="default" onClick={() => setCurrentDate(subDays(currentDate, 7))}>{'<'}</ActionIcon>
+            <Text size="lg" fw={500}>{weekRange}</Text>
+            <ActionIcon variant="default" onClick={() => setCurrentDate(addDays(currentDate, 7))}>{'<'}</ActionIcon>
           </Group>
         </Group>
 
         <Grid grow>
-          <Grid.Col span={{ base: 12, md: 3 }}>
-            <DroppableArea id="unassigned" title="Visitas Pendientes">
-              {visits
-                .filter(v => v.technicianId === null)
-                .map(visit => <DraggableVisit key={visit.id} visit={visit} />)
-              }
+          <Grid.Col span={{ base: 12, md: 2 }}>
+            <DroppableArea id="tech-null" title="Visitas Pendientes">
+              {visits.filter(v => !v.technicianId).map(visit => <DraggableVisit key={visit.id} visit={visit} />)}
             </DroppableArea>
           </Grid.Col>
 
-          <Grid.Col span={{ base: 12, md: 9 }}>
+          <Grid.Col span={{ base: 12, md: 10 }}>
             <Grid>
               {technicians.map(tech => (
-                <Grid.Col key={tech.id} span={{ base: 12, lg: 6, xl: 4 }}>
-                   <DroppableArea id={tech.id} title={tech.name}>
+                <Grid.Col key={tech.id} span={{ base: 12, md: 6, lg: 4 }}>
+                   <DroppableArea id={`tech-${tech.id}`} title={tech.name}>
                     {visits
                       .filter(v => v.technicianId === tech.id)
                       .map(visit => <DraggableVisit key={visit.id} visit={visit} />)

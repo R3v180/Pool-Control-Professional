@@ -1,6 +1,7 @@
 // filename: packages/client/src/features/technician/pages/MyRoutePage.tsx
-// Version: 1.0.0 (Initial implementation of the technician's daily route page)
+// Version: 1.1.1 (Fix invalid HTML nesting and implement state-based refresh)
 import { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Container,
   Title,
@@ -27,7 +28,6 @@ interface Visit {
       name: string;
     };
   };
-  // Agregaremos más campos a medida que los necesitemos (ej. estado)
 }
 
 interface ApiResponse<T> {
@@ -40,24 +40,27 @@ export function MyRoutePage() {
   const [visits, setVisits] = useState<Visit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const location = useLocation(); // Hook para detectar cambios en la navegación
 
+  const fetchMyRoute = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await apiClient.get<ApiResponse<Visit[]>>('/visits/my-route');
+      setVisits(response.data.data);
+    } catch (err) {
+      setError('No se pudo cargar tu ruta del día.');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Este useEffect ahora se ejecutará al cargar la página Y cada vez que volvamos a ella
+  // desde otra ruta, gracias a que "location.key" cambia.
   useEffect(() => {
-    const fetchMyRoute = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await apiClient.get<ApiResponse<Visit[]>>('/visits/my-route');
-        setVisits(response.data.data);
-      } catch (err) {
-        setError('No se pudo cargar tu ruta del día.');
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchMyRoute();
-  }, []);
+  }, [location.key]);
 
   if (isLoading) {
     return (
@@ -73,19 +76,19 @@ export function MyRoutePage() {
   }
 
   const visitCards = visits.map((visit) => (
+    // CORRECCIÓN: La Card es un div, y el contenido principal un Link para evitar anidamiento <a> en <a>.
     <Card key={visit.id} shadow="sm" padding="lg" radius="md" withBorder>
-      <Group justify="space-between" mt="md" mb="xs">
-        <Text fw={500} size="lg">{visit.pool.name}</Text>
-        <ThemeIcon variant="light" radius="md" size="lg">
-          {/* Aquí podríamos poner un icono de estado (pendiente, completado, etc.) */}
-          <span>📍</span>
-        </ThemeIcon>
-      </Group>
-
-      <Text size="sm" c="dimmed">
-        Cliente: {visit.pool.client.name}
-      </Text>
-
+      <Link to={`/visits/${visit.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+        <Group justify="space-between" mt="md" mb="xs">
+          <Text fw={500} size="lg">{visit.pool.name}</Text>
+          <ThemeIcon variant="light" radius="md" size="lg">
+            <span>📍</span>
+          </ThemeIcon>
+        </Group>
+        <Text size="sm" c="dimmed">
+          Cliente: {visit.pool.client.name}
+        </Text>
+      </Link>
       <Anchor
         href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(visit.pool.address)}`}
         target="_blank"

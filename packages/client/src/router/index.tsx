@@ -1,5 +1,5 @@
 // filename: packages/client/src/router/index.tsx
-// Version: 1.7.0 (Add /my-route for Technician role)
+// Version: 1.8.0 (Add WorkOrderPage route for Technician)
 import { createBrowserRouter } from 'react-router-dom';
 import { LoginPage } from '../features/auth/pages/LoginPage.js';
 import { TenantsPage } from '../features/superadmin/pages/TenantsPage.js';
@@ -10,6 +10,7 @@ import { ClientDetailPage } from '../features/admin/pages/clients/ClientDetailPa
 import { PoolDetailPage } from '../features/admin/pages/pools/PoolDetailPage.js';
 import { PlannerPage } from '../features/admin/pages/planner/PlannerPage.js';
 import { MyRoutePage } from '../features/technician/pages/MyRoutePage.js';
+import { WorkOrderPage } from '../features/technician/pages/WorkOrderPage.js'; // <-- Importamos la nueva página
 import {
   AppLayout,
   ProtectedRoute,
@@ -102,6 +103,16 @@ export const router = createBrowserRouter([
               {
                 index: true,
                 element: <MyRoutePage />,
+              },
+            ],
+          },
+          {
+            path: 'visits/:visitId', // <-- Añadimos la nueva ruta
+            element: <TechnicianRoute />,
+            children: [
+              {
+                index: true,
+                element: <WorkOrderPage />,
               },
             ],
           },

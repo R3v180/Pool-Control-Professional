@@ -1,11 +1,13 @@
 // filename: packages/server/src/api/visits/visits.controller.ts
-// Version: 1.3.0 (Restore 'today' logic for getMyRouteHandler)
+// Version: 1.7.0 (Adapt assignTechnicianHandler to new logic)
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
 import { 
   getScheduledVisitsForWeek, 
   assignTechnicianToVisit,
-  getVisitsForTechnicianOnDate, // <-- Volvemos a usar esta
+  getVisitsForTechnicianOnDate,
+  getVisitDetails,
+  submitWorkOrder,
 } from './visits.service.js';
 
 /**
@@ -45,18 +47,14 @@ export const assignTechnicianHandler = async (
   next: NextFunction
 ) => {
   try {
-    const tenantId = req.user?.tenantId;
-    if (!tenantId) {
-      return res.status(403).json({ message: 'Acción no permitida.' });
-    }
-
-    const { poolId, technicianId, date } = req.body;
-    if (!poolId || !date) {
-      return res.status(400).json({ message: 'poolId y date son requeridos.' });
+    const { visitId, technicianId } = req.body;
+    if (!visitId) {
+      return res.status(400).json({ message: 'visitId es requerido.' });
     }
     
-    const visitDate = new Date(date);
-    const assignedVisit = await assignTechnicianToVisit(poolId, technicianId, visitDate);
+    // TODO: Verificar que la visita pertenece al tenant del admin
+    
+    const assignedVisit = await assignTechnicianToVisit(visitId, technicianId);
     
     res.status(200).json({ success: true, data: assignedVisit });
   } catch (error) {
@@ -78,12 +76,59 @@ export const getMyRouteHandler = async (
       return res.status(403).json({ message: 'Acceso denegado.' });
     }
     
-    // RESTAURAMOS LA LÓGICA ORIGINAL: filtramos por el día de hoy
     const today = new Date();
     const visits = await getVisitsForTechnicianOnDate(technicianId, today);
     
     res.status(200).json({ success: true, data: visits });
   } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Maneja la obtención de los detalles de una visita específica.
+ */
+export const getVisitDetailsHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ message: 'El ID de la visita es requerido.' });
+    }
+    
+    const visitDetails = await getVisitDetails(id);
+    if (!visitDetails) {
+      return res.status(404).json({ message: 'Visita no encontrada.' });
+    }
+
+    res.status(200).json({ success: true, data: visitDetails });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Maneja el envío de un parte de trabajo.
+ */
+export const submitWorkOrderHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ message: 'El ID de la visita es requerido.' });
+    }
+    
+    await submitWorkOrder(id, req.body);
+
+    res.status(200).json({ success: true, message: 'Parte de trabajo guardado con éxito.' });
+  } catch (error) {
+    console.error('ERROR AL PROCESAR PARTE DE TRABAJO:', error); 
     next(error);
   }
 };

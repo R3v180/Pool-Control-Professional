@@ -1,10 +1,12 @@
 // filename: packages/server/src/api/visits/visits.routes.ts
-// Version: 1.2.0 (Add route for a technician to get their daily route)
+// Version: 1.4.4 (Clean up unused imports and finalize route order)
 import { Router } from 'express';
 import { 
   getScheduledVisitsForWeekHandler,
   assignTechnicianHandler,
   getMyRouteHandler,
+  getVisitDetailsHandler,
+  submitWorkOrderHandler,
 } from './visits.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
 
@@ -12,26 +14,25 @@ const visitsRouter = Router();
 
 visitsRouter.use(protect);
 
-/**
- * @route   GET /api/visits/scheduled
- * @desc    Obtiene las visitas programadas para una semana (ADMIN)
- * @access  Private (Admin)
- */
+// --- Rutas para ADMIN ---
 visitsRouter.get('/scheduled', getScheduledVisitsForWeekHandler);
-
-/**
- * @route   POST /api/visits/assign
- * @desc    Asigna un técnico a una visita (ADMIN)
- * @access  Private (Admin)
- */
 visitsRouter.post('/assign', assignTechnicianHandler);
 
-/**
- * @route   GET /api/visits/my-route
- * @desc    Obtiene la ruta del día para el técnico logueado (TECHNICIAN)
- * @access  Private (Technician)
- */
+// --- Rutas para TECHNICIAN ---
 visitsRouter.get('/my-route', getMyRouteHandler);
 
+/**
+ * @route   POST /api/visits/:id/complete
+ * @desc    Envía y procesa los datos de un Parte de Trabajo.
+ * @access  Private (Technician)
+ */
+visitsRouter.post('/:id/complete', submitWorkOrderHandler);
+
+/**
+ * @route   GET /api/visits/:id
+ * @desc    Obtiene los detalles de una visita específica (para el Parte de Trabajo)
+ * @access  Private (Technician/Admin)
+ */
+visitsRouter.get('/:id', getVisitDetailsHandler);
 
 export default visitsRouter;
