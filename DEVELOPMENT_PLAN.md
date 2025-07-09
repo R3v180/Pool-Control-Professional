@@ -1,110 +1,109 @@
-# Plan de Desarrollo Secuencial Detallado
+# Plan de Desarrollo y Arquitectura: Pool-Control Professional
 
-Este documento es la hoja de ruta arquitectónica y de implementación para **Pool-Control Professional**. Cada paso está descrito con el máximo detalle para servir como guía técnica durante el desarrollo, asegurando que cada componente se construya con un propósito claro y se integre correctamente en el ecosistema del proyecto.
-
----
-
-## FASE 0: Configuración del Monorepo
-
-El objetivo de esta fase es establecer una base de proyecto robusta, escalable y con herramientas de desarrollo modernas.
-
-- **1. `/package.json` (Raíz):**
-
-  - **Propósito:** Definir el proyecto como un monorepo y centralizar la gestión de scripts.
-  - **Detalles:** Se configura `private: true` para indicar que el paquete raíz no se publica. La clave `workspaces` (gestionada a través de `pnpm-workspace.yaml`) define la estructura del monorepo. Los `scripts` aquí definidos (ej. `pnpm dev:server`) actúan como atajos que delegan la ejecución a los paquetes específicos usando el flag `--filter` de pnpm.
-
-- **2. `/pnpm-workspace.yaml`:**
-
-  - **Propósito:** Declarar la ubicación de los sub-proyectos (workspaces).
-  - **Detalles:** Este archivo contiene una única directiva (`packages: ['packages/*']`) que le indica a pnpm que cualquier subdirectorio dentro de `packages/` debe ser tratado como un proyecto individual, permitiendo la gestión centralizada de dependencias.
-
-- **3. `/tsconfig.json` (Raíz):**
-
-  - **Propósito:** Servir como la configuración "maestra" de TypeScript para todo el proyecto.
-  - **Detalles:** Establece las reglas de compilación más estrictas y modernas para garantizar la calidad del código (`strict: true`, `verbatimModuleSyntax: true`). Configura la resolución de módulos para ESM con Node.js (`module: NodeNext`, `moduleResolution: NodeNext`), que es la base de nuestra arquitectura de backend.
-
-- **4. `/.gitignore` (Raíz):**
-  - **Propósito:** Prevenir que archivos sensibles o innecesarios sean subidos al repositorio de Git.
-  - **Detalles:** Se configuran reglas para ignorar sistemáticamente directorios de dependencias (`node_modules`), archivos de entorno (`.env`), artefactos de compilación (`dist/`, `build/`) y archivos de configuración específicos de IDEs (`.vscode/`, `.idea/`).
+Este documento es la hoja de ruta arquitectónica y el registro de implementación para el proyecto. Sirve tanto de guía para el trabajo futuro como de crónica de las decisiones tomadas, garantizando un entendimiento profundo del sistema en cualquier punto de su ciclo de vida.
 
 ---
 
-## FASE 1: Fundación del Backend y Base de Datos
+## ✅ FASE 0: Fundación del Entorno y Monorepo
 
-Esta fase construye el esqueleto completo y funcional del servidor, incluyendo la base de datos, la autenticación y la gestión de errores.
-
-- **5. `packages/server/package.json`:**
-
-  - **Propósito:** Gestionar las dependencias y scripts exclusivos del backend.
-  - **Detalles:** Se añade `"type": "module"` para habilitar la sintaxis de ES Modules de forma nativa en Node.js. Se listan las dependencias de producción (`express`, `@prisma/client`, `jsonwebtoken`, `bcryptjs`, `cors`, `cookie-parser`) y de desarrollo (`tsx`, `@types/*`, `prisma`).
-
-- **6. `packages/server/tsconfig.json`:**
-
-  - **Propósito:** Especializar la configuración de TypeScript para el servidor.
-  - **Detalles:** Utiliza la directiva `extends` para heredar toda la configuración del `tsconfig.json` raíz. Su única adición es `"outDir": "./dist"`, que le indica al compilador dónde debe colocar los archivos JavaScript compilados.
-
-- **7. `packages/server/.env.example`:**
-
-  - **Propósito:** Servir como plantilla y documentación de las variables de entorno requeridas.
-  - **Detalles:** Define las claves que el servidor espera encontrar para funcionar: `DATABASE_URL` (la cadena de conexión a PostgreSQL), `PORT` (el puerto del servidor), `JWT_SECRET` (la clave secreta para firmar tokens) y `JWT_EXPIRES_IN` (la duración de los tokens en segundos).
-
-- **8. `packages/server/prisma/schema.prisma`:**
-
-  - **Propósito:** Es el corazón de la persistencia de datos. Define toda la arquitectura de la base de datos.
-  - **Detalles:** Este archivo es la "única fuente de verdad" para los modelos de datos. Describe cada tabla (`model`), sus columnas (campos) y tipos, y, fundamentalmente, las `relation` entre ellas. Al ejecutar `pnpm prisma:migrate`, Prisma lee este archivo para generar y aplicar las migraciones SQL correspondientes.
-
-- **9. `packages/server/src/config/index.ts`:**
-
-  - **Propósito:** Cargar, validar y centralizar el acceso a las variables de entorno de forma segura.
-  - **Detalles:** Este módulo utiliza `dotenv` para cargar el archivo `.env`. Implementa una lógica que verifica que todas las variables requeridas estén presentes, lanzando un error si falta alguna. Parsea los valores a sus tipos correctos (ej. `parseInt` para `PORT`) y exporta un único objeto `config` inmutable y tipado para su uso en el resto de la aplicación.
-
-- **10. `packages/server/src/utils/password.utils.ts`:**
-
-  - **Propósito:** Abstraer y centralizar la lógica de manejo de contraseñas.
-  - **Detalles:** Exportará dos funciones asíncronas: `hashPassword` (que encapsula a `bcrypt.hash`) y `comparePassword` (que encapsula a `bcrypt.compare`). Esto evita la dispersión de la lógica de hashing y facilita futuras actualizaciones (ej. cambiar el número de rondas de salting).
-
-- **11. `packages/server/src/utils/jwt.utils.ts`:**
-
-  - **Propósito:** Abstraer y centralizar la creación y verificación de JSON Web Tokens.
-  - **Detalles:** Exportará dos funciones: `signToken` (que usa el `JWT_SECRET` y `JWT_EXPIRES_IN` del `config` para crear un token a partir de un payload) y `verifyToken` (que valida un token y devuelve su payload decodificado o `null` si es inválido).
-
-- **12. `packages/server/src/middleware/error.middleware.ts`:**
-
-  - **Propósito:** Implementar un gestor de errores global ("catch-all").
-  - **Detalles:** Se define una función con la firma especial de 4 argumentos de Express (`err, req, res, next`). Este middleware se colocará al final de la cadena de middlewares y será responsable de atrapar cualquier error lanzado en las rutas (tanto síncronos como asíncronos), registrarlo en la consola y enviar al cliente una respuesta JSON limpia y estandarizada, evitando que el servidor se caiga por una excepción no controlada.
-
-- **13. `packages/server/src/api/auth/auth.service.ts`:**
-
-  - **Propósito:** Contener la lógica de negocio pura y desacoplada para la autenticación.
-  - **Detalles:** Este archivo se comunica directamente con la base de datos a través del Prisma Client. Contendrá funciones como `loginUser`, que buscará un usuario por email, usará `password.utils` para comparar la contraseña y, si es exitoso, devolverá los datos del usuario. No sabe nada sobre HTTP, cookies o `Request`/`Response`.
-
-- **14. `packages/server/src/api/auth/auth.controller.ts`:**
-
-  - **Propósito:** Orquestar el flujo de las peticiones de autenticación.
-  - **Detalles:** Actúa como un "controlador de tráfico". Sus funciones reciben `req` y `res`. Extraen datos del `req.body` (email, password), llaman a los métodos correspondientes en `auth.service.ts`, y con el resultado, construyen la respuesta HTTP. Por ejemplo, en un login exitoso, llamará a `jwt.utils.signToken`, establecerá una cookie `httpOnly` en el `res`, y enviará los datos del usuario como JSON.
-
-- **15. `packages/server/src/api/auth/auth.routes.ts`:**
-
-  - **Propósito:** Definir los endpoints de la API de autenticación.
-  - **Detalles:** Utiliza `express.Router()` para crear un mini-enrutador. Define las rutas (`POST /login`, `POST /register`, etc.) y las asocia con las funciones del controlador (`auth.controller.ts`) que las manejarán.
-
-- **16. `packages/server/src/app.ts`:**
-
-  - **Propósito:** Ensamblar la aplicación Express.
-  - **Detalles:** Crea la instancia de `express()`. Es responsable de configurar la secuencia de middlewares globales en el orden correcto: `cors` para permitir peticiones del frontend, `express.json` para parsear bodies JSON, `cookieParser` para parsear cookies. Luego, monta el enrutador de autenticación (`auth.routes.ts`) bajo un prefijo base como `/api/auth`. Finalmente, y de forma crucial, registra el `errorHandler` como el último middleware de la pila. Exporta la instancia `app` configurada.
-
-- **17. `packages/server/src/server.ts`:**
-  - **Propósito:** Iniciar el servidor web.
-  - **Detalles:** Es el punto de entrada ejecutable. Importa la instancia `app` desde `app.ts` y el objeto `config` desde `config/index.ts`. Su única responsabilidad es llamar a `app.listen()` usando el `PORT` de la configuración y mostrar un mensaje en consola para confirmar que el servidor está en línea y escuchando.
+- **Estado:** `COMPLETADA`
+- **Objetivo:** Establecer una base de desarrollo robusta, consistente y escalable.
+- **Entregables Clave:**
+  - **Monorepo con PNPM:** Configuración de `pnpm-workspace.yaml` para gestionar los paquetes `server` y `client` de forma centralizada.
+  - **Configuración Maestra de TypeScript:** `tsconfig.json` raíz con reglas estrictas y modernas (`strict: true`, `module: NodeNext`) que se heredan en todo el proyecto.
+  * **Gestión de Código Fuente:** `/.gitignore` configurado para excluir dependencias, variables de entorno y artefactos de compilación.
 
 ---
 
-## FASE 2: Fundación del Frontend y Conexión
+## ✅ FASE 1: Fundación del Backend
 
-Esta fase establece la base de la aplicación React, la configura y crea la primera funcionalidad de cara al usuario: el login.
+- **Estado:** `COMPLETADA`
+- **Objetivo:** Construir un servidor API funcional, seguro y resiliente.
+- **Entregables Clave:**
+  - **Servidor Express.js:** `app.ts` y `server.ts` configurados para usar ES Modules, con middlewares esenciales (CORS, JSON, Cookie Parser).
+  - **Conexión a Base de Datos:** `schema.prisma` define el modelo de datos completo. Se ha realizado la migración inicial y la conexión con PostgreSQL es estable.
+  - **Script de Seeding:** `prisma/seed.ts` implementado para crear el `SUPER_ADMIN` y el tenant de sistema, garantizando un punto de partida consistente para el desarrollo y las pruebas.
+  - **Seguridad y Autenticación:**
+    - `auth.middleware.ts` y `jwt.utils.ts`: Sistema robusto de protección de rutas basado en tokens JWT en cookies `httpOnly`.
+    - `password.utils.ts`: Lógica de hashing y comparación de contraseñas aislada y segura.
+    - `auth.routes.ts`: Endpoints `login`, `logout`, `register` y `me` implementados y funcionales.
+  - **Gestión de Errores:** `error.middleware.ts` implementado como un "catch-all" para manejar excepciones de forma controlada y devolver respuestas de error estandarizadas.
 
-- **18-21. Archivos de Configuración (`package.json`, `tsconfig.json`, `vite.config.ts`, `theme.ts`):** Configuración inicial del proyecto de React con Vite, incluyendo dependencias (`react`, `mantine`), configuración de TypeScript y definición del tema visual de la UI.
-- **22. `packages/client/src/api/apiClient.ts`:** Creación de una instancia de `axios` preconfigurada con la `baseURL` del API del backend y la opción `withCredentials: true` para asegurar que las cookies de autenticación se envíen en cada petición.
-- **23. `packages/client/src/providers/AuthProvider.tsx`:** Implementación de un React Context Provider para gestionar el estado de autenticación (`usuario`, `isLoggedIn`). Expondrá funciones como `login` y `logout` que el resto de la app podrá usar.
-- **24-26. `router/index.ts`, `App.tsx`, `main.tsx`:** Configuración del enrutador de la aplicación (`react-router-dom`), definiendo rutas públicas y privadas. El componente `App.tsx` envolverá toda la aplicación con el `AuthProvider` y el `MantineProvider`.
-- **27. `packages/client/src/features/auth/pages/LoginPage.tsx`:** Desarrollo de la primera pantalla interactiva. Este componente contendrá el formulario de login, gestionará su estado, y al enviarse, llamará a la función `login` del `AuthProvider`, que a su vez usará el `apiClient` para realizar la petición `POST /api/auth/login` al backend.
+---
+
+## ✅ FASE 2: Fundación del Frontend
+
+- **Estado:** `COMPLETADA`
+- **Objetivo:** Construir una aplicación React cliente, conectada al backend y con una gestión de estado de autenticación sólida.
+- **Entregables Clave:**
+  - **Aplicación React con Vite:** `vite.config.ts` configurado, incluyendo un proxy para las llamadas a la API que simplifica el desarrollo.
+  - **Gestión de Estado de Autenticación:** `AuthProvider.tsx` implementado usando React Context. Gestiona el estado del usuario y la sesión, persistiendo a través de recargas de página mediante el endpoint `/api/auth/me`.
+  - **Sistema de Enrutamiento:** `router/index.tsx` y `router/components.tsx` definen la estructura de navegación de la aplicación, implementando componentes de protección de rutas por rol (`ProtectedRoute`, `SuperAdminRoute`, `AdminRoute`).
+  - **UI y Estilo:** `theme.ts` define el tema base de Mantine UI, asegurando una estética consistente. La `AppLayout` provee la estructura visual principal (header, navbar).
+
+---
+
+## ✅ FASE 3: Módulos de Gestión (Admin y SuperAdmin)
+
+- **Estado:** `COMPLETADA`
+- **Objetivo:** Implementar las funcionalidades de configuración y gestión que son el núcleo del panel de administración.
+- **Entregables Clave:**
+  - **Módulo `SUPER_ADMIN` - Gestión de Tenants:**
+    - **Backend:** API CRUD completa en `/api/tenants`.
+    - **Frontend:** `TenantsPage.tsx` permite listar, crear, actualizar estado y eliminar tenants.
+  - **Módulo `ADMIN` - Gestión de Catálogos:**
+    - **Backend:** APIs CRUD para `/api/parameters` y `/api/tasks`.
+    - **Frontend:** `ParameterCatalogPage.tsx` y `TaskCatalogPage.tsx` permiten la gestión completa de las plantillas de parámetros y tareas.
+  - **Módulo `ADMIN` - Gestión de Clientes y Piscinas:**
+    - **Backend:** APIs CRUD para `/api/clients` y `/api/pools`.
+    - **Frontend:** `ClientsPage.tsx` y `ClientDetailPage.tsx` permiten la gestión de clientes y sus piscinas asociadas.
+  - **Módulo `ADMIN` - Constructor de Fichas de Mantenimiento:**
+    - **Backend:** API CRUD para `/api/pool-configurations`.
+    - **Frontend:** `PoolDetailPage.tsx` funciona como el constructor, permitiendo asociar ítems de los catálogos a una piscina.
+  - **Módulo `ADMIN` - Planificador de Rutas:**
+    - **Backend:** API en `/api/visits` para generar y asignar visitas.
+    - **Frontend:** `PlannerPage.tsx` implementa un planificador visual con `Drag and Drop`.
+  - **Módulo `TECHNICIAN` - "Mi Ruta de Hoy":**
+    - **Backend:** Endpoint `GET /api/visits/my-route` que filtra y devuelve las visitas del día para el técnico logueado.
+    - **Frontend:** `MyRoutePage.tsx` muestra las visitas del día de forma clara.
+
+---
+
+## ▶️ FASE 4: Módulo de Ejecución (Técnico) - Parte de Trabajo
+
+- **Estado:** `EN CURSO`
+- **Objetivo:** Desarrollar la funcionalidad más crítica de la aplicación: el formulario donde el técnico registra los datos de su visita.
+- **Plan de Acción Detallado:**
+  1.  **Backend - Obtener Detalles de la Visita:**
+      - **Archivo:** `packages/server/src/api/visits/visits.service.ts`
+      - **Tarea:** Crear una nueva función `getVisitDetails(visitId)` que devuelva no solo la visita, sino también la `PoolConfiguration` asociada (con sus `ParameterTemplate` y `TaskTemplate` anidados). Esto es vital para que el frontend sepa qué formulario construir.
+      - **Archivo:** `packages/server/src/api/visits/visits.controller.ts` y `visits.routes.ts`
+      - **Tarea:** Exponer la nueva función de servicio a través de un nuevo endpoint `GET /api/visits/:id`.
+  2.  **Backend - Procesar el Parte de Trabajo:**
+      - **Schema:** Modificar `schema.prisma` para añadir `hasIncident: Boolean @default(false)` al modelo `Visit` y crear el nuevo modelo `Notification`. Ejecutar la migración.
+      - **Archivo:** `packages/server/src/api/visits/visits.service.ts`
+      - **Tarea:** Crear una función `submitWorkOrder(visitId, data)` que procese los datos del formulario, cree los `VisitResult`, actualice el estado de la visita, y cree una `Notification` si procede.
+      - **Archivo:** `packages/server/src/api/visits/visits.controller.ts` y `visits.routes.ts`
+      - **Tarea:** Exponer esta lógica a través de un endpoint `POST /api/visits/:id/complete`.
+  3.  **Frontend - Construir la Página del Parte de Trabajo:**
+      - **Archivo:** Crear `packages/client/src/features/technician/pages/WorkOrderPage.tsx`.
+      - **Tarea:** Esta página recibirá un `visitId` de la URL. Hará una llamada al nuevo endpoint `GET /api/visits/:id` para obtener los detalles.
+  4.  **Frontend - Renderizado Dinámico del Formulario:**
+      - **Archivo:** `WorkOrderPage.tsx`.
+      - **Tarea:** Basándose en los datos recibidos, la página renderizará dinámicamente los controles de formulario necesarios: `NumberInput` para parámetros numéricos, `Switch` para booleanos, `Checkbox` para tareas, etc. Se incluirá el `Checkbox` para "Reportar Incidencia".
+  5.  **Frontend - Envío de Datos:**
+      - **Archivo:** `WorkOrderPage.tsx`.
+      - **Tarea:** Implementar la lógica de envío del formulario, que llamará al endpoint `POST /api/visits/:id/complete` con todos los datos recopilados.
+
+---
+
+## 🔮 FASE 5 Y POSTERIORES: Funcionalidades Futuras
+
+- **Estado:** `PLANIFICADO`
+- **Objetivo:** Mejorar la aplicación con funcionalidades de alto valor.
+- **Ideas Clave:**
+  - **Modo Offline (PWA):** Implementar Service Workers e IndexedDB.
+  - **Dashboard de Gerencia:** Desarrollar los KPIs y gráficos para el rol de `MANAGER`.
+  - **Gestión de Productos y Consumos:** Implementar la API y la UI para gestionar el catálogo de productos y registrar su consumo en cada visita.
+  - **Facturación:** Generar informes de consumo por cliente para facilitar la facturación.
+  - **Notificaciones en Tiempo Real:** Implementar un sistema de notificaciones push o WebSockets para el `ADMIN`.
