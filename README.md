@@ -1,11 +1,11 @@
-# Documento de Especificación Funcional v2.1: Sistema "Pool-Control Professional"
+# Documento de Especificación Funcional v3.0: Sistema "Pool-Control Professional"
 
 **Documentos del Proyecto:**
 [Ver Plan de Desarrollo](./DEVELOPMENT_PLAN.md) | [Ver Estado del Proyecto](./PROJECT_STATUS.md)
 
 ---
 
-**Fecha:** 9 de julio de 2025
+**Fecha:** 10 de julio de 2025
 **Proyecto:** Plataforma Integral de Gestión para Empresas de Mantenimiento de Piscinas.
 
 ---
@@ -27,12 +27,12 @@
 
 El sistema se estructura en torno a roles con permisos estrictos para garantizar la seguridad y la focalización de cada usuario en sus responsabilidades.
 
-| Rol                  | Misión Principal                                  | Capacidades Clave                                                                                                                                                                                                                                                                                |
-| -------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **SuperAdmin**       | Gestionar la plataforma y sus clientes (tenants). | CRUD completo sobre los **Tenants**. Gestión de suscripciones y ciclo de vida de las empresas que usan el software. No tiene visibilidad sobre los datos operativos (clientes, piscinas) de los tenants.                                                                                         |
-| **Admin (Isa)**      | Configurar y dirigir la operativa de su empresa.  | Control absoluto sobre la configuración del tenant: **definir el catálogo de servicios**, gestionar clientes y piscinas, **diseñar las fichas de mantenimiento**, planificar rutas, y supervisar toda la operativa a través de un **centro de notificaciones**. Es el "arquitecto" del servicio. |
-| **Técnico**          | Ejecutar el trabajo en campo de forma eficiente.  | Acceso exclusivo a su **ruta de trabajo del día**. Su única misión es ejecutar las visitas asignadas y rellenar los **partes de trabajo** con los datos requeridos. Interfaz 100% optimizada para móvil y diseñada para funcionar incluso en condiciones de baja conectividad (futuro).          |
-| **Gerencia (Jorge)** | Supervisar la salud y rendimiento del negocio.    | Acceso de **solo lectura** a toda la configuración y datos operativos del `ADMIN`. Su objetivo es el análisis a través de dashboards y reportes, sin la capacidad de alterar ningún dato, garantizando la integridad de la información.                                                          |
+| Rol                  | Misión Principal                                  | Capacidades Clave                                                                                                                                                                                                                                                                                                       |
+| -------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **SuperAdmin**       | Gestionar la plataforma y sus clientes (tenants). | CRUD completo sobre los **Tenants**. Gestión de suscripciones y ciclo de vida de las empresas que usan el software. No tiene visibilidad sobre los datos operativos (clientes, piscinas) de los tenants.                                                                                                                |
+| **Admin (Isa)**      | Configurar y dirigir la operativa de su empresa.  | Control absoluto sobre la configuración del tenant: **definir el catálogo de servicios**, gestionar clientes y piscinas, **diseñar las fichas de mantenimiento**, planificar rutas, y supervisar toda la operativa a través de un **dashboard central y un centro de notificaciones**. Es el "arquitecto" del servicio. |
+| **Técnico**          | Ejecutar el trabajo en campo de forma eficiente.  | Acceso exclusivo a su **ruta de trabajo del día**. Su única misión es ejecutar las visitas asignadas y rellenar los **partes de trabajo** con los datos requeridos. Interfaz 100% optimizada para móvil y diseñada para funcionar incluso en condiciones de baja conectividad (futuro).                                 |
+| **Gerencia (Jorge)** | Supervisar la salud y rendimiento del negocio.    | Acceso de **solo lectura** a toda la configuración y datos operativos del `ADMIN`. Su objetivo es el análisis a través de dashboards y reportes, sin la capacidad de alterar ningún dato, garantizando la integridad de la información.                                                                                 |
 
 ---
 
@@ -85,15 +85,35 @@ Esta etapa es el corazón del sistema. El `ADMIN` define "el qué, cómo y cuán
   2.  El técnico rellena los valores. La UI le proporciona feedback instantáneo si un valor está fuera de los umbrales.
   3.  **Reporte de Incidencias:** Junto a un campo de "Observaciones", el técnico dispone de un **checkbox "Reportar como Incidencia"**. Si lo marca, al guardar el parte se generará una notificación interna automática para el `ADMIN`, informándole del problema.
   4.  Al guardar, los datos se envían a la API, la visita se marca como `COMPLETED` y desaparece de la lista de tareas pendientes del técnico.
-- **Mejora Futura Planificada:** Implementación de un **Modo Offline** (PWA) que permitirá rellenar y guardar el parte sin conexión a internet, sincronizándose automáticamente al recuperar la señal.
 
 ### **ETAPA 3: Supervisión y Análisis (Roles: Admin y Gerencia)**
 
-#### **Pantalla: Centro de Notificaciones (Rol: Admin)**
+#### **Pantalla: Dashboard del Administrador**
 
-- **Propósito:** Centralizar y gestionar las incidencias reportadas por los técnicos.
-- **Estado de Implementación:** `EN DESARROLLO`.
-- **Funcionalidad Prevista:** El `ADMIN` tendrá un icono de "campana" en la interfaz. Un indicador le avisará de nuevas notificaciones. Al hacer clic, podrá ver una lista de las incidencias, acceder a los detalles de la visita asociada y marcarlas como leídas o gestionadas.
+- **Propósito:** Ofrecer al `ADMIN` una visión de 360 grados del estado de la operativa diaria, centralizando la información más crítica.
+- **Estado de Implementación:** `COMPLETADA Y OPERATIVA`.
+- **Funcionalidad Detallada:**
+  - **Visitas del Día:** Un widget principal muestra en tiempo real todas las visitas programadas para hoy, con el técnico asignado y su estado (`PENDIENTE` o `COMPLETADA`), permitiendo un seguimiento rápido del progreso del equipo.
+  - **Centro de Incidencias Activas:** Un segundo widget destaca las incidencias que están actualmente en estado `PENDING`, asegurando que los problemas urgentes sean la prioridad número uno. Cada incidencia es un enlace directo al parte de trabajo donde se originó.
+
+#### **Pantalla: Gestión de Incidencias (Integrada en el flujo)**
+
+- **Propósito:** Dotar al `ADMIN` de un sistema robusto y trazable para gestionar los problemas reportados desde el campo.
+- **Estado de Implementación:** `COMPLETADA Y OPERATIVA`.
+- **Flujo de Trabajo:**
+  1.  Una incidencia reportada por un técnico aparece en el Dashboard y en la "campana" de notificaciones del `ADMIN`.
+  2.  El `ADMIN` hace clic en la notificación y es redirigido a una **vista de solo lectura del parte de trabajo original**. Esto garantiza la integridad de los datos: el parte del técnico no puede ser alterado.
+  3.  En esta vista, el `ADMIN` tiene un botón para **"Gestionar Incidencia"**. Al pulsarlo, se abre un modal donde puede:
+      - Revisar las notas del técnico.
+      - Añadir sus propias **notas de resolución** (ej. "Se ha hablado con el cliente, se aprueba cambio de pieza").
+      - Marcar la incidencia como **"Resuelta"**.
+  4.  Una vez resuelta, la incidencia desaparece del dashboard principal para mantener la interfaz enfocada en los problemas activos.
+
+#### **Pantalla: Historial de Incidencias**
+
+- **Propósito:** Proporcionar un registro completo y auditable de todos los problemas gestionados, fundamental para el análisis de calidad y la resolución de disputas.
+- **Estado de Implementación:** `COMPLETADA Y OPERATIVA`.
+- **Funcionalidad Detallada:** Una nueva sección en la aplicación muestra una tabla con el historial de todas las incidencias (pendientes y resueltas). Se puede consultar la fecha, piscina, técnico, el problema reportado y la solución aplicada por el `ADMIN`, con un enlace permanente al parte de trabajo original.
 
 #### **Pantalla: Dashboards y Reportes (Rol: Gerencia)**
 

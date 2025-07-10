@@ -66,36 +66,53 @@ Este documento es la hoja de ruta arquitectónica y el registro de implementaci�
 
 ---
 
-## ▶️ FASE 5: Cierre de Bucles y Experiencia de Usuario
+## ✅ FASE 5: Cierre de Bucles y Experiencia de Usuario
 
-- **Estado:** `EN CURSO`
+- **Estado:** `COMPLETADA`
 - **Intención de Negocio:** Conectar los flujos de información y mejorar la interfaz para proporcionar una experiencia de usuario cohesiva y completa.
-- **Plan de Acción Detallado:**
+- **Entregables Clave:**
   1.  **Sistema de Notificaciones (Admin):**
-      - **Propósito:** Hacer visibles las incidencias reportadas por los técnicos.
-      - **Tareas:**
-        - **Backend:** Crear la API CRUD para `/api/notifications`.
-        - **Frontend:** Añadir un componente "campana" en el `AppLayout` que muestre un indicador y un menú desplegable con las notificaciones.
+      - **Estado:** `COMPLETADO`
+      - **Descripción:** Se ha implementado un sistema de notificaciones en tiempo real para el `ADMIN`. Incluye un componente de "campana" 🔔 en la cabecera, que alerta visualmente de nuevas incidencias. La lógica distingue entre notificaciones "leídas" y "no leídas" para una mejor gestión.
   2.  **Dashboard Principal (Admin):**
-      - **Propósito:** Dar al `ADMIN` una vista rápida del estado de la operativa diaria.
-      - **Tareas:** Reemplazar el `div` actual por un panel que muestre "Visitas de hoy" y "Últimas Incidencias".
-  3.  **Mejoras en el Planificador (Admin):**
-      - **Propósito:** Proporcionar más información visual al `ADMIN`.
-      - **Tareas:** Diferenciar visualmente las visitas `PENDING` de las `COMPLETED` en el planificador (ej. con colores o transparencia).
-  4.  **Gestión de Consumo de Productos (Técnico y Admin):**
-      - **Propósito:** Empezar a registrar los costes asociados a cada visita.
-      - **Tareas:**
-        - **Backend y Frontend:** Implementar el CRUD para el catálogo de `Product`.
-        - **Frontend:** Añadir una sección en el `WorkOrderPage` para que el técnico pueda registrar los productos consumidos.
-        - **Backend:** Modificar `submitWorkOrder` para guardar los registros `Consumption`.
+      - **Estado:** `COMPLETADO`
+      - **Descripción:** La página de inicio del `ADMIN` se ha convertido en un dashboard funcional. Muestra widgets con información crítica: un resumen de las visitas programadas para el día (con su estado) y una lista de las incidencias activas que requieren atención inmediata.
+  3.  **Ciclo de Vida de Gestión de Incidencias:**
+      - **Estado:** `COMPLETADO`
+      - **Descripción:** Se ha desarrollado el flujo completo para la resolución de incidencias. El `ADMIN` puede navegar desde una notificación directamente al parte de trabajo afectado, que se muestra en modo de **solo lectura** para garantizar la integridad de los datos. Desde allí, puede abrir un modal para añadir notas de resolución y marcar la incidencia como `RESOLVED`, cerrando así el ciclo.
+  4.  **Historial de Incidencias Auditable:**
+      - **Estado:** `COMPLETADO`
+      - **Descripción:** Se ha creado una nueva sección en la aplicación que presenta una tabla con el historial completo de todas las incidencias (pendientes y resueltas). Esto proporciona una herramienta de auditoría y consulta fundamental.
 
 ---
 
-## 🔮 FASE 6 Y POSTERIORES: Funcionalidades Avanzadas
+## ▶️ FASE 6: Mejoras UX y Funcionalidades Avanzadas
+
+- **Estado:** `EN CURSO`
+- **Intención de Negocio:** Pulir la interfaz de usuario para una mayor claridad y comenzar a añadir capas de inteligencia de negocio y expandir las capacidades de la plataforma.
+- **Plan de Acción Detallado:**
+  1.  **Mejoras Visuales en el Planificador (Admin):**
+      - **Propósito:** Proporcionar más información visual al `ADMIN` durante la planificación.
+      - **Tareas:** Diferenciar visualmente las visitas `PENDING` de las `COMPLETED` en el planificador (ej. con colores, iconos o transparencia).
+  2.  **Gestión de Consumo de Productos (Técnico y Admin):**
+      - **Propósito:** Empezar a registrar los costes de material asociados a cada visita.
+      - **Tareas:**
+        - **Backend y Frontend:** Implementar el CRUD para el catálogo de `Product`.
+        - **Frontend:** Añadir una sección en la `WorkOrderPage` para que el técnico pueda registrar los productos consumidos.
+        - **Backend:** Modificar `submitWorkOrder` para guardar los registros `Consumption`.
+  3.  **Modo Offline (PWA) para Técnicos:**
+      - **Propósito:** Implementar la capacidad de trabajo sin conexión para el técnico.
+      - **Tareas:** Investigar e implementar Service Workers e IndexedDB para permitir rellenar y guardar partes de trabajo sin conexión a internet.
+  4.  **Dashboard de Gerencia (`MANAGER`):**
+      - **Propósito:** Desarrollar los KPIs y gráficos de alto nivel para el rol de `MANAGER`.
+      - **Tareas:** Diseño y desarrollo de los paneles de análisis de rentabilidad, costes, incidencias y rendimiento.
+
+---
+
+## 🔮 FASE 7 Y POSTERIORES: Ideas Futuras
 
 - **Estado:** `PLANIFICADO`
-- **Intención de Negocio:** Añadir capas de inteligencia de negocio y expandir las capacidades de la plataforma.
 - **Ideas Clave:**
-  - **Modo Offline (PWA):** Implementar la capacidad de trabajo sin conexión para el técnico.
-  - **Dashboard de Gerencia (`MANAGER`):** Desarrollar los KPIs y gráficos.
   - **Sistema de Facturación:** Generar informes de consumo por cliente.
+  - **Integración con Calendarios Externos.**
+  - **App Móvil Nativa.**
