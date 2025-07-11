@@ -1,5 +1,5 @@
 // filename: packages/server/src/api/visits/visits.service.ts
-// version: 1.8.1 (Ensure all notification fields are included in getVisitDetails)
+// version: 1.8.3 (Use technician's notes for incident notification message)
 import { PrismaClient } from '@prisma/client';
 import type { Visit } from '@prisma/client';
 import { 
@@ -66,7 +66,10 @@ export const getScheduledVisitsForWeek = async (tenantId: string, weekDate: Date
 
   return prisma.visit.findMany({
     where: { pool: { tenantId }, timestamp: { gte: start, lte: end } },
-    include: { pool: { include: { client: true } } },
+    include: { 
+      pool: { include: { client: true } },
+      technician: { select: { name: true } },
+    },
     orderBy: { timestamp: 'asc' },
   });
 };
@@ -182,10 +185,16 @@ export const submitWorkOrder = async (visitId: string, data: WorkOrderInput) => 
         where: { tenantId: visit.pool.tenantId, role: 'ADMIN' },
       });
       if (admin) {
-        const technicianName = visit.technician ? visit.technician.name : 'Un técnico';
+        // --- CORRECCIÓN AQUÍ ---
+        // El mensaje de la notificación ahora son las notas del técnico.
+        // Si no hay notas, se usa un mensaje genérico.
+        const notificationMessage = notes && notes.trim().length > 0 
+            ? notes 
+            : `Incidencia reportada en ${visit.pool.name}`;
+
         await tx.notification.create({
           data: {
-            message: `Incidencia en ${visit.pool.name} por ${technicianName}.`,
+            message: notificationMessage,
             tenantId: visit.pool.tenantId,
             userId: admin.id,
             visitId: visit.id,

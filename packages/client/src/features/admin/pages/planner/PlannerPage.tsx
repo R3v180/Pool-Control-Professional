@@ -1,5 +1,5 @@
 // filename: packages/client/src/features/admin/pages/planner/PlannerPage.tsx
-// Version: 1.4.1 (Fix typing errors and clean up unused variables)
+// version: 1.6.3 (Fix conditional styling merge with dnd-kit styles)
 import { useEffect, useState } from 'react';
 import {
   Container,
@@ -21,12 +21,14 @@ import { startOfWeek, endOfWeek, format, addDays, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DndContext, useDraggable, useDroppable } from '@dnd-kit/core';
 import type { DragEndEvent } from '@dnd-kit/core';
+import { useNavigate } from 'react-router-dom';
 
 // --- Tipos ---
 interface Visit {
   id: string;
   timestamp: string;
   status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
+  hasIncident: boolean;
   pool: { name: string; client: { name: string; }; };
   technicianId: string | null;
 }
@@ -36,18 +38,62 @@ interface ApiResponse<T> { success: boolean; data: T; }
 // --- Componentes de Drag and Drop ---
 function DraggableVisit({ visit }: { visit: Visit }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: visit.id, data: visit });
-  const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 100 } : undefined;
-  const visitDate = new Date(visit.timestamp);
+  const navigate = useNavigate();
+  
+  const isCompleted = visit.status === 'COMPLETED';
+
+  // --- LÓGICA DE ESTILOS CORREGIDA ---
+  // 1. Estilos base para la transformación del drag-and-drop
+  const dndStyle = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 100 } : undefined;
+
+  // 2. Nuestros estilos condicionales personalizados
+  const customCardStyles: React.CSSProperties = {
+    cursor: 'pointer',
+  };
+  
+  if (isCompleted) {
+    customCardStyles.opacity = 0.65;
+    if (visit.hasIncident) {
+      customCardStyles.borderLeft = '4px solid var(--mantine-color-red-6)';
+    } else {
+      customCardStyles.borderLeft = '4px solid var(--mantine-color-green-6)';
+    }
+  }
+
+  // 3. Unimos ambos objetos de estilo
+  const combinedDivStyle = { ...dndStyle, ...customCardStyles };
+
+  const titleStyle = isCompleted ? { textDecoration: 'line-through' } : {};
+  
+  const handleCardClick = () => {
+    navigate(`/visits/${visit.id}`);
+  };
 
   return (
-    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
-      <Card shadow="sm" p="xs" withBorder>
+    // Aplicamos los estilos combinados al div exterior
+    <div 
+      ref={setNodeRef} 
+      style={combinedDivStyle} 
+      {...attributes} 
+      {...listeners}
+      onClick={handleCardClick} // El onClick ahora está en el div que se arrastra
+    >
+      <Card 
+        shadow="sm" 
+        p="xs" 
+        withBorder 
+        style={{ width: '100%', height: '100%' }} // La tarjeta ocupa todo el div
+      >
         <Group justify="space-between">
-          <Text fw={500}>{visit.pool.name}</Text>
-          {visit.status === 'COMPLETED' && <Badge size="sm" color="green">OK</Badge>}
+          <Text fw={500} style={titleStyle}>{visit.pool.name}</Text>
+          {isCompleted && (
+            visit.hasIncident 
+              ? <Badge size="sm" color="red" variant="light">⚠️ Incidencia</Badge>
+              : <Badge size="sm" color="green" variant="light">OK</Badge>
+          )}
         </Group>
         <Text size="sm" c="dimmed">{visit.pool.client.name}</Text>
-        <Text size="xs" mt={4}>{format(visitDate, 'eeee d', { locale: es })}</Text>
+        <Text size="xs" mt={4}>{format(new Date(visit.timestamp), 'eeee d', { locale: es })}</Text>
       </Card>
     </div>
   );
@@ -101,7 +147,6 @@ export function PlannerPage() {
 
     let technicianId: string | null = null;
     
-    // CORRECCIÓN: Aseguramos que technicianId sea siempre string o null.
     if (type === 'tech' && id) {
         technicianId = id;
     }
@@ -151,6 +196,7 @@ export function PlannerPage() {
                    <DroppableArea id={`tech-${tech.id}`} title={tech.name}>
                     {visits
                       .filter(v => v.technicianId === tech.id)
+                      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
                       .map(visit => <DraggableVisit key={visit.id} visit={visit} />)
                     }
                    </DroppableArea>

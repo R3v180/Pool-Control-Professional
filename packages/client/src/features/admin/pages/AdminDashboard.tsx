@@ -1,10 +1,10 @@
 // filename: packages/client/src/features/admin/pages/AdminDashboard.tsx
-// version: 1.0.2
-// description: Corrige la navegación programática desde la lista de incidencias.
+// version: 1.1.4
+// description: Corrige el acceso a los datos en la respuesta paginada de la API.
 
 import { useEffect, useState } from 'react';
 import { Container, Title, Grid, Paper, Text, Badge, Loader, Alert, Stack } from '@mantine/core';
-import { useNavigate } from 'react-router-dom'; // <-- 1. Importar useNavigate
+import { useNavigate } from 'react-router-dom';
 import apiClient from '../../../api/apiClient';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -22,6 +22,7 @@ interface Notification {
   id: string;
   message: string;
   visitId: string | null;
+  isCritical: boolean;
 }
 
 // --- Componente Principal ---
@@ -30,7 +31,7 @@ export function AdminDashboard() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate(); // <-- 2. Inicializar el hook
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -39,7 +40,7 @@ export function AdminDashboard() {
       try {
         const [visitsResponse, notificationsResponse] = await Promise.all([
           apiClient.get('/visits/scheduled', { params: { date: new Date().toISOString() } }),
-          apiClient.get('/notifications')
+          apiClient.get('/notifications/history')
         ]);
         
         const today = new Date().toDateString();
@@ -47,8 +48,13 @@ export function AdminDashboard() {
             new Date(v.timestamp).toDateString() === today
         );
         
+        // --- CORRECCIÓN AQUÍ ---
+        // Extraemos el array 'notifications' del objeto de respuesta.
+        const allNotifications = notificationsResponse.data.data.notifications;
+        const pendingNotifications = allNotifications.filter((n: any) => n.status === 'PENDING');
+
         setVisits(todayVisits);
-        setNotifications(notificationsResponse.data.data);
+        setNotifications(pendingNotifications);
       } catch (err) {
         setError('No se pudo cargar la información del dashboard.');
         console.error(err);
@@ -60,7 +66,6 @@ export function AdminDashboard() {
     fetchData();
   }, []);
 
-  // --- 3. Nueva función para manejar el click ---
   const handleIncidentClick = (notification: Notification) => {
     if (notification.visitId) {
       navigate(`/visits/${notification.visitId}`);
@@ -85,7 +90,11 @@ export function AdminDashboard() {
             <Stack>
               {visits.length > 0 ? (
                 visits.map(visit => (
-                  <Paper key={visit.id} withBorder p="sm" radius="md">
+                  <Paper 
+                    key={visit.id} 
+                    withBorder p="sm" radius="md"
+                    style={{ opacity: visit.status === 'COMPLETED' ? 0.65 : 1 }}
+                  >
                     <Grid align="center">
                       <Grid.Col span={8}>
                         <Text fw={500}>{visit.pool.name}</Text>
@@ -93,7 +102,10 @@ export function AdminDashboard() {
                         <Text size="xs" c="dimmed">Técnico: {visit.technician?.name || 'Sin asignar'}</Text>
                       </Grid.Col>
                       <Grid.Col span={4} ta="right">
-                        <Badge color={visit.status === 'COMPLETED' ? 'green' : 'blue'}>
+                        <Badge 
+                          color={visit.status === 'COMPLETED' ? 'green' : 'blue'}
+                          variant="light"
+                        >
                           {visit.status}
                         </Badge>
                       </Grid.Col>
@@ -110,25 +122,26 @@ export function AdminDashboard() {
         {/* Columna de Incidencias */}
         <Grid.Col span={{ base: 12, md: 5 }}>
           <Paper withBorder p="md" shadow="sm">
-            <Title order={4} mb="md">Últimas Incidencias</Title>
+            <Title order={4} mb="md">Incidencias Activas</Title>
              <Stack>
               {notifications.length > 0 ? (
                 notifications.map(notification => (
-                  // --- 4. Simplificamos el renderizado ---
-                  // Quitamos el <Link> y añadimos el onClick al Paper
                   <Paper 
                     key={notification.id} 
                     withBorder p="sm" radius="md" 
                     onClick={() => handleIncidentClick(notification)}
-                    style={{ cursor: 'pointer' }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    style={{ 
+                      cursor: 'pointer',
+                      backgroundColor: notification.isCritical ? 'var(--mantine-color-red-0)' : 'transparent'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.boxShadow = 'var(--mantine-shadow-md)'}
+                    onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
                   >
                     <Text size="sm">{notification.message}</Text>
                   </Paper>
                 ))
               ) : (
-                <Text c="dimmed">No hay incidencias pendientes.</Text>
+                <Text c="dimmed">No hay incidencias activas.</Text>
               )}
             </Stack>
           </Paper>

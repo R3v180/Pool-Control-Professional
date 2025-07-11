@@ -1,13 +1,14 @@
 // filename: packages/server/src/api/notifications/notifications.routes.ts
-// version: 1.2.0
-// description: Añade el endpoint para obtener el historial de notificaciones.
+// version: 1.3.0
+// description: Añade el endpoint para clasificar una notificación.
 
 import { Router } from 'express';
 import { 
   getNotificationsHandler, 
   markAsReadHandler, 
   resolveNotificationHandler,
-  getHistoryHandler, // <-- Importar el nuevo manejador
+  getHistoryHandler,
+  classifyNotificationHandler, // <-- Importar el nuevo manejador
 } from './notifications.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
 
@@ -43,6 +44,13 @@ notificationsRouter.post('/:notificationId/read', markAsReadHandler);
  * @access  Private (Admin)
  */
 notificationsRouter.post('/:notificationId/resolve', resolveNotificationHandler);
+
+/**
+ * @route   PATCH /api/notifications/:notificationId/classify
+ * @desc    Clasifica una notificación (establece prioridad y/o plazo).
+ * @access  Private (Admin)
+ */
+notificationsRouter.patch('/:notificationId/classify', classifyNotificationHandler);
 
 
 export default notificationsRouter;

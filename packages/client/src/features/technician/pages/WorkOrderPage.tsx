@@ -1,5 +1,5 @@
 // filename: packages/client/src/features/technician/pages/WorkOrderPage.tsx
-// version: 1.4.3 (Display admin resolution notes in read-only view)
+// version: 1.5.3 (Ensure deadline value is a proper Date object)
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
@@ -22,13 +22,16 @@ import {
   Grid,
   Modal,
   Group,
-  Divider, // <-- Importar Divider
+  Divider,
 } from '@mantine/core';
+import { DateTimePicker } from '@mantine/dates';
+import 'dayjs/locale/es';
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
 import apiClient from '../../../api/apiClient';
 
 // --- Tipos ---
+type IncidentPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
 interface VisitResult {
   parameterName: string;
   parameterUnit: string | null;
@@ -37,7 +40,9 @@ interface VisitResult {
 interface Notification {
     id: string;
     status: 'PENDING' | 'RESOLVED';
-    resolutionNotes: string | null; // <-- Necesitamos las notas
+    resolutionNotes: string | null;
+    priority: IncidentPriority | null;
+    resolutionDeadline: string | null;
 }
 interface VisitDetails {
   id: string;
@@ -66,99 +71,111 @@ interface ApiResponse<T> {
 // --- Componente de Solo Lectura ---
 const ReadOnlyWorkOrder = ({ visit }: { visit: VisitDetails }) => {
   const navigate = useNavigate();
-  const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
-  const incidentNotification = visit.notifications.find(n => n.status === 'PENDING' || n.status === 'RESOLVED');
+  const [resolutionModalOpened, { open: openResolutionModal, close: closeResolutionModal }] = useDisclosure(false);
+  const [classifyModalOpened, { open: openClassifyModal, close: closeClassifyModal }] = useDisclosure(false);
+  
+  const incidentNotification = visit.notifications.length > 0 ? visit.notifications[0] : null;
 
   const resolutionForm = useForm({
     initialValues: { resolutionNotes: '' },
-    validate: {
-      resolutionNotes: (value) => value.trim().length < 10 ? 'Las notas de resolución son demasiado cortas.' : null,
-    },
+    validate: { resolutionNotes: (value) => value.trim().length < 10 ? 'Las notas de resolución son demasiado cortas.' : null },
+  });
+
+  const classificationForm = useForm({
+      initialValues: {
+          priority: incidentNotification?.priority || 'NORMAL',
+          deadline: incidentNotification?.resolutionDeadline ? new Date(incidentNotification.resolutionDeadline) : null,
+      },
+      validate: { priority: (value) => !value ? 'Debe seleccionar una prioridad.' : null }
   });
 
   const handleResolveIncident = async (values: { resolutionNotes: string }) => {
     if (!incidentNotification) return;
     try {
       await apiClient.post(`/notifications/${incidentNotification.id}/resolve`, values);
-      closeModal();
-      navigate('/');
-    } catch (error) {
-      console.error('Failed to resolve incident', error);
-    }
+      closeResolutionModal();
+      navigate('/incidents-history');
+    } catch (error) { console.error('Failed to resolve incident', error); }
   };
+
+  const handleClassifyIncident = async (values: { priority: IncidentPriority, deadline: Date | null }) => {
+      if (!incidentNotification) return;
+      try {
+          // --- CORRECCIÓN AQUÍ ---
+          // Creamos una nueva instancia de Date a partir del valor del formulario para asegurar que tenemos los métodos correctos.
+          const deadlineDate = values.deadline ? new Date(values.deadline) : null;
+
+          await apiClient.patch(`/notifications/${incidentNotification.id}/classify`, {
+              priority: values.priority,
+              deadline: deadlineDate ? deadlineDate.toISOString() : null
+          });
+          closeClassifyModal();
+          navigate('/incidents-history'); 
+      } catch (error) { console.error('Failed to classify incident', error); }
+  }
 
   return (
     <>
-      <Modal opened={modalOpened} onClose={closeModal} title="Gestionar Incidencia" centered>
+      <Modal opened={resolutionModalOpened} onClose={closeResolutionModal} title="Gestionar Incidencia" centered>
         <form onSubmit={resolutionForm.onSubmit(handleResolveIncident)}>
           <Stack>
-            <Title order={5}>Notas del Técnico:</Title>
-            <Text>{visit.notes || 'N/A'}</Text>
-            <Textarea
-              label="Notas de Resolución (Admin)"
-              placeholder="Ej: Se contactó al cliente, se agendó revisión para el día Jueves..."
-              required
-              autosize
-              minRows={3}
-              {...resolutionForm.getInputProps('resolutionNotes')}
-            />
-            <Button type="submit" mt="md">Marcar como Resuelta</Button>
+            <Text c="dimmed">Notas del Técnico:</Text>
+            <Paper withBorder p="sm" bg="gray.0">{visit.notes || 'N/A'}</Paper>
+            <Textarea label="Notas de Resolución (Admin)" placeholder="Ej: Cliente contactado..." required minRows={3} {...resolutionForm.getInputProps('resolutionNotes')}/>
+            <Button type="submit" mt="md" color="green">Marcar como Resuelta</Button>
           </Stack>
         </form>
       </Modal>
 
+      <Modal opened={classifyModalOpened} onClose={closeClassifyModal} title="Clasificar Incidencia" centered>
+          <form onSubmit={classificationForm.onSubmit(handleClassifyIncident)}>
+              <Stack>
+                  <Select
+                    label="Establecer Prioridad"
+                    data={['LOW', 'NORMAL', 'HIGH', 'CRITICAL']}
+                    required
+                    {...classificationForm.getInputProps('priority')}
+                  />
+                  <DateTimePicker
+                    label="Establecer Plazo de Resolución (opcional)"
+                    placeholder="Seleccione fecha y hora"
+                    locale="es"
+                    clearable
+                    {...classificationForm.getInputProps('deadline')}
+                  />
+                  <Button type="submit" mt="md">Guardar Clasificación</Button>
+              </Stack>
+          </form>
+      </Modal>
+
       <Container>
-          <Breadcrumbs>
-              <Link to="/">Dashboard</Link>
-              <Text>{visit.pool.name}</Text>
-          </Breadcrumbs>
-          <Grid align="center" justify="space-between" my="lg">
-              <Grid.Col span="auto">
-                  <Title order={2}>Resumen de Visita: {visit.pool.name}</Title>
-              </Grid.Col>
-              <Grid.Col span="content">
-                  <Badge color="green" size="lg">COMPLETADA</Badge>
-              </Grid.Col>
-          </Grid>
+          <Breadcrumbs><Link to="/">Dashboard</Link><Text>{visit.pool.name}</Text></Breadcrumbs>
+          <Grid align="center" justify="space-between" my="lg"><Grid.Col span="auto"><Title order={2}>Resumen de Visita: {visit.pool.name}</Title></Grid.Col><Grid.Col span="content"><Badge color="green" size="lg">COMPLETADA</Badge></Grid.Col></Grid>
           <Text c="dimmed">{visit.pool.client.name} - {visit.pool.address}</Text>
 
           <Paper withBorder p="md" mt="xl">
               <Stack>
-                  {visit.results.length > 0 && (
-                      <div>
-                          <Title order={4} mb="sm">Resultados de Mediciones</Title>
-                          {visit.results.map(r => <Text key={r.parameterName}><strong>{r.parameterName}:</strong> {r.value} {r.parameterUnit || ''}</Text>)}
-                      </div>
-                  )}
-                  {visit.completedTasks.length > 0 && (
-                      <div>
-                          <Title order={4} mt="lg" mb="sm">Tareas Realizadas</Title>
-                          {visit.completedTasks.map(t => <Text key={t}>✅ {t}</Text>)}
-                      </div>
-                  )}
+                  {visit.results.length > 0 && (<div><Title order={4} mb="sm">Resultados de Mediciones</Title>{visit.results.map(r => <Text key={r.parameterName}><strong>{r.parameterName}:</strong> {r.value} {r.parameterUnit || ''}</Text>)}</div>)}
+                  {visit.completedTasks.length > 0 && (<div><Title order={4} mt="lg" mb="sm">Tareas Realizadas</Title>{visit.completedTasks.map(t => <Text key={t}>✅ {t}</Text>)}</div>)}
                   <Divider my="sm" />
                   <div>
                       <Title order={4}>Observaciones e Incidencia</Title>
                       <Text fw={500} mt="sm">Notas del Técnico:</Text>
-                      <Paper withBorder p="sm" bg="#f8f9fa" mt="xs">
-                          <Text>{visit.notes || 'No se dejaron notas.'}</Text>
-                      </Paper>
+                      <Paper withBorder p="sm" bg="gray.0" mt="xs"><Text>{visit.notes || 'No se dejaron notas.'}</Text></Paper>
                       
-                      {/* --- SECCIÓN DE INCIDENCIA MEJORADA --- */}
                       {visit.hasIncident && incidentNotification && (
                         <>
                             {incidentNotification.status === 'RESOLVED' ? (
-                                <>
-                                    <Badge color="green" size="lg" mt="md">INCIDENCIA RESUELTA</Badge>
+                                <Stack mt="md" gap="xs">
+                                    <Badge color="green" size="lg">INCIDENCIA RESUELTA</Badge>
                                     <Text fw={500} mt="sm">Notas de Resolución (Admin):</Text>
-                                    <Paper withBorder p="sm" bg="#e6fcf5" mt="xs">
-                                        <Text>{incidentNotification.resolutionNotes}</Text>
-                                    </Paper>
-                                </>
+                                    <Paper withBorder p="sm" bg="green.0" mt="xs"><Text>{incidentNotification.resolutionNotes}</Text></Paper>
+                                </Stack>
                             ) : (
                                 <Group mt="md">
                                     <Badge color="red" size="lg">INCIDENCIA PENDIENTE</Badge>
-                                    <Button onClick={openModal}>Gestionar Incidencia</Button>
+                                    <Button onClick={openClassifyModal} variant="outline">Clasificar</Button>
+                                    <Button onClick={openResolutionModal} color="green">Resolver</Button>
                                 </Group>
                             )}
                         </>
