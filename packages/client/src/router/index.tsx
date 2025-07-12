@@ -1,5 +1,5 @@
 // filename: packages/client/src/router/index.tsx
-// Version: 1.8.4 (Add route for ProductCatalogPage)
+// Version: 1.9.1 (FIX: Allow technicians to access IncidentDetailPage)
 import { createBrowserRouter } from 'react-router-dom';
 import { LoginPage } from '../features/auth/pages/LoginPage.js';
 import { TenantsPage } from '../features/superadmin/pages/TenantsPage.js';
@@ -14,6 +14,7 @@ import { MyRoutePage } from '../features/technician/pages/MyRoutePage.js';
 import { WorkOrderPage } from '../features/technician/pages/WorkOrderPage.js';
 import { AdminDashboard } from '../features/admin/pages/AdminDashboard.js';
 import { IncidentsHistoryPage } from '../features/admin/pages/IncidentsHistoryPage.js';
+import { IncidentDetailPage } from '../features/admin/pages/incidents/IncidentDetailPage.js';
 import { useAuth } from '../providers/AuthProvider.js';
 import {
   AppLayout,
@@ -112,6 +113,17 @@ export const router = createBrowserRouter([
                 element: <IncidentsHistoryPage />,
               },
             ],
+          },
+          // --- RUTA CORREGIDA PARA EL DETALLE DE INCIDENCIA ---
+          {
+            path: 'incidents/:notificationId',
+            element: <ProtectedRoute />, // <-- CAMBIO APLICADO: de AdminRoute a ProtectedRoute
+            children: [
+              {
+                index: true,
+                element: <IncidentDetailPage />,
+              }
+            ]
           },
           {
             path: 'catalog',

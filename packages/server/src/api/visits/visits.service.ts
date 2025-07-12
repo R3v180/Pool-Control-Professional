@@ -1,5 +1,7 @@
 // filename: packages/server/src/api/visits/visits.service.ts
-// version: 1.9.1 (Process and save product consumption data in submitWorkOrder)
+// version: 2.0.1 (FIXED)
+// description: Corrige los errores de tipo y se alinea con el schema v2.2.0.
+
 import { PrismaClient } from '@prisma/client';
 import type { Visit } from '@prisma/client';
 import { 
@@ -12,9 +14,10 @@ const prisma = new PrismaClient();
 export type WorkOrderInput = {
   results: Record<string, string | number | boolean>;
   completedTasks: Record<string, boolean>;
-  consumptions?: { productId: string; quantity: number }[]; // El campo de consumo que recibimos
+  consumptions?: { productId: string; quantity: number }[];
   notes?: string;
   hasIncident?: boolean;
+  imageUrls?: string[]; 
 };
 
 
@@ -116,7 +119,11 @@ export const getVisitDetails = async (visitId: string) => {
     where: { id: visitId },
     include: {
       results: true, 
-      notifications: true,
+      notifications: {
+        include: {
+          images: true, // Esto es correcto, 'images' es la relación en el modelo Notification
+        }
+      },
       consumptions: {
         include: {
           product: true,
@@ -150,20 +157,17 @@ export const submitWorkOrder = async (visitId: string, data: WorkOrderInput) => 
         technician: true
       },
     });
-    if (!visit) throw new Error('Visita no encontrada');
+    if (!visit || !visit.technicianId) throw new Error('Visita o técnico no encontrados');
     
-    // Extraemos todos los datos, incluyendo el nuevo 'consumptions'
-    const { results, completedTasks, notes, hasIncident, consumptions = [] } = data;
+    const { results, completedTasks, notes, hasIncident, consumptions = [], imageUrls = [] } = data;
 
-    // --- NUEVA LÓGICA DE GUARDADO DE CONSUMO ---
     if (consumptions && consumptions.length > 0) {
-        // Filtramos para evitar entradas vacías que puedan venir del frontend
         const validConsumptions = consumptions
             .filter(c => c.productId && c.quantity && c.quantity > 0)
             .map(c => ({
                 quantity: c.quantity,
                 productId: c.productId,
-                visitId: visitId, // Añadimos el visitId a cada registro
+                visitId: visitId,
             }));
 
         if (validConsumptions.length > 0) {
@@ -178,12 +182,7 @@ export const submitWorkOrder = async (visitId: string, data: WorkOrderInput) => 
       const config = visit.pool.configurations.find(c => c.id === configId);
       if (config?.parameterTemplate) {
         await tx.visitResult.create({
-          data: {
-            visitId,
-            value: String(value),
-            parameterName: config.parameterTemplate.name,
-            parameterUnit: config.parameterTemplate.unit,
-          },
+          data: { visitId, value: String(value), parameterName: config.parameterTemplate.name, parameterUnit: config.parameterTemplate.unit, },
         });
       }
     }
@@ -197,12 +196,7 @@ export const submitWorkOrder = async (visitId: string, data: WorkOrderInput) => 
     
     await tx.visit.update({
       where: { id: visitId },
-      data: {
-        notes,
-        hasIncident: hasIncident || false,
-        completedTasks: completedTaskNames,
-        status: 'COMPLETED',
-      },
+      data: { notes, hasIncident: hasIncident || false, completedTasks: completedTaskNames, status: 'COMPLETED', },
     });
 
     if (hasIncident) {
@@ -214,15 +208,20 @@ export const submitWorkOrder = async (visitId: string, data: WorkOrderInput) => 
             ? notes 
             : `Incidencia reportada en ${visit.pool.name} por ${visit.technician?.name || 'un técnico'}`;
 
-        await tx.notification.create({
-          data: {
-            message: notificationMessage,
-            tenantId: visit.pool.tenantId,
-            userId: admin.id,
-            visitId: visit.id,
-            status: 'PENDING',
-          },
+        const newNotification = await tx.notification.create({
+          data: { message: notificationMessage, tenantId: visit.pool.tenantId, userId: admin.id, visitId: visit.id, status: 'PENDING', },
         });
+        
+        if (imageUrls.length > 0) {
+          // Aquí usamos el nombre correcto del modelo: `incidentImage`
+          await tx.incidentImage.createMany({
+            data: imageUrls.map(url => ({
+              url: url,
+              notificationId: newNotification.id,
+              uploaderId: visit.technicianId!,
+            })),
+          });
+        }
       }
     }
     

@@ -1,3 +1,6 @@
+// filename: packages/server/src/config/index.ts
+// version: 2.0.0 (Add Cloudinary credentials)
+
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -22,6 +25,11 @@ const config = {
   JWT_SECRET: getEnvVar('JWT_SECRET'),
   JWT_EXPIRES_IN: parseInt(getEnvVar('JWT_EXPIRES_IN'), 10),
   DATABASE_URL: getEnvVar('DATABASE_URL'),
+
+  // --- Nuevas credenciales de Cloudinary ---
+  CLOUDINARY_CLOUD_NAME: getEnvVar('CLOUDINARY_CLOUD_NAME'),
+  CLOUDINARY_API_KEY: getEnvVar('CLOUDINARY_API_KEY'),
+  CLOUDINARY_API_SECRET: getEnvVar('CLOUDINARY_API_SECRET'),
 };
 
 export default config;

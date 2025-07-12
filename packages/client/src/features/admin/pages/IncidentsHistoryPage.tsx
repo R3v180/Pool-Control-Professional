@@ -1,10 +1,10 @@
 // filename: packages/client/src/features/admin/pages/IncidentsHistoryPage.tsx
-// version: 2.2.4
-// description: Ajusta el tamaño de página a un valor de producción.
+// version: 2.3.0
+// description: Convierte las filas de la tabla en enlaces a la nueva página de detalles de la incidencia.
 
 import { useEffect, useState, useRef } from 'react';
 import { Container, Title, Table, Loader, Alert, Badge, ActionIcon, Tooltip, Text, Select, Grid, Pagination, Center } from '@mantine/core';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import apiClient from '../../../api/apiClient';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -51,13 +51,13 @@ export function IncidentsHistoryPage() {
   
   const [activePage, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  // --- CORRECCIÓN AQUÍ ---
-  const PAGE_SIZE = 10; // Valor de producción
+  const PAGE_SIZE = 10;
 
   const [filterStatus, setFilterStatus] = useState<string | null>('PENDING');
   const [filterClient, setFilterClient] = useState<string | null>(null);
 
   const isInitialMount = useRef(true);
+  const navigate = useNavigate(); // <-- Hook para la navegación
 
   useEffect(() => {
     if (!isInitialMount.current) {
@@ -106,13 +106,24 @@ export function IncidentsHistoryPage() {
     fetchClients();
   }, []);
   
+  // --- Manejador para la navegación ---
+  const handleRowClick = (notificationId: string) => {
+    navigate(`/incidents/${notificationId}`);
+  };
+
   if (isLoading) return <Loader size="xl" />;
   if (error) return <Alert color="red" title="Error">{error}</Alert>;
   
   const rows = incidents.map((item) => (
     <Table.Tr 
       key={item.id} 
-      style={{ backgroundColor: item.isCritical ? 'var(--mantine-color-red-0)' : 'transparent' }}
+      style={{ 
+        backgroundColor: item.isCritical ? 'var(--mantine-color-red-0)' : 'transparent',
+        cursor: 'pointer' // <-- Cambia el cursor para indicar que es clicable
+      }}
+      onClick={() => handleRowClick(item.id)} // <-- Añadimos el evento onClick
+      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--mantine-color-gray-1)'}
+      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = item.isCritical ? 'var(--mantine-color-red-0)' : 'transparent'}
     >
       <Table.Td>
         <Tooltip label={format(new Date(item.createdAt), 'dd/MM/yyyy HH:mm')}>
@@ -134,8 +145,9 @@ export function IncidentsHistoryPage() {
       </Table.Td>
       <Table.Td>
         {item.visit && (
-          <Tooltip label="Ver Parte de Trabajo">
-            <ActionIcon component={Link} to={`/visits/${item.visit.id}`} variant="subtle">
+          <Tooltip label="Ver Parte de Trabajo Original">
+            {/* Detenemos la propagación para que al hacer clic en el icono no navegue a la página de detalle de incidencia */}
+            <ActionIcon component={Link} to={`/visits/${item.visit.id}`} variant="subtle" onClick={(e) => e.stopPropagation()}>
               📄
             </ActionIcon>
           </Tooltip>

@@ -1,6 +1,5 @@
 // filename: packages/server/src/api/notifications/notifications.service.ts
-// version: 1.5.1
-// description: Añade lógica de filtrado por estado y cliente a la consulta del historial.
+// version: 1.6.1 (FIXED - Based on v1.5.1, adds getNotificationById)
 
 import { PrismaClient } from '@prisma/client';
 import type { Notification, IncidentPriority, NotificationStatus } from '@prisma/client';
@@ -12,8 +11,8 @@ const prisma = new PrismaClient();
 export type NotificationWithCriticality = Notification & { isCritical: boolean };
 
 export type PaginatedNotifications = {
-  notifications: NotificationWithCriticality[];
-  total: number;
+    notifications: (Notification & { visit: any })[]; // Ajustado para que coincida con el include
+    total: number;
 };
 
 /**
@@ -33,14 +32,12 @@ export const getNotificationHistory = async (
   tenantId: string,
   page: number,
   pageSize: number,
-  // --- NUEVOS PARÁMETROS DE FILTRO ---
   status?: NotificationStatus,
   clientId?: string
 ): Promise<PaginatedNotifications> => {
     
     const skip = (page - 1) * pageSize;
 
-    // --- OBJETO DE FILTROS DINÁMICO ---
     const whereClause: any = { tenantId };
     if (status) {
         whereClause.status = status;
@@ -51,7 +48,7 @@ export const getNotificationHistory = async (
     
     const [notifications, total] = await prisma.$transaction([
         prisma.notification.findMany({
-            where: whereClause, // Usamos el objeto de filtros dinámico
+            where: whereClause,
             skip: skip,
             take: pageSize,
             include: {
@@ -62,13 +59,13 @@ export const getNotificationHistory = async (
                         },
                         technician: { select: { name: true } }
                     }
-                }
+                },
+                images: true, // Incluimos las imágenes
             }
         }),
-        prisma.notification.count({ where: whereClause }) // Contamos usando los mismos filtros
+        prisma.notification.count({ where: whereClause })
     ]);
     
-    // El resto de la lógica no cambia
     const now = new Date();
     const criticalThreshold = subHours(now, 48); 
 
@@ -135,4 +132,26 @@ export const classifyNotification = async (
         where: { id: notificationId, userId: userId },
         data: { priority: priority, resolutionDeadline: deadline },
     });
+};
+
+
+/**
+ * --- NUEVA FUNCIÓN ---
+ * Obtiene los detalles de una única notificación por su ID.
+ * @param notificationId - El ID de la notificación a buscar.
+ * @returns El objeto de la notificación con sus relaciones, o null si no se encuentra.
+ */
+export const getNotificationById = async (notificationId: string) => {
+  return prisma.notification.findUnique({
+    where: { id: notificationId },
+    include: {
+      images: true,
+      visit: {
+        include: {
+          pool: { select: { name: true } },
+          technician: { select: { name: true } },
+        },
+      },
+    },
+  });
 };

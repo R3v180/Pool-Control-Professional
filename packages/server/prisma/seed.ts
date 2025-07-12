@@ -1,6 +1,6 @@
 // filename: packages/server/prisma/seed.ts
-// version: 3.1.0
-// description: Añade la creación de productos y simula un registro de consumo, manteniendo toda la estructura anterior.
+// version: 3.4.2 (FIXED - Removed redundant deleteMany calls)
+// description: Versión corregida que elimina la limpieza inicial para ser compatible con `prisma migrate reset`.
 
 import { PrismaClient } from '@prisma/client';
 import type { Frequency, ParameterTemplate, ScheduledTaskTemplate, User, Pool, Product } from '@prisma/client';
@@ -11,7 +11,8 @@ import { subDays, addDays } from 'date-fns';
 import { usersData } from './data/users.js';
 import { parameterData, taskData } from './data/catalogs.js';
 import { clientsData } from './data/clients.js';
-import { productData } from './data/products.js'; // <-- Importación de nuevos datos
+import { productData } from './data/products.js';
+import { incidentTasksData } from './data/incident-tasks.js';
 
 const prisma = new PrismaClient();
 
@@ -28,24 +29,10 @@ const getRandomItems = <T>(arr: T[], count: number): T[] => {
 async function main() {
   console.log('🌱 Empezando el proceso de seeding para la demo...');
 
-  // 1. --- RESET COMPLETO DE LA BASE DE DATOS ---
-  console.log('🗑️  Limpiando la base de datos...');
-  // Añadimos los nuevos modelos al principio de la secuencia de borrado
-  await prisma.consumption.deleteMany({});
-  await prisma.product.deleteMany({});
-  await prisma.notification.deleteMany({});
-  await prisma.visitResult.deleteMany({});
-  await prisma.visit.deleteMany({});
-  await prisma.poolConfiguration.deleteMany({});
-  await prisma.pool.deleteMany({});
-  await prisma.client.deleteMany({});
-  await prisma.scheduledTaskTemplate.deleteMany({});
-  await prisma.parameterTemplate.deleteMany({});
-  await prisma.user.deleteMany({});
-  await prisma.tenant.deleteMany({});
-  console.log('✅ Base de datos reseteada.');
+  // La limpieza de la base de datos la realiza el comando `prisma migrate reset`.
+  // No es necesario (y es problemático) hacerlo aquí de nuevo.
 
-  // 2. --- CREACIÓN DE ENTIDADES DEL SISTEMA ---
+  // 1. --- CREACIÓN DE ENTIDADES DEL SISTEMA ---
   const systemTenant = await prisma.tenant.create({
     data: { companyName: 'SYSTEM_INTERNAL', subdomain: 'system', subscriptionStatus: 'ACTIVE' },
   });
@@ -55,7 +42,7 @@ async function main() {
   });
   console.log('👑 SuperAdmin y Tenant del sistema creados.');
 
-  // 3. --- CREACIÓN DEL TENANT DE PRUEBA Y USUARIOS ---
+  // 2. --- CREACIÓN DEL TENANT DE PRUEBA Y USUARIOS ---
   const mainTenant = await prisma.tenant.create({
     data: { companyName: 'Piscival S.L.', subdomain: 'piscival', subscriptionStatus: 'ACTIVE' },
   });
@@ -72,13 +59,12 @@ async function main() {
   const technicians = createdUsers.filter(u => u.role === 'TECHNICIAN');
   if (!adminUser || technicians.length < 3) throw new Error('Seeding fallido: No se encontraron suficientes usuarios admin o técnicos.');
 
-  // 4. --- CREACIÓN DE CATÁLOGOS ---
+  // 3. --- CREACIÓN DE CATÁLOGOS ---
   const createdParams = await prisma.parameterTemplate.createManyAndReturn({ data: parameterData.map(p => ({ ...p, tenantId: mainTenant.id })) });
   console.log(`\n📊 Creados ${createdParams.length} parámetros en el catálogo de Parámetros.`);
   const createdTasks = await prisma.scheduledTaskTemplate.createManyAndReturn({ data: taskData.map(t => ({ ...t, tenantId: mainTenant.id })) });
   console.log(`📋 Creadas ${createdTasks.length} tareas en el catálogo de Tareas.`);
   
-  // --- 4.5 NUEVA SECCIÓN: CREACIÓN DEL CATÁLOGO DE PRODUCTOS ---
   const createdProducts: Product[] = [];
   for (const prodData of productData) {
       const product = await prisma.product.create({ data: { ...prodData, tenantId: mainTenant.id }});
@@ -86,7 +72,7 @@ async function main() {
   }
   console.log(`📦 Creados ${createdProducts.length} productos en el catálogo de Productos.`);
 
-  // 5. --- CREACIÓN DE CLIENTES Y PISCINAS ---
+  // 4. --- CREACIÓN DE CLIENTES Y PISCINAS ---
   const allPools: Pool[] = [];
   for (const data of clientsData) {
     const client = await prisma.client.create({ data: { ...data.client, tenantId: mainTenant.id } });
@@ -102,142 +88,61 @@ async function main() {
   }
   if (allPools.length < 5) throw new Error('Seeding fallido: No se crearon suficientes piscinas.');
 
-  // 6. --- SIMULACIÓN DE ACTIVIDAD RECIENTE ---
+  // 5. --- SIMULACIÓN DE ACTIVIDAD RECIENTE ---
   console.log('\n⚙️  Simulando escenario de demo...');
   const today = new Date();
   const threeDaysAgo = subDays(today, 3);
   const tomorrow = addDays(today, 1);
   
-  // --- Visitas PENDIENTES para hoy ---
-  await prisma.visit.create({
-    data: {
-      timestamp: today,
-      poolId: allPools[1]!.id,
-      technicianId: technicians[0]!.id,
-      status: 'PENDING',
-    }
-  });
-  await prisma.visit.create({
-    data: {
-      timestamp: today,
-      poolId: allPools[3]!.id,
-      technicianId: technicians[1]!.id,
-      status: 'PENDING',
-    }
-  });
+  await prisma.visit.create({ data: { timestamp: today, poolId: allPools[1]!.id, technicianId: technicians[0]!.id, status: 'PENDING' } });
+  await prisma.visit.create({ data: { timestamp: today, poolId: allPools[3]!.id, technicianId: technicians[1]!.id, status: 'PENDING' } });
   console.log('   - 2 visitas PENDIENTES para hoy creadas.');
 
-  // --- Visita COMPLETADA SIN INCIDENCIA ---
-  const okVisit = await prisma.visit.create({
-    data: {
-      timestamp: today,
-      poolId: allPools[2]!.id,
-      technicianId: technicians[1]!.id,
-      status: 'COMPLETED',
-      hasIncident: false,
-      notes: 'Todo en orden. Valores perfectos. El cliente ha comentado que está muy contento con el servicio.',
-      completedTasks: ['Limpieza de cestos de skimmers', 'Revisión de clorador salino']
-    }
-  });
-  await prisma.visitResult.createMany({
-    data: [
-      { visitId: okVisit.id, parameterName: 'Nivel de pH', value: '7.4', parameterUnit: 'pH' },
-      { visitId: okVisit.id, parameterName: 'Nivel de Sal (para piscinas de sal)', value: '4500', parameterUnit: 'ppm' }
-    ]
-  });
-  // --- NUEVA ADICIÓN: SIMULACIÓN DE CONSUMO ---
+  const okVisit = await prisma.visit.create({ data: { timestamp: today, poolId: allPools[2]!.id, technicianId: technicians[1]!.id, status: 'COMPLETED', hasIncident: false, notes: 'Todo en orden. Valores perfectos. El cliente ha comentado que está muy contento con el servicio.', completedTasks: ['Limpieza de cestos de skimmers', 'Revisión de clorador salino'] } });
+  await prisma.visitResult.createMany({ data: [ { visitId: okVisit.id, parameterName: 'Nivel de pH', value: '7.4', parameterUnit: 'pH' }, { visitId: okVisit.id, parameterName: 'Nivel de Sal (para piscinas de sal)', value: '4500', parameterUnit: 'ppm' } ] });
   const salProduct = createdProducts.find(p => p.name.includes('Sal para Piscinas'));
-  if(salProduct) {
-      await prisma.consumption.create({ data: { visitId: okVisit.id, productId: salProduct.id, quantity: 1 }}); // 1 saco de sal
-  }
+  if(salProduct) { await prisma.consumption.create({ data: { visitId: okVisit.id, productId: salProduct.id, quantity: 1 }}); }
   console.log('   - 1 visita COMPLETADA OK (con consumo de sal) creada.');
   
-  // --- INCIDENCIA 1: CRÍTICA (Antigua) ---
   const criticalVisitNotes = 'Fuga de agua detectada en la tubería principal del skimmer. Gotea constantemente, el nivel de la piscina ha bajado notablemente.';
-  const criticalVisit = await prisma.visit.create({
-    data: {
-      timestamp: threeDaysAgo,
-      poolId: allPools[0]!.id,
-      technicianId: technicians[0]!.id,
-      status: 'COMPLETED',
-      hasIncident: true,
-      notes: criticalVisitNotes,
-      completedTasks: ['Limpieza de cestos de skimmers']
-    }
-  });
-  await prisma.visitResult.createMany({
-    data: [
-      { visitId: criticalVisit.id, parameterName: 'Nivel del Agua en Skimmer', value: 'Bajo' },
-      { visitId: criticalVisit.id, parameterName: 'Nivel de pH', value: '7.9' },
-    ]
-  });
-  await prisma.notification.create({
-    data: {
-      message: criticalVisitNotes,
-      visitId: criticalVisit.id,
-      tenantId: mainTenant.id,
-      userId: adminUser.id,
-      createdAt: threeDaysAgo,
-    }
-  });
+  const criticalVisit = await prisma.visit.create({ data: { timestamp: threeDaysAgo, poolId: allPools[0]!.id, technicianId: technicians[0]!.id, status: 'COMPLETED', hasIncident: true, notes: criticalVisitNotes, completedTasks: ['Limpieza de cestos de skimmers'] } });
+  await prisma.visitResult.createMany({ data: [ { visitId: criticalVisit.id, parameterName: 'Nivel del Agua en Skimmer', value: 'Bajo' }, { visitId: criticalVisit.id, parameterName: 'Nivel de pH', value: '7.9' }, ] });
+  await prisma.notification.create({ data: { message: criticalVisitNotes, visitId: criticalVisit.id, tenantId: mainTenant.id, userId: adminUser.id, createdAt: threeDaysAgo, } });
   console.log('   - 1 incidencia CRÍTICA (de hace 3 días) creada.');
 
-  // --- INCIDENCIA 2: PENDIENTE NORMAL ---
   const pendingVisitNotes = 'El nivel de sal es bajo, pero no hay producto en el almacén. Avisar para reponer.';
-  const pendingVisit = await prisma.visit.create({
-    data: {
-      timestamp: today,
-      poolId: allPools[1]!.id,
-      technicianId: technicians[1]!.id,
-      status: 'COMPLETED',
-      hasIncident: true,
-      notes: pendingVisitNotes,
-      completedTasks: ['Limpieza de cestos de skimmers']
-    }
-  });
-  await prisma.visitResult.createMany({
-      data: [{ visitId: pendingVisit.id, parameterName: 'Nivel de Sal (para piscinas de sal)', value: '3800', parameterUnit: 'ppm' }]
-  });
-  await prisma.notification.create({
-    data: {
-      message: pendingVisitNotes,
-      visitId: pendingVisit.id,
-      tenantId: mainTenant.id,
-      userId: adminUser.id,
-    }
-  });
+  const pendingVisit = await prisma.visit.create({ data: { timestamp: today, poolId: allPools[1]!.id, technicianId: technicians[1]!.id, status: 'COMPLETED', hasIncident: true, notes: pendingVisitNotes, completedTasks: ['Limpieza de cestos de skimmers'] } });
+  await prisma.visitResult.createMany({ data: [{ visitId: pendingVisit.id, parameterName: 'Nivel de Sal (para piscinas de sal)', value: '3800', parameterUnit: 'ppm' }] });
+  await prisma.notification.create({ data: { message: pendingVisitNotes, visitId: pendingVisit.id, tenantId: mainTenant.id, userId: adminUser.id, } });
   console.log('   - 1 incidencia PENDIENTE (de hoy) creada.');
   
-  // --- INCIDENCIA 3: CLASIFICADA (Prioridad Alta) ---
   const classifiedVisitNotes = 'La bomba de calor hace un ruido metálico muy fuerte al arrancar. Podría romperse. Recomiendo no encenderla hasta que se revise.';
-  const classifiedVisit = await prisma.visit.create({
-    data: {
-      timestamp: today,
-      poolId: allPools[4]!.id,
-      technicianId: technicians[2]!.id,
-      status: 'COMPLETED',
-      hasIncident: true,
-      notes: classifiedVisitNotes,
-      completedTasks: ['Limpieza de cestos de skimmers', 'Cepillado de paredes y línea de flotación']
-    }
-  });
-  await prisma.visitResult.createMany({
-    data: [
-      { visitId: classifiedVisit.id, parameterName: 'Temperatura del Agua', value: '24', parameterUnit: '°C' },
-      { visitId: classifiedVisit.id, parameterName: 'Presión del Filtro', value: '1.5', parameterUnit: 'bar' },
-    ]
-  });
-  await prisma.notification.create({
-    data: {
-      message: classifiedVisitNotes,
-      visitId: classifiedVisit.id,
-      tenantId: mainTenant.id,
-      userId: adminUser.id,
-      priority: 'HIGH', 
-      resolutionDeadline: tomorrow,
-    }
-  });
+  const classifiedVisit = await prisma.visit.create({ data: { timestamp: today, poolId: allPools[4]!.id, technicianId: technicians[2]!.id, status: 'COMPLETED', hasIncident: true, notes: classifiedVisitNotes, completedTasks: ['Limpieza de cestos de skimmers', 'Cepillado de paredes y línea de flotación'] } });
+  await prisma.visitResult.createMany({ data: [ { visitId: classifiedVisit.id, parameterName: 'Temperatura del Agua', value: '24', parameterUnit: '°C' }, { visitId: classifiedVisit.id, parameterName: 'Presión del Filtro', value: '1.5', parameterUnit: 'bar' }, ] });
+  await prisma.notification.create({ data: { message: classifiedVisitNotes, visitId: classifiedVisit.id, tenantId: mainTenant.id, userId: adminUser.id, priority: 'HIGH',  resolutionDeadline: tomorrow, } });
   console.log('   - 1 incidencia PENDIENTE CLASIFICADA (Prioridad ALTA) creada.');
+
+  // 6. --- SIMULACIÓN DE TICKETING AVANZADO ---
+  console.log('   - Creando tareas de incidencia y logs de auditoría...');
+  const allNotifications = await prisma.notification.findMany({ where: { tenantId: mainTenant.id } });
+  let taskCount = 0;
+  for (const taskSeed of incidentTasksData) {
+    const parentNotification = allNotifications.find(n => n.message.includes(taskSeed.notificationMessage));
+    if (!parentNotification) { console.warn(`   - ⚠️  No se encontró la notificación padre para la tarea: "${taskSeed.task.title}"`); continue; }
+    
+    const assignedUser = taskSeed.task.title.includes('Contactar') ? adminUser : technicians[taskCount % technicians.length];
+    if (!assignedUser) continue;
+
+    const taskData = { ...taskSeed.task, notificationId: parentNotification.id, assignedToId: assignedUser.id, tenantId: mainTenant.id };
+    const createdTask = await prisma.incidentTask.create({ data: taskData });
+    taskCount++;
+
+    await prisma.incidentTaskLog.create({ data: { action: 'CREATION', details: `Tarea creada por ${adminUser.name}. Asignada a ${assignedUser.name}.`, incidentTaskId: createdTask.id, userId: adminUser.id, }});
+    if (createdTask.status !== 'PENDING') {
+      await prisma.incidentTaskLog.create({ data: { action: 'STATUS_CHANGE', details: `Estado cambiado a ${createdTask.status}.`, incidentTaskId: createdTask.id, userId: assignedUser.id, }});
+    }
+  }
+  console.log(`     - ${taskCount} tareas de incidencia creadas con sus logs.`);
 
 
   console.log('\n\n✅ Seeding de demostración completado con éxito!');
@@ -248,10 +153,6 @@ async function main() {
   console.log('Manager:    manager@piscival.com / password123');
 }
 
-/**
- * Función de lógica de negocio para generar una ficha de mantenimiento realista
- * para una piscina, basada en su tipo y en los catálogos disponibles.
- */
 function createPoolMaintenanceSheet(
   poolId: string,
   allParams: ParameterTemplate[],
@@ -261,13 +162,7 @@ function createPoolMaintenanceSheet(
   const configs: any[] = [];
   const commonParams = allParams.filter(p => ['Nivel de pH', 'Alcalinidad Total (TA)', 'Estado del Agua'].includes(p.name));
   for (const param of commonParams) {
-    configs.push({
-      poolId,
-      parameterTemplateId: param.id,
-      frequency: 'SEMANAL' as Frequency,
-      minThreshold: param.name.includes('pH') ? 7.2 : null,
-      maxThreshold: param.name.includes('pH') ? 7.6 : null,
-    });
+    configs.push({ poolId, parameterTemplateId: param.id, frequency: 'SEMANAL' as Frequency, minThreshold: param.name.includes('pH') ? 7.2 : null, maxThreshold: param.name.includes('pH') ? 7.6 : null, });
   }
   const commonTasks = allTasks.filter(t => ['Limpieza de cestos de skimmers', 'Cepillado de paredes y línea de flotación'].includes(t.name));
   for (const task of commonTasks) {
@@ -285,12 +180,8 @@ function createPoolMaintenanceSheet(
   } else if (poolType === 'Sal') {
     const salParam = allParams.find(p => p.name.includes('Nivel de Sal'));
     const salTask = allTasks.find(t => t.name.includes('Revisión de clorador salino'));
-    if (salParam) {
-      configs.push({ poolId, parameterTemplateId: salParam.id, frequency: 'MENSUAL' as Frequency });
-    }
-    if (salTask) {
-      configs.push({ poolId, taskTemplateId: salTask.id, frequency: 'QUINCENAL' as Frequency });
-    }
+    if (salParam) { configs.push({ poolId, parameterTemplateId: salParam.id, frequency: 'MENSUAL' as Frequency }); }
+    if (salTask) { configs.push({ poolId, taskTemplateId: salTask.id, frequency: 'QUINCENAL' as Frequency }); }
   }
   const availableExtraParams = allParams.filter(p => !configs.some(c => c.parameterTemplateId === p.id));
   if (availableExtraParams.length >= 2) {
@@ -302,12 +193,4 @@ function createPoolMaintenanceSheet(
   return configs;
 }
 
-// --- Ejecución ---
-main()
-  .catch((e) => {
-    console.error('❌ Error fatal durante el proceso de seeding:', e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+main().catch((e) => { console.error('❌ Error fatal durante el proceso de seeding:', e); process.exit(1); }).finally(async () => { await prisma.$disconnect(); });

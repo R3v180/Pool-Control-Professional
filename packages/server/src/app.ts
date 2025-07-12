@@ -1,5 +1,5 @@
 // filename: packages/server/src/app.ts
-// Version: 1.9.0 (Mount productsRouter)
+// version: 2.1.0 (Mount uploadsRouter)
 import express from 'express';
 import type { Request, Response } from 'express';
 import cors from 'cors';
@@ -16,7 +16,9 @@ import poolConfigurationsRouter from './api/pool-configurations/pool-configurati
 import visitsRouter from './api/visits/visits.routes.js';
 import usersRouter from './api/users/users.routes.js';
 import notificationsRouter from './api/notifications/notifications.routes.js';
-import productsRouter from './api/products/products.routes.js'; // <-- 1. Importar el nuevo router
+import productsRouter from './api/products/products.routes.js';
+import incidentTasksRouter from './api/incident-tasks/incident-tasks.routes.js';
+import uploadsRouter from './api/uploads/uploads.routes.js'; // <-- 1. Importar
 
 // --- Instancia de la App ---
 const app = express();
@@ -32,12 +34,10 @@ app.use(express.json());
 
 // --- Rutas de la API ---
 
-// Ruta de health-check para verificar que el servidor está vivo.
 app.get('/api/health', (_req: Request, res: Response) => {
   res.status(200).json({ status: 'UP' });
 });
 
-// Montamos los enrutadores de cada módulo
 app.use('/api/auth', authRouter);
 app.use('/api/tenants', tenantsRouter);
 app.use('/api/parameters', parametersRouter);
@@ -48,8 +48,9 @@ app.use('/api/pool-configurations', poolConfigurationsRouter);
 app.use('/api/visits', visitsRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/notifications', notificationsRouter);
-app.use('/api/products', productsRouter); // <-- 2. Montar el nuevo router
-
+app.use('/api/products', productsRouter);
+app.use('/api/incident-tasks', incidentTasksRouter);
+app.use('/api/uploads', uploadsRouter); // <-- 2. Montar
 
 // --- Gestor de Errores ---
 app.use(errorHandler);
