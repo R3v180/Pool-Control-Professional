@@ -1,9 +1,9 @@
 // filename: packages/server/prisma/seed.ts
-// version: 3.0.2
-// description: Corrige la lógica de creación de la tercera incidencia en el seed, manteniendo la estructura completa.
+// version: 3.1.0
+// description: Añade la creación de productos y simula un registro de consumo, manteniendo toda la estructura anterior.
 
 import { PrismaClient } from '@prisma/client';
-import type { Frequency, ParameterTemplate, ScheduledTaskTemplate, User, Pool } from '@prisma/client';
+import type { Frequency, ParameterTemplate, ScheduledTaskTemplate, User, Pool, Product } from '@prisma/client';
 import { hashPassword } from '../src/utils/password.utils.js';
 import { subDays, addDays } from 'date-fns';
 
@@ -11,6 +11,7 @@ import { subDays, addDays } from 'date-fns';
 import { usersData } from './data/users.js';
 import { parameterData, taskData } from './data/catalogs.js';
 import { clientsData } from './data/clients.js';
+import { productData } from './data/products.js'; // <-- Importación de nuevos datos
 
 const prisma = new PrismaClient();
 
@@ -29,6 +30,9 @@ async function main() {
 
   // 1. --- RESET COMPLETO DE LA BASE DE DATOS ---
   console.log('🗑️  Limpiando la base de datos...');
+  // Añadimos los nuevos modelos al principio de la secuencia de borrado
+  await prisma.consumption.deleteMany({});
+  await prisma.product.deleteMany({});
   await prisma.notification.deleteMany({});
   await prisma.visitResult.deleteMany({});
   await prisma.visit.deleteMany({});
@@ -70,9 +74,17 @@ async function main() {
 
   // 4. --- CREACIÓN DE CATÁLOGOS ---
   const createdParams = await prisma.parameterTemplate.createManyAndReturn({ data: parameterData.map(p => ({ ...p, tenantId: mainTenant.id })) });
-  console.log(`\n📊 Creados ${createdParams.length} parámetros en el catálogo.`);
+  console.log(`\n📊 Creados ${createdParams.length} parámetros en el catálogo de Parámetros.`);
   const createdTasks = await prisma.scheduledTaskTemplate.createManyAndReturn({ data: taskData.map(t => ({ ...t, tenantId: mainTenant.id })) });
-  console.log(`📋 Creadas ${createdTasks.length} tareas en el catálogo.`);
+  console.log(`📋 Creadas ${createdTasks.length} tareas en el catálogo de Tareas.`);
+  
+  // --- 4.5 NUEVA SECCIÓN: CREACIÓN DEL CATÁLOGO DE PRODUCTOS ---
+  const createdProducts: Product[] = [];
+  for (const prodData of productData) {
+      const product = await prisma.product.create({ data: { ...prodData, tenantId: mainTenant.id }});
+      createdProducts.push(product);
+  }
+  console.log(`📦 Creados ${createdProducts.length} productos en el catálogo de Productos.`);
 
   // 5. --- CREACIÓN DE CLIENTES Y PISCINAS ---
   const allPools: Pool[] = [];
@@ -133,7 +145,12 @@ async function main() {
       { visitId: okVisit.id, parameterName: 'Nivel de Sal (para piscinas de sal)', value: '4500', parameterUnit: 'ppm' }
     ]
   });
-  console.log('   - 1 visita COMPLETADA OK creada.');
+  // --- NUEVA ADICIÓN: SIMULACIÓN DE CONSUMO ---
+  const salProduct = createdProducts.find(p => p.name.includes('Sal para Piscinas'));
+  if(salProduct) {
+      await prisma.consumption.create({ data: { visitId: okVisit.id, productId: salProduct.id, quantity: 1 }}); // 1 saco de sal
+  }
+  console.log('   - 1 visita COMPLETADA OK (con consumo de sal) creada.');
   
   // --- INCIDENCIA 1: CRÍTICA (Antigua) ---
   const criticalVisitNotes = 'Fuga de agua detectada en la tubería principal del skimmer. Gotea constantemente, el nivel de la piscina ha bajado notablemente.';
@@ -166,15 +183,14 @@ async function main() {
   console.log('   - 1 incidencia CRÍTICA (de hace 3 días) creada.');
 
   // --- INCIDENCIA 2: PENDIENTE NORMAL ---
-  // Este era el bloque que estaba fallando
   const pendingVisitNotes = 'El nivel de sal es bajo, pero no hay producto en el almacén. Avisar para reponer.';
   const pendingVisit = await prisma.visit.create({
     data: {
       timestamp: today,
-      poolId: allPools[1]!.id, // Usamos una piscina diferente para más realismo
-      technicianId: technicians[1]!.id, // Ana Técnica
+      poolId: allPools[1]!.id,
+      technicianId: technicians[1]!.id,
       status: 'COMPLETED',
-      hasIncident: true, // <-- LA LÍNEA QUE FALTABA
+      hasIncident: true,
       notes: pendingVisitNotes,
       completedTasks: ['Limpieza de cestos de skimmers']
     }
@@ -191,8 +207,7 @@ async function main() {
     }
   });
   console.log('   - 1 incidencia PENDIENTE (de hoy) creada.');
-
-
+  
   // --- INCIDENCIA 3: CLASIFICADA (Prioridad Alta) ---
   const classifiedVisitNotes = 'La bomba de calor hace un ruido metálico muy fuerte al arrancar. Podría romperse. Recomiendo no encenderla hasta que se revise.';
   const classifiedVisit = await prisma.visit.create({
@@ -244,7 +259,6 @@ function createPoolMaintenanceSheet(
   poolType: string | null
 ): any[] {
   const configs: any[] = [];
-
   const commonParams = allParams.filter(p => ['Nivel de pH', 'Alcalinidad Total (TA)', 'Estado del Agua'].includes(p.name));
   for (const param of commonParams) {
     configs.push({
@@ -255,17 +269,14 @@ function createPoolMaintenanceSheet(
       maxThreshold: param.name.includes('pH') ? 7.6 : null,
     });
   }
-
   const commonTasks = allTasks.filter(t => ['Limpieza de cestos de skimmers', 'Cepillado de paredes y línea de flotación'].includes(t.name));
   for (const task of commonTasks) {
     configs.push({ poolId, taskTemplateId: task.id, frequency: 'SEMANAL' as Frequency });
   }
-
   const backwashTask = allTasks.find(t => t.name.includes('Contralavado'));
   if (backwashTask) {
     configs.push({ poolId, taskTemplateId: backwashTask.id, frequency: 'QUINCENAL' as Frequency });
   }
-
   if (poolType === 'Cloro') {
     const cloroParams = allParams.filter(p => p.name.includes('Cloro Libre') || p.name.includes('Cloro Total'));
     for (const param of cloroParams) {
@@ -281,7 +292,6 @@ function createPoolMaintenanceSheet(
       configs.push({ poolId, taskTemplateId: salTask.id, frequency: 'QUINCENAL' as Frequency });
     }
   }
-  
   const availableExtraParams = allParams.filter(p => !configs.some(c => c.parameterTemplateId === p.id));
   if (availableExtraParams.length >= 2) {
     const extraParams = getRandomItems(availableExtraParams, 2);
@@ -289,7 +299,6 @@ function createPoolMaintenanceSheet(
       configs.push({ poolId, parameterTemplateId: param.id, frequency: 'MENSUAL' as Frequency });
     }
   }
-
   return configs;
 }
 

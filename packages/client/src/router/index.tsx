@@ -1,10 +1,11 @@
 // filename: packages/client/src/router/index.tsx
-// Version: 1.8.3 (Add route for IncidentsHistoryPage)
+// Version: 1.8.4 (Add route for ProductCatalogPage)
 import { createBrowserRouter } from 'react-router-dom';
 import { LoginPage } from '../features/auth/pages/LoginPage.js';
 import { TenantsPage } from '../features/superadmin/pages/TenantsPage.js';
 import { ParameterCatalogPage } from '../features/admin/pages/ParameterCatalogPage.js';
 import { TaskCatalogPage } from '../features/admin/pages/TaskCatalogPage.js';
+import { ProductCatalogPage } from '../features/admin/pages/ProductCatalogPage.js';
 import { ClientsPage } from '../features/admin/pages/clients/ClientsPage.js';
 import { ClientDetailPage } from '../features/admin/pages/clients/ClientDetailPage.js';
 import { PoolDetailPage } from '../features/admin/pages/pools/PoolDetailPage.js';
@@ -12,7 +13,7 @@ import { PlannerPage } from '../features/admin/pages/planner/PlannerPage.js';
 import { MyRoutePage } from '../features/technician/pages/MyRoutePage.js';
 import { WorkOrderPage } from '../features/technician/pages/WorkOrderPage.js';
 import { AdminDashboard } from '../features/admin/pages/AdminDashboard.js';
-import { IncidentsHistoryPage } from '../features/admin/pages/IncidentsHistoryPage.js'; // <-- 1. Importar la nueva página
+import { IncidentsHistoryPage } from '../features/admin/pages/IncidentsHistoryPage.js';
 import { useAuth } from '../providers/AuthProvider.js';
 import {
   AppLayout,
@@ -23,6 +24,7 @@ import {
 } from './components.js';
 
 // --- Componente Despachador de Dashboard ---
+// Este componente decide qué página principal mostrar según el rol del usuario.
 const RoleBasedDashboard = () => {
   const { user } = useAuth();
 
@@ -102,6 +104,16 @@ export const router = createBrowserRouter([
             ]
           },
           {
+            path: 'incidents-history',
+            element: <AdminRoute />,
+            children: [
+              {
+                index: true,
+                element: <IncidentsHistoryPage />,
+              },
+            ],
+          },
+          {
             path: 'catalog',
             element: <AdminRoute />,
             children: [
@@ -113,16 +125,9 @@ export const router = createBrowserRouter([
                 path: 'tasks',
                 element: <TaskCatalogPage />,
               },
-            ],
-          },
-          // --- 2. AÑADIR NUEVA RUTA AQUÍ ---
-          {
-            path: 'incidents-history',
-            element: <AdminRoute />,
-            children: [
               {
-                index: true,
-                element: <IncidentsHistoryPage />,
+                path: 'products',
+                element: <ProductCatalogPage />,
               },
             ],
           },

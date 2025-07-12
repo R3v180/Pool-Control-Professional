@@ -1,5 +1,5 @@
 // filename: packages/client/src/router/components.tsx
-// version: 1.6.4 (Add navigation link to Incidents History page)
+// version: 1.6.5 (Add navigation link to Product Catalog page)
 import { AppShell, Burger, Group, NavLink, Title, Button, Indicator, ActionIcon, Popover, Text, Stack } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Navigate, Outlet, Link, useNavigate } from 'react-router-dom';
@@ -157,14 +157,13 @@ export const AppLayout = () => {
               label="Clientes"
               onClick={toggle}
             />
-            {/* --- AÑADIR NUEVO ENLACE AQUÍ --- */}
             <NavLink
               component={Link}
               to="/incidents-history"
               label="Historial de Incidencias"
               onClick={toggle}
             />
-            <NavLink label="Catálogos">
+            <NavLink label="Catálogos" defaultOpened>
               <NavLink 
                 component={Link} 
                 to="/catalog/parameters" 
@@ -175,6 +174,12 @@ export const AppLayout = () => {
                 component={Link} 
                 to="/catalog/tasks" 
                 label="Tareas" 
+                onClick={toggle} 
+              />
+              <NavLink 
+                component={Link} 
+                to="/catalog/products" 
+                label="Productos" 
                 onClick={toggle} 
               />
             </NavLink>
@@ -247,7 +252,6 @@ export const AdminRoute = () => {
 export const TechnicianRoute = () => {
   const { user, isLoading } = useAuth();
   if (isLoading) return <div>Cargando...</div>;
-  // Solo permite acceso si el rol es TECHNICIAN
   if (user?.role !== 'TECHNICIAN') {
     return <Navigate to="/" replace />;
   }

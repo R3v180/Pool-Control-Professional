@@ -1,5 +1,5 @@
 // filename: packages/server/src/api/visits/visits.service.ts
-// version: 1.8.3 (Use technician's notes for incident notification message)
+// version: 1.9.1 (Process and save product consumption data in submitWorkOrder)
 import { PrismaClient } from '@prisma/client';
 import type { Visit } from '@prisma/client';
 import { 
@@ -12,6 +12,7 @@ const prisma = new PrismaClient();
 export type WorkOrderInput = {
   results: Record<string, string | number | boolean>;
   completedTasks: Record<string, boolean>;
+  consumptions?: { productId: string; quantity: number }[]; // El campo de consumo que recibimos
   notes?: string;
   hasIncident?: boolean;
 };
@@ -116,6 +117,11 @@ export const getVisitDetails = async (visitId: string) => {
     include: {
       results: true, 
       notifications: true,
+      consumptions: {
+        include: {
+          product: true,
+        }
+      },
       pool: {
         include: {
           client: true,
@@ -146,7 +152,26 @@ export const submitWorkOrder = async (visitId: string, data: WorkOrderInput) => 
     });
     if (!visit) throw new Error('Visita no encontrada');
     
-    const { results, completedTasks, notes, hasIncident } = data;
+    // Extraemos todos los datos, incluyendo el nuevo 'consumptions'
+    const { results, completedTasks, notes, hasIncident, consumptions = [] } = data;
+
+    // --- NUEVA LÓGICA DE GUARDADO DE CONSUMO ---
+    if (consumptions && consumptions.length > 0) {
+        // Filtramos para evitar entradas vacías que puedan venir del frontend
+        const validConsumptions = consumptions
+            .filter(c => c.productId && c.quantity && c.quantity > 0)
+            .map(c => ({
+                quantity: c.quantity,
+                productId: c.productId,
+                visitId: visitId, // Añadimos el visitId a cada registro
+            }));
+
+        if (validConsumptions.length > 0) {
+            await tx.consumption.createMany({
+                data: validConsumptions,
+            });
+        }
+    }
 
     for (const [configId, value] of Object.entries(results)) {
       if(value === '' || value === null) continue;
@@ -185,12 +210,9 @@ export const submitWorkOrder = async (visitId: string, data: WorkOrderInput) => 
         where: { tenantId: visit.pool.tenantId, role: 'ADMIN' },
       });
       if (admin) {
-        // --- CORRECCIÓN AQUÍ ---
-        // El mensaje de la notificación ahora son las notas del técnico.
-        // Si no hay notas, se usa un mensaje genérico.
         const notificationMessage = notes && notes.trim().length > 0 
             ? notes 
-            : `Incidencia reportada en ${visit.pool.name}`;
+            : `Incidencia reportada en ${visit.pool.name} por ${visit.technician?.name || 'un técnico'}`;
 
         await tx.notification.create({
           data: {

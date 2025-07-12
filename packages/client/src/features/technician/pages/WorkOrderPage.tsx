@@ -1,5 +1,5 @@
 // filename: packages/client/src/features/technician/pages/WorkOrderPage.tsx
-// version: 1.5.3 (Ensure deadline value is a proper Date object)
+// version: 1.7.0 (Implement full product consumption lifecycle)
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
@@ -23,6 +23,7 @@ import {
   Modal,
   Group,
   Divider,
+  ActionIcon,
 } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
 import 'dayjs/locale/es';
@@ -32,11 +33,13 @@ import apiClient from '../../../api/apiClient';
 
 // --- Tipos ---
 type IncidentPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
+
 interface VisitResult {
   parameterName: string;
   parameterUnit: string | null;
   value: string;
 }
+
 interface Notification {
     id: string;
     status: 'PENDING' | 'RESOLVED';
@@ -44,6 +47,18 @@ interface Notification {
     priority: IncidentPriority | null;
     resolutionDeadline: string | null;
 }
+
+interface Product {
+    id: string;
+    name: string;
+    unit: string;
+}
+
+interface Consumption {
+    quantity: number;
+    product: Product;
+}
+
 interface VisitDetails {
   id: string;
   status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
@@ -52,6 +67,7 @@ interface VisitDetails {
   completedTasks: string[];
   results: VisitResult[];
   notifications: Notification[];
+  consumptions: Consumption[]; // Campo para los consumos
   pool: {
     configurations: {
       id: string;
@@ -63,6 +79,7 @@ interface VisitDetails {
     client: { name: string };
   };
 }
+
 interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -101,10 +118,7 @@ const ReadOnlyWorkOrder = ({ visit }: { visit: VisitDetails }) => {
   const handleClassifyIncident = async (values: { priority: IncidentPriority, deadline: Date | null }) => {
       if (!incidentNotification) return;
       try {
-          // --- CORRECCIÓN AQUÍ ---
-          // Creamos una nueva instancia de Date a partir del valor del formulario para asegurar que tenemos los métodos correctos.
           const deadlineDate = values.deadline ? new Date(values.deadline) : null;
-
           await apiClient.patch(`/notifications/${incidentNotification.id}/classify`, {
               priority: values.priority,
               deadline: deadlineDate ? deadlineDate.toISOString() : null
@@ -112,7 +126,7 @@ const ReadOnlyWorkOrder = ({ visit }: { visit: VisitDetails }) => {
           closeClassifyModal();
           navigate('/incidents-history'); 
       } catch (error) { console.error('Failed to classify incident', error); }
-  }
+  };
 
   return (
     <>
@@ -157,6 +171,14 @@ const ReadOnlyWorkOrder = ({ visit }: { visit: VisitDetails }) => {
               <Stack>
                   {visit.results.length > 0 && (<div><Title order={4} mb="sm">Resultados de Mediciones</Title>{visit.results.map(r => <Text key={r.parameterName}><strong>{r.parameterName}:</strong> {r.value} {r.parameterUnit || ''}</Text>)}</div>)}
                   {visit.completedTasks.length > 0 && (<div><Title order={4} mt="lg" mb="sm">Tareas Realizadas</Title>{visit.completedTasks.map(t => <Text key={t}>✅ {t}</Text>)}</div>)}
+                  
+                  {visit.consumptions.length > 0 && (
+                    <div>
+                        <Title order={4} mt="lg" mb="sm">Productos Consumidos</Title>
+                        {visit.consumptions.map(c => <Text key={c.product.id}>- {c.quantity} {c.product.unit} de {c.product.name}</Text>)}
+                    </div>
+                  )}
+
                   <Divider my="sm" />
                   <div>
                       <Title order={4}>Observaciones e Incidencia</Title>
@@ -190,23 +212,55 @@ const ReadOnlyWorkOrder = ({ visit }: { visit: VisitDetails }) => {
 
 
 // --- Componente de Formulario Editable ---
-const EditableWorkOrder = ({ visit, onSubmit }: { visit: VisitDetails; onSubmit: (values: any) => Promise<void> }) => {
+const EditableWorkOrder = ({ visit, products, onSubmit }: { visit: VisitDetails; products: Product[], onSubmit: (values: any) => Promise<void> }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm({
     initialValues: {
       results: visit.pool.configurations.filter(c => c.parameterTemplate).reduce((acc, c) => ({ ...acc, [c.id]: '' }), {}),
       completedTasks: visit.pool.configurations.filter(c => c.taskTemplate).reduce((acc, c) => ({ ...acc, [c.id]: false }), {}),
+      consumptions: [] as { productId: string; quantity: number | '' }[],
       notes: '',
       hasIncident: false,
     },
   });
+
+  const productOptions = products.map(p => ({ value: p.id, label: `${p.name} (${p.unit})` }));
 
   const handleSubmit = async (values: typeof form.values) => {
     setIsSubmitting(true);
     await onSubmit(values);
     setIsSubmitting(false);
   };
+  
+  const consumptionFields = form.values.consumptions.map((_, index) => (
+    <Grid key={index} align="flex-end">
+      <Grid.Col span={7}>
+        <Select
+          label={index === 0 ? 'Producto Consumido' : ''}
+          placeholder="Seleccione un producto"
+          data={productOptions}
+          {...form.getInputProps(`consumptions.${index}.productId`)}
+          required
+        />
+      </Grid.Col>
+      <Grid.Col span={3}>
+        <NumberInput
+          label={index === 0 ? 'Cantidad' : ''}
+          placeholder="0.0"
+          min={0}
+          decimalScale={2}
+          {...form.getInputProps(`consumptions.${index}.quantity`)}
+          required
+        />
+      </Grid.Col>
+      <Grid.Col span={2}>
+        <ActionIcon color="red" onClick={() => form.removeListItem('consumptions', index)}>
+          🗑️
+        </ActionIcon>
+      </Grid.Col>
+    </Grid>
+  ));
   
   const parametersToMeasure = visit.pool.configurations.filter(c => c.parameterTemplate);
   const tasksToComplete = visit.pool.configurations.filter(c => c.taskTemplate);
@@ -227,36 +281,31 @@ const EditableWorkOrder = ({ visit, onSubmit }: { visit: VisitDetails; onSubmit:
   
   return (
       <Container>
-        <Breadcrumbs>
-          <Link to="/my-route">Mi Ruta</Link>
-          <Text>{visit.pool.name}</Text>
-        </Breadcrumbs>
+        <Breadcrumbs><Link to="/my-route">Mi Ruta</Link><Text>{visit.pool.name}</Text></Breadcrumbs>
         <Title order={2} my="lg">Parte de Trabajo: {visit.pool.name}</Title>
         <Text c="dimmed">{visit.pool.client.name} - {visit.pool.address}</Text>
-
         <Paper withBorder p="md" mt="xl">
           <form onSubmit={form.onSubmit(handleSubmit)}>
             <Stack>
-              {parametersToMeasure.length > 0 && (
-                <div>
-                  <Title order={4} mb="sm">Mediciones de Parámetros</Title>
-                  <Stack>{parametersToMeasure.map(p => <div key={p.id}>{renderParameterInput(p)}</div>)}</Stack>
-                </div>
-              )}
-              {tasksToComplete.length > 0 && (
-                <div>
-                  <Title order={4} mt="lg" mb="sm">Tareas a Realizar</Title>
-                  <Stack>{tasksToComplete.map(t => <Checkbox key={t.id} label={t.taskTemplate?.name} {...form.getInputProps(`completedTasks.${t.id}`, { type: 'checkbox' })} />)}</Stack>
-                </div>
-              )}
+              {parametersToMeasure.length > 0 && (<div><Title order={4} mb="sm">Mediciones de Parámetros</Title><Stack>{parametersToMeasure.map(p => <div key={p.id}>{renderParameterInput(p)}</div>)}</Stack></div>)}
+              {tasksToComplete.length > 0 && (<div><Title order={4} mt="lg" mb="sm">Tareas a Realizar</Title><Stack>{tasksToComplete.map(t => <Checkbox key={t.id} label={t.taskTemplate?.name} {...form.getInputProps(`completedTasks.${t.id}`, { type: 'checkbox' })} />)}</Stack></div>)}
               
-              <Title order={4} mt="lg" mb="sm">Observaciones e Incidencias</Title>
+              <Divider my="md" label="Consumo de Productos" labelPosition="center" />
+              {consumptionFields}
+              <Button 
+                mt="xs" 
+                variant="outline" 
+                onClick={() => form.insertListItem('consumptions', { productId: '', quantity: '' })}
+              >
+                + Añadir Producto
+              </Button>
+
+              <Divider my="md" />
+              <Title order={4} mb="sm">Observaciones e Incidencias</Title>
               <Textarea label="Notas de la visita (opcional)" placeholder="Cualquier observación relevante..." {...form.getInputProps('notes')} />
               <Checkbox label="Reportar como Incidencia" description="Marca esta casilla si hay un problema que requiera la atención del administrador." {...form.getInputProps('hasIncident', { type: 'checkbox' })} />
               
-              <Button type="submit" mt="xl" size="lg" loading={isSubmitting}>
-                Guardar y Finalizar Visita
-              </Button>
+              <Button type="submit" mt="xl" size="lg" loading={isSubmitting}>Guardar y Finalizar Visita</Button>
             </Stack>
           </form>
         </Paper>
@@ -270,28 +319,26 @@ export function WorkOrderPage() {
   const { visitId } = useParams<{ visitId: string }>();
   const navigate = useNavigate();
   const [visit, setVisit] = useState<VisitDetails | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!visitId) {
-      setError('No se ha proporcionado un ID de visita.');
-      setIsLoading(false);
-      return;
-    }
-    const fetchVisitDetails = async () => {
+    if (!visitId) { setError('No se ha proporcionado un ID de visita.'); setIsLoading(false); return; }
+    
+    const fetchAllData = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await apiClient.get<ApiResponse<VisitDetails>>(`/visits/${visitId}`);
-        setVisit(response.data.data);
-      } catch (err) {
-        setError('No se pudo cargar la información de la visita.');
-      } finally {
-        setIsLoading(false);
-      }
+        const [visitResponse, productsResponse] = await Promise.all([
+          apiClient.get<ApiResponse<VisitDetails>>(`/visits/${visitId}`),
+          apiClient.get<ApiResponse<Product[]>>('/products')
+        ]);
+        setVisit(visitResponse.data.data);
+        setProducts(productsResponse.data.data);
+      } catch (err) { setError('No se pudo cargar la información de la visita o los productos.'); } finally { setIsLoading(false); }
     };
-    fetchVisitDetails();
+    fetchAllData();
   }, [visitId]);
 
   const handleSubmit = async (values: any) => {
@@ -299,9 +346,7 @@ export function WorkOrderPage() {
     try {
       await apiClient.post(`/visits/${visitId}/complete`, values);
       navigate('/my-route');
-    } catch (err) {
-      console.error('Error submitting work order', err);
-    }
+    } catch (err) { console.error('Error submitting work order', err); }
   };
 
   if (isLoading) return <Container style={{ textAlign: 'center', paddingTop: '50px' }}><Loader size="xl" /></Container>;
@@ -312,5 +357,5 @@ export function WorkOrderPage() {
     return <ReadOnlyWorkOrder visit={visit} />;
   }
   
-  return <EditableWorkOrder visit={visit} onSubmit={handleSubmit} />;
+  return <EditableWorkOrder visit={visit} products={products} onSubmit={handleSubmit} />;
 }

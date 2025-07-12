@@ -28,6 +28,8 @@ model Tenant {
   paramTemplates ParameterTemplate[]
   taskTemplates ScheduledTaskTemplate[]
   notifications Notification[]
+  // --- NUEVA RELACIÓN ---
+  products      Product[]
 }
 
 model User {
@@ -126,6 +128,26 @@ model ScheduledTaskTemplate {
   @@index([tenantId])
 }
 
+// --- NUEVO MODELO: CATÁLOGO DE PRODUCTOS ---
+model Product {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  unit        String // ej: 'L', 'Kg', 'Pastilla', 'Saco'
+  cost        Float   // Precio de coste por unidad
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  consumptions Consumption[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+
 // --- Modelo de Unión: Ficha de Mantenimiento ---
 
 model PoolConfiguration {
@@ -166,6 +188,8 @@ model Visit {
   technician     User?         @relation(fields: [technicianId], references: [id], onDelete: SetNull)
   results        VisitResult[]
   notifications  Notification[]
+  // --- NUEVA RELACIÓN ---
+  consumptions   Consumption[]
 
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
@@ -189,27 +213,42 @@ model VisitResult {
   @@index([visitId])
 }
 
+// --- NUEVO MODELO: REGISTRO DE CONSUMO ---
+model Consumption {
+    id        String @id @default(cuid())
+    quantity  Float
+    visitId   String
+    productId String
+
+    visit   Visit   @relation(fields: [visitId], references: [id], onDelete: Cascade)
+    product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([visitId])
+    @@index([productId])
+}
+
 model Notification {
-  id                String             @id @default(cuid())
-  message           String
-  isRead            Boolean            @default(false)
-  status            NotificationStatus @default(PENDING)
-  resolutionNotes   String?
-  
-  // --- NUEVOS CAMPOS ---
-  priority          IncidentPriority? // Opcional, el admin lo establece. Default: null
-  resolutionDeadline DateTime?        // Opcional, el admin lo establece. Default: null
+  id                 String             @id @default(cuid())
+  message            String
+  isRead             Boolean            @default(false)
+  status             NotificationStatus @default(PENDING)
+  resolutionNotes    String?
+  priority           IncidentPriority?
+  resolutionDeadline DateTime?
 
-  userId            String
-  tenantId          String
-  visitId           String?
+  userId             String
+  tenantId           String
+  visitId            String?
 
-  visit             Visit?             @relation(fields: [visitId], references: [id], onDelete: Cascade)
-  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: NoAction)
+  visit              Visit?             @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant             Tenant             @relation(fields: [tenantId], references: [id], onDelete: NoAction)
 
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
   
   @@index([userId])
   @@index([tenantId])
@@ -225,7 +264,6 @@ enum NotificationStatus {
   RESOLVED
 }
 
-// --- NUEVO ENUM ---
 enum IncidentPriority {
   LOW
   NORMAL
