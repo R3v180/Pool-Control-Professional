@@ -2,71 +2,58 @@
 
 **Filosofía de este documento:** Este no es solo un registro de tareas, es el pulso del proyecto. Refleja nuestro compromiso con la excelencia, documentando no solo _qué_ hemos hecho, sino _por qué_ lo hemos hecho y el _valor_ que cada fase aporta al producto final. Está diseñado para ser la fuente de verdad para cualquier miembro del equipo, presente o futuro.
 
-_Última actualización: 13 de julio de 2025, 10:00 CEST_
+_Última actualización: 13 de julio de 2025, 04:45 CEST_
 
 ---
 
-## 1. Visión Estratégica Actual: Hacia la Gestión Integral del Negocio
+## 1. Visión Estratégica Actual: De la Operativa al Análisis de Negocio
 
-El proyecto ha alcanzado y superado con éxito sus objetivos iniciales de digitalización operativa. Ahora, hemos entrado en una fase de consolidación y expansión estratégica, enfocada en dotar a la plataforma de las herramientas necesarias para una **gestión integral del negocio**, abarcando no solo la operativa diaria sino también el **control de la rentabilidad** y la **calidad del servicio post-visita**.
+El proyecto ha evolucionado con éxito más allá de la simple digitalización de la operativa diaria. Hemos entrado en una fase estratégica clave, enfocada en transformar los datos operativos en **inteligencia de negocio accionable**. El objetivo es dotar a la plataforma de herramientas que permitan un análisis profundo de la rentabilidad y la eficiencia, sentando las bases para una gestión empresarial basada en datos.
 
 ---
 
 ## 2. Hitos de Desarrollo y Entregables Validados
 
-### 🚧 **Hito Actual: Flujo de Trabajo Avanzado para Incidencias (Ticketing)**
-
-- **Estado:** `EN PROGRESO (Backend: 100% completado | Frontend: 95% completado)`
-- **Objetivo Estratégico:** Evolucionar el sistema de "notificaciones" a un sistema de "ticketing" profesional y accionable. El objetivo es crear un bucle de comunicación y resolución completo y auditable entre el `ADMIN` y el `TÉCNICO` para cualquier problema detectado en campo.
-- **Detalles Técnicos y de Implementación (Backend - COMPLETADO):**
-
-  - **Ampliación Profunda del Modelo de Datos (`schema.prisma`):**
-    - **`IncidentTask`:** Se ha creado el modelo central del ticketing para registrar tareas de seguimiento (título, descripción, estado, prioridad).
-    - **`deadline`:** Se ha añadido un campo de plazo a las `IncidentTask` para permitir el control de vencimientos.
-    - **`IncidentImage`:** Se ha añadido un modelo para asociar una o varias imágenes a una incidencia, guardando la URL del fichero y el ID del técnico que la subió.
-    - **`IncidentTaskLog`:** Se ha implementado un modelo de auditoría para registrar cada acción (creación, cambio de estado, comentarios) sobre una tarea, garantizando una trazabilidad total.
-  - **API para Subida Segura de Archivos (`/api/uploads`):**
-    - Se ha integrado con **Cloudinary** para el almacenamiento de imágenes.
-    - Se ha creado un endpoint (`GET /api/uploads/signature`) que genera una firma de un solo uso para que el frontend pueda subir archivos de forma segura directamente a la nube, sin pasar por nuestro servidor.
-  - **API para el Ciclo de Vida del Ticket (`/api/incident-tasks`):**
-    - Se ha construido un módulo de API RESTful completo para las tareas de incidencia, incluyendo:
-      - `POST /`: Crear una nueva tarea.
-      - `GET /my-tasks`: Endpoint para que un usuario (técnico/admin) obtenga solo las tareas que tiene asignadas.
-      - `PATCH /:id/status`: Cambiar el estado de una tarea (`PENDING`, `IN_PROGRESS`, `COMPLETED`).
-      - `POST /:id/log`: Añadir un comentario o solicitar un aplazamiento, generando un registro de auditoría.
-      - `GET /:id/logs`: Obtener el historial completo de una tarea.
-  - **Integración en el Flujo de Trabajo Principal (`visits.service.ts`):**
-    - La función `submitWorkOrder` ha sido robustecida para que, si una visita tiene una incidencia, procese el array de `imageUrls` subidas a Cloudinary y cree los registros correspondientes en la tabla `IncidentImage` dentro de la misma transacción atómica.
-
-- **Detalles de Implementación (Frontend - CASI COMPLETADO):**
-  - **Subida de Imágenes (`WorkOrderPage.tsx`):** El técnico, al reportar una incidencia, ahora tiene un componente `FileInput` que le permite seleccionar imágenes. La interfaz gestiona la subida en segundo plano a Cloudinary y muestra el progreso.
-  - **Visibilidad para el Técnico (`MyRoutePage.tsx`):** La página de inicio del técnico ahora consulta y muestra una nueva sección de "Tareas Especiales" asignadas, además de sus visitas diarias.
-  - **Página de Detalle de Incidencia (`IncidentDetailPage.tsx`):**
-    - Se ha creado esta nueva página, que es el centro de operaciones del ticketing.
-    - **Renderizado por Rol:** La página detecta el rol del usuario y muestra una vista diferente para el `ADMIN` (con controles de gestión completos) y para el `TÉCNICO` (con controles de ejecución de la tarea).
-    - **Funcionalidad Implementada:** Visualización de detalles, galería de imágenes, creación y edición de tareas, historial de auditoría y la mayor parte de las acciones del técnico.
-
-### ✅ **Hito Previo: Módulo de Control de Rentabilidad**
+### ✅ **Hito Completado: Flujo de Trabajo Avanzado para Incidencias (Ticketing)**
 
 - **Estado:** `COMPLETADO Y VALIDADO`
-- **Detalles:** Se implementó con éxito la gestión del catálogo de `Products` y el registro de `Consumption` en los partes de trabajo.
+- **Resumen:** Se ha finalizado con éxito la implementación del sistema de ticketing avanzado, que transforma la gestión de incidencias reactiva en un proceso colaborativo y completamente trazable.
+- **Detalles de Valor Aportado:**
+  - **Comunicación Bidireccional Completa:** Cuando un administrador comenta, asigna o cambia el plazo de una tarea, el técnico responsable recibe una notificación instantánea. De igual manera, cuando el técnico actualiza el estado de la tarea o añade un comentario, el administrador es notificado. [cite_start]Esto crea un bucle de comunicación cerrado y eficiente. [cite: 37]
+  - [cite_start]**Trazabilidad Total:** Cada acción, comentario o cambio de estado sobre una tarea de incidencia queda registrado en un historial de auditoría inmutable, asociado al usuario que realizó la acción. [cite: 41, 1071]
+  - [cite_start]**Resolución de Bloqueos Críticos:** Se ha solucionado el `TypeError` que impedía al técnico interactuar con el selector de fechas (`DateTimePicker`), desbloqueando así por completo el flujo de trabajo del técnico. [cite: 23, 61]
+
+### 🚧 **Hito Actual: Módulo de Informes de Consumo y Rentabilidad (Fase 8)**
+
+- **Estado:** `EN PROGRESO (Backend: 100% | Frontend: 100% - Funcionalidad Base)`
+- **Objetivo Estratégico:** Proporcionar a los roles de `ADMIN` y `MANAGER` una herramienta poderosa para analizar los costes operativos, entender la rentabilidad por cliente y facilitar los procesos de facturación.
+- **Detalles de Implementación y Valor Aportado:**
+
+  - **Backend (API de Reportes - COMPLETADO):**
+
+    - **Nuevo Módulo de Reportes:** Se ha creado una nueva sección en la API (`/api/reports`) dedicada a la inteligencia de negocio.
+    - **Endpoint de Agregación de Datos (`GET /api/reports/consumption`):** Se ha desarrollado un potente endpoint que acepta filtros por rango de fechas y cliente. Este realiza consultas complejas a la base de datos para agregar todos los consumos, calcular los costes totales multiplicando cantidad por el coste del producto y agrupar los resultados por cliente.
+    - **Endpoint de Desglose (`GET /api/reports/consumption/details`):** Se ha creado un segundo endpoint para soportar la funcionalidad de "drill-down", permitiendo consultar en qué visitas específicas se consumió un producto determinado.
+
+  - **Frontend (Interfaz de Informes - COMPLETADO):**
+    - **Nueva Página de Informes:** Se ha creado y enlazado en el menú la nueva página "Informe de Consumos" (`ConsumptionReportPage.tsx`).
+    - **Filtros Intuitivos:** Se ha implementado un panel de filtros rediseñado, utilizando selectores de fecha individuales (`DatePickerInput`) para una mejor experiencia de usuario y un selector de clientes que permite filtrar por un cliente específico o por todos.
+    - **Visualización de KPIs:** La página muestra tarjetas con los indicadores clave del periodo seleccionado (Coste Total, Nº de Visitas), ofreciendo una visión rápida del rendimiento.
+    - **Tabla de Resumen Expandible (Drill-Down):** La tabla principal muestra el coste total por cliente. Cada fila es expandible, permitiendo al usuario hacer clic para ver una sub-tabla con el desglose detallado de qué productos específicos componen ese coste.
+    - **Interconexión y Trazabilidad:** El desglose de productos es interactivo. Al hacer clic en un producto, se abre una ventana modal que lista todas las visitas en las que se usó, mostrando la fecha, el técnico y la cantidad. Cada una de esas visitas es un enlace directo al parte de trabajo original, permitiendo una auditoría completa del consumo.
+    - **Funcionalidad de Exportación:** Se ha implementado y validado un botón "Exportar a CSV" que permite al usuario descargar los datos del informe para su uso en herramientas externas como Excel.
 
 ---
 
-## 3. Tareas Inmediatas / Próximos Pasos dentro del Hito Actual
+## 3. Tareas Inmediatas y Próximos Pasos
 
-1.  **Resolver Bloqueo del Frontend:** La máxima prioridad es solucionar el `TypeError` en `IncidentDetailPage.tsx` para desbloquear el flujo de comunicación del técnico.
-2.  **Notificaciones en la App:** Implementar la lógica para que la campana de notificaciones del `ADMIN` se actualice en tiempo real cuando un técnico completa una tarea o añade un comentario.
-3.  **Refinamiento de la UI:** Una vez que el flujo sea 100% funcional, realizar una pasada de pulido visual sobre las nuevas interfaces (`IncidentDetailPage` y los nuevos elementos en `MyRoutePage`).
+1.  **Planificar el Rol de Gerencia y su Dashboard:** Basado en nuestra última conversación, el siguiente gran objetivo es el rol de `MANAGER`. Debemos definir y empezar a construir su dashboard principal, que será la primera de sus "vistas" conmutables (Gerencia, Administración, Técnico).
+2.  **Implementar Alertas de Umbrales de Parámetros:** Añadir la lógica en el backend para que el sistema genere notificaciones automáticas cuando un técnico registre un valor de parámetro (ej. pH, cloro) que esté fuera de los umbrales definidos en la ficha de la piscina.
+3.  **Refinar el Módulo de Informes:** Aunque funcional, se pueden añadir mejoras como gráficos visuales de los costes o filtros más avanzados.
 
 ---
 
 ## 4. Bloqueos Actuales
 
-- **ESTADO:** `ACTIVO - BLOQUEO CRÍTICO EN FRONTEND`
-- **Descripción Detallada:**
-  - **Archivo:** `packages/client/src/features/admin/pages/incidents/IncidentDetailPage.tsx`
-  - **Componente:** `TechnicianTaskView`
-  - **Problema:** Existe un `TypeError` persistente que se dispara en la prop `onChange` del componente `<DateTimePicker>` de Mantine. Este error impide al técnico usar la funcionalidad de "Añadir Actualización / Solicitar Aplazamiento".
-  - **Impacto:** Este bug interrumpe el flujo de comunicación bidireccional, que es el núcleo de la nueva funcionalidad de ticketing. Aunque el backend está listo, la incapacidad del técnico para interactuar plenamente con la tarea bloquea la validación del ciclo completo.
-  - **Contexto:** El problema ha resistido varios intentos de corrección, lo que sugiere una sutil incompatibilidad de tipos o un comportamiento inesperado de la librería que requiere un análisis fresco y enfocado.
+- **ESTADO:** `SIN BLOQUEOS`
+- **Descripción:** El bloqueo crítico de frontend que afectaba al `DateTimePicker` en el módulo de incidencias ha sido **resuelto**. Actualmente no existen impedimentos técnicos para continuar con el desarrollo planificado.

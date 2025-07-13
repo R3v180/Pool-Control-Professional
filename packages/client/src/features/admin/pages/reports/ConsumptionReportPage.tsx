@@ -1,12 +1,15 @@
 // filename: packages/client/src/features/admin/pages/reports/ConsumptionReportPage.tsx
-// version: 2.2.1 (FIX: Correctly handle string-to-date conversion on DatePickerInput)
+// version: 2.2.2 (FIX: Definitively correct the string-to-date conversion on DatePickerInput's onChange)
 
 import { useState, useEffect, Fragment } from 'react';
-import { Container, Title, Paper, Group, Select, Button, Loader, Alert, Stack, Table, Text, Card, SimpleGrid, Collapse } from '@mantine/core';
+import { Link } from 'react-router-dom';
+import { Container, Title, Paper, Group, Select, Button, Loader, Alert, Stack, Table, Text, Card, SimpleGrid, Collapse, Modal, Anchor } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import 'dayjs/locale/es';
-import { startOfMonth, endOfMonth, startOfDay, endOfDay } from 'date-fns';
+import { startOfMonth, endOfMonth, startOfDay, endOfDay, format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import apiClient from '../../../../api/apiClient';
+import { useDisclosure } from '@mantine/hooks';
 
 // --- Tipos de Datos para el Frontend ---
 interface Client {
@@ -15,10 +18,19 @@ interface Client {
 }
 
 interface DetailedConsumption {
+  productId: string;
   productName: string;
   unit: string;
   totalQuantity: number;
   totalCost: number;
+}
+
+interface ProductConsumptionDetail {
+    visitId: string;
+    visitDate: Date;
+    quantity: number;
+    cost: number;
+    technicianName: string | null;
 }
 
 type DateRange = [Date | null, Date | null];
@@ -46,6 +58,11 @@ export function ConsumptionReportPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openedRow, setOpenedRow] = useState<string | null>(null);
+  const [detailModalOpened, { open: openDetailModal, close: closeDetailModal }] = useDisclosure(false);
+  const [productDetailData, setProductDetailData] = useState<ProductConsumptionDetail[]>([]);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [selectedProductInfo, setSelectedProductInfo] = useState<{ productName: string, clientId: string } | null>(null);
+
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -88,6 +105,32 @@ export function ConsumptionReportPage() {
       setIsLoading(false);
     }
   };
+  
+  const handleProductDrillDown = async (clientId: string, product: DetailedConsumption) => {
+    if (!dateRange[0] || !dateRange[1]) return;
+
+    setSelectedProductInfo({ productName: product.productName, clientId });
+    setIsDetailLoading(true);
+    openDetailModal();
+    setProductDetailData([]);
+
+    try {
+        const params = new URLSearchParams({
+            startDate: startOfDay(dateRange[0]).toISOString(),
+            endDate: endOfDay(dateRange[1]).toISOString(),
+            clientId: clientId,
+            productId: product.productId,
+        });
+
+        const response = await apiClient.get(`/reports/consumption/details?${params.toString()}`);
+        setProductDetailData(response.data.data);
+    } catch (err) {
+        console.error("Error al cargar el detalle del producto", err);
+    } finally {
+        setIsDetailLoading(false);
+    }
+  }
+
 
   const handleExportToCSV = () => {
     if (!reportData) return;
@@ -156,7 +199,11 @@ export function ConsumptionReportPage() {
                   <Table.Tbody>
                     {client.detailedConsumption.map(item => (
                       <Table.Tr key={item.productName}>
-                        <Table.Td>{item.productName}</Table.Td>
+                        <Table.Td>
+                            <Anchor component="button" type="button" onClick={() => handleProductDrillDown(client.clientId, item)}>
+                                {item.productName}
+                            </Anchor>
+                        </Table.Td>
                         <Table.Td>{item.totalQuantity.toFixed(2)} {item.unit}</Table.Td>
                         <Table.Td>{item.totalCost.toFixed(2)} €</Table.Td>
                       </Table.Tr>
@@ -173,6 +220,43 @@ export function ConsumptionReportPage() {
 
   return (
     <Container fluid>
+      <Modal 
+        opened={detailModalOpened} 
+        onClose={closeDetailModal} 
+        title={`Detalle de consumo para: ${selectedProductInfo?.productName || ''}`}
+        size="xl"
+        centered
+      >
+        {isDetailLoading ? <Loader /> : (
+            <Table>
+                <Table.Thead>
+                    <Table.Tr>
+                        <Table.Th>Fecha de Visita</Table.Th>
+                        <Table.Th>Técnico</Table.Th>
+                        <Table.Th>Cantidad</Table.Th>
+                        <Table.Th>Coste</Table.Th>
+                        <Table.Th>Acciones</Table.Th>
+                    </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                    {productDetailData.map(detail => (
+                        <Table.Tr key={detail.visitId}>
+                            <Table.Td>{format(new Date(detail.visitDate), 'd MMMM yyyy, HH:mm', { locale: es })}</Table.Td>
+                            <Table.Td>{detail.technicianName}</Table.Td>
+                            <Table.Td>{detail.quantity.toFixed(2)}</Table.Td>
+                            <Table.Td>{detail.cost.toFixed(2)} €</Table.Td>
+                            <Table.Td>
+                                <Button component={Link} to={`/visits/${detail.visitId}`} size="xs" variant="outline">
+                                    Ver Parte
+                                </Button>
+                            </Table.Td>
+                        </Table.Tr>
+                    ))}
+                </Table.Tbody>
+            </Table>
+        )}
+      </Modal>
+
       <Title order={2} mb="xl">Informe de Consumos y Costes</Title>
       
       <Paper withBorder shadow="sm" p="md" mb="xl">
@@ -182,8 +266,8 @@ export function ConsumptionReportPage() {
             label="Periodo del Informe"
             placeholder="Seleccione un rango de fechas"
             value={dateRange}
-            // ✅ SOLUCIÓN DEFINITIVA: Se acepta el array de strings, se convierte a Date y se actualiza el estado.
-            onChange={(value) => {
+            // ✅ SOLUCIÓN FINAL Y DEFINITIVA
+            onChange={(value: [string | null, string | null]) => {
               const [start, end] = value;
               setDateRange([start ? new Date(start) : null, end ? new Date(end) : null]);
             }}

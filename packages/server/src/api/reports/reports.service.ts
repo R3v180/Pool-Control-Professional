@@ -1,14 +1,13 @@
 // filename: packages/server/src/api/reports/reports.service.ts
-// version: 1.0.0
-// description: Servicio para generar informes de consumo y rentabilidad.
+// version: 1.1.1 (FIX: Remove unused imports)
 
 import { PrismaClient } from '@prisma/client';
+// ✅ CAMBIO: Se elimina la importación de 'format' y 'es' que no se usaban.
 
 const prisma = new PrismaClient();
 
 // --- Tipos de Datos ---
 
-// Define los filtros que la función aceptará
 interface ReportFilters {
   tenantId: string;
   startDate: Date;
@@ -16,7 +15,6 @@ interface ReportFilters {
   clientId?: string;
 }
 
-// Define la estructura de la respuesta que generará este servicio
 interface ConsumptionReport {
   summary: {
     totalCost: number;
@@ -40,16 +38,23 @@ interface ConsumptionReport {
   }[];
 }
 
+interface DetailFilters extends ReportFilters {
+    productId: string;
+    clientId: string;
+}
 
-/**
- * Genera un informe detallado de consumo de productos y costes.
- * @param filters - Objeto con tenantId, startDate, endDate y opcionalmente clientId.
- * @returns Un objeto con el informe de consumo detallado.
- */
+export interface ProductConsumptionDetail {
+    visitId: string;
+    visitDate: Date;
+    quantity: number;
+    cost: number;
+    technicianName: string | null;
+}
+
+
 export const generateConsumptionReport = async (filters: ReportFilters): Promise<ConsumptionReport> => {
   const { tenantId, startDate, endDate, clientId } = filters;
 
-  // 1. Construir la cláusula 'where' para la consulta de Prisma
   const whereClause: any = {
     visit: {
       pool: {
@@ -62,21 +67,19 @@ export const generateConsumptionReport = async (filters: ReportFilters): Promise
     },
   };
 
-  // Si se especifica un cliente, se añade al filtro
   if (clientId) {
     whereClause.visit.pool.clientId = clientId;
   }
 
-  // 2. Obtener todos los registros de consumo que cumplen con los filtros
   const consumptions = await prisma.consumption.findMany({
     where: whereClause,
     include: {
-      product: true, // Para obtener el coste, nombre y unidad del producto
+      product: true,
       visit: {
         include: {
           pool: {
             include: {
-              client: true, // Para obtener el nombre y ID del cliente
+              client: true,
             },
           },
         },
@@ -84,13 +87,11 @@ export const generateConsumptionReport = async (filters: ReportFilters): Promise
     },
   });
   
-  // 3. Procesar los datos en memoria para agregarlos y calcular totales
   const reportData: Record<string, any> = {};
   let overallTotalCost = 0;
   const visitedVisits = new Set<string>();
 
   for (const consumption of consumptions) {
-    // Si el consumo, por alguna razón, no tiene visita o cliente, se omite
     if (!consumption.visit || !consumption.visit.pool || !consumption.visit.pool.client) {
       continue;
     }
@@ -102,7 +103,6 @@ export const generateConsumptionReport = async (filters: ReportFilters): Promise
     overallTotalCost += itemCost;
     visitedVisits.add(consumption.visitId);
 
-    // Inicializar la entrada para el cliente si no existe
     if (!reportData[client.id]) {
       reportData[client.id] = {
         clientId: client.id,
@@ -113,11 +113,9 @@ export const generateConsumptionReport = async (filters: ReportFilters): Promise
       };
     }
     
-    // Agregar datos al cliente
     reportData[client.id].totalClientCost += itemCost;
     reportData[client.id].visitCount.add(consumption.visitId);
     
-    // Inicializar la entrada para el producto si no existe para ese cliente
     if (!reportData[client.id].detailedConsumption[product.id]) {
       reportData[client.id].detailedConsumption[product.id] = {
         productId: product.id,
@@ -128,16 +126,14 @@ export const generateConsumptionReport = async (filters: ReportFilters): Promise
       };
     }
     
-    // Agregar datos al producto consumido por ese cliente
     reportData[client.id].detailedConsumption[product.id].totalQuantity += consumption.quantity;
     reportData[client.id].detailedConsumption[product.id].totalCost += itemCost;
   }
   
-  // 4. Formatear la salida final para que coincida con la estructura deseada
   const byClientArray = Object.values(reportData).map(clientData => ({
     ...clientData,
-    visitCount: clientData.visitCount.size, // Convertir el Set a un número
-    detailedConsumption: Object.values(clientData.detailedConsumption), // Convertir el objeto a un array
+    visitCount: clientData.visitCount.size,
+    detailedConsumption: Object.values(clientData.detailedConsumption),
   }));
   
   return {
@@ -150,4 +146,49 @@ export const generateConsumptionReport = async (filters: ReportFilters): Promise
     },
     byClient: byClientArray,
   };
+};
+
+export const getConsumptionDetailsForProduct = async (filters: DetailFilters): Promise<ProductConsumptionDetail[]> => {
+    const { tenantId, startDate, endDate, clientId, productId } = filters;
+
+    const consumptions = await prisma.consumption.findMany({
+        where: {
+            productId: productId,
+            visit: {
+                pool: {
+                    clientId: clientId,
+                    tenantId: tenantId,
+                },
+                timestamp: {
+                    gte: startDate,
+                    lte: endDate,
+                }
+            }
+        },
+        include: {
+            product: true,
+            visit: {
+                include: {
+                    technician: {
+                        select: {
+                            name: true,
+                        }
+                    }
+                }
+            }
+        },
+        orderBy: {
+            visit: {
+                timestamp: 'desc'
+            }
+        }
+    });
+
+    return consumptions.map(c => ({
+        visitId: c.visitId,
+        visitDate: c.visit.timestamp,
+        quantity: c.quantity,
+        cost: c.quantity * c.product.cost,
+        technicianName: c.visit.technician?.name ?? 'No asignado',
+    }));
 };

@@ -6,59 +6,53 @@
 
 ## ✅ FASE 0 a 6: Fundación, Operativa y Rentabilidad
 
-- **Estado:** `COMPLETADAS`
-- **Resumen:** Durante estas fases iniciales, se estableció una base arquitectónica robusta (Monorepo, TypeScript estricto), se construyó un backend seguro con Prisma y autenticación JWT, y se desarrollaron todos los módulos operativos clave. Esto incluye la gestión completa de catálogos (parámetros, tareas, productos), la planificación de rutas, la ejecución de partes de trabajo y la supervisión de incidencias y consumo de materiales. El sistema alcanzó un estado funcional completo para la digitalización de la operativa diaria.
+- **Estado:** `COMPLETADA`
+- [cite_start]**Resumen:** Durante estas fases iniciales, se estableció una base arquitectónica robusta (Monorepo, TypeScript estricto), se construyó un backend seguro con Prisma y autenticación JWT, y se desarrollaron todos los módulos operativos clave. [cite: 4] [cite_start]Esto incluye la gestión completa de catálogos (parámetros, tareas, productos), la planificación de rutas, la ejecución de partes de trabajo y la supervisión de incidencias y consumo de materiales. [cite: 5] [cite_start]El sistema alcanzó un estado funcional completo para la digitalización de la operativa diaria. [cite: 6]
 
 ---
 
-## 🚧 FASE 7: Ticketing Avanzado y Comunicación Proactiva
+## ✅ FASE 7: Ticketing Avanzado y Comunicación Proactiva
+
+- **Estado:** `COMPLETADA`
+- **Resumen:** Esta fase ha transformado con éxito el sistema de incidencias en un motor de resolución de problemas colaborativo y completamente trazable. [cite_start]Se implementó un sistema de ticketing completo que formaliza la comunicación entre administradores y técnicos. [cite: 8] [cite_start]Se habilitaron las notificaciones bidireccionales, permitiendo que los técnicos sean notificados de cualquier cambio en sus tareas asignadas. [cite: 58, 1090] [cite_start]Se solucionó el bloqueo crítico del frontend, garantizando un flujo de trabajo fluido y sin impedimentos. [cite: 23, 63]
+
+---
+
+## 🚧 FASE 8 y Visión de Futuro: Inteligencia de Negocio y Eficiencia Avanzada
 
 - **Estado:** `EN PROGRESO`
-- **Intención Estratégica:** Transformar el sistema de incidencias reactivo en un motor de resolución de problemas proactivo y colaborativo. El objetivo es crear un sistema de ticketing completo que formalice la comunicación, asigne responsabilidades claras y proporcione una trazabilidad total de cada acción.
-- **Plan de Acción y Hitos de Implementación:**
+- **Intención Estratégica:** Una vez consolidada la operativa, esta fase se centra en expandir las capacidades de la plataforma hacia el análisis de negocio, la automatización proactiva y la mejora de la eficiencia global.
 
-  1.  **Ampliación del Modelo de Datos para Ticketing:**
-
-      - **Estado:** `COMPLETADO`
-      - **Descripción:** Se ha modificado el `schema.prisma` para dar soporte a un flujo de trabajo granular.
-        - Se añadió el modelo `IncidentTask` para representar tareas accionables con `status`, `priority` y `deadline`.
-        - Se añadió el modelo `IncidentImage` para permitir la adjunción de evidencia visual a las incidencias, un requisito clave para el diagnóstico remoto.
-        - Se añadió el modelo `IncidentTaskLog` para crear una pista de auditoría inmutable de cada cambio y comentario en una tarea.
-
-  2.  **Desarrollo del Backend para el Ciclo de Vida del Ticket:**
-
-      - **Estado:** `COMPLETADO`
-      - **Descripción:** Se ha construido toda la infraestructura de API necesaria para la nueva funcionalidad.
-        - **API de Subida Segura:** Se implementó un endpoint (`/api/uploads/signature`) que se integra con Cloudinary para permitir la subida de imágenes desde el cliente de forma segura.
-        - **API de Tareas:** Se crearon los endpoints CRUD para `/api/incident-tasks`.
-        - **API de Comunicación:** Se implementaron endpoints específicos como `/api/incident-tasks/:id/status` y `/api/incident-tasks/:id/log` que, además de realizar la acción, crean notificaciones automáticas para el `ADMIN`, cerrando el bucle de comunicación.
-        - **API de Consulta:** Se desarrolló el endpoint `/api/incident-tasks/my-tasks` para que cada usuario pueda consultar únicamente las tareas que tiene asignadas.
-
-  3.  **Integración en la Interfaz del Técnico (Flujo de Entrada):**
-
-      - **Estado:** `COMPLETADO`
-      - **Descripción:** Se ha modificado el flujo de trabajo del técnico para incorporar las nuevas capacidades.
-        - En `WorkOrderPage.tsx`, el técnico ahora puede adjuntar imágenes a una incidencia.
-        - En `MyRoutePage.tsx`, el técnico ahora ve una nueva sección con las "Tareas Especiales" que se le han asignado.
-
-  4.  **Desarrollo de la Interfaz de Gestión (Admin y Técnico):**
-      - **Estado:** `EN PROGRESO - BLOQUEADO`
-      - **Descripción:** Se ha desarrollado la página `IncidentDetailPage.tsx`, que actúa como centro de mando. La página ya incluye renderizado condicional por rol, mostrando una vista de gestión para el `ADMIN` y una vista de ejecución para el `TÉCNICO`.
-      - **Bloqueo Actual:** La funcionalidad está mayormente implementada, pero un `TypeError` persistente en el componente `DateTimePicker` de la vista del técnico impide que este pueda interactuar plenamente con la tarea (solicitar aplazamientos), lo que bloquea la validación del flujo completo.
-
----
-
-## ▶️ FASE 8 y Visión de Futuro
-
-- **Estado:** `PLANIFICADO`
-- **Intención Estratégica:** Una vez desbloqueado y finalizado el sistema de ticketing, se expandirán las capacidades de la plataforma hacia el análisis de negocio y la mejora de la eficiencia operativa.
 - **Plan de Acción Detallado:**
-  1.  **Módulo de Informes de Consumo:**
-      - **Propósito de Negocio:** Permitir al `ADMIN` y al `MANAGER` analizar la rentabilidad por cliente y periodo, y exportar los datos para su facturación.
-      - **Tareas Técnicas:** Crear la API de reportes con agregaciones y la página de visualización en el frontend.
-  2.  **Modo Offline (PWA) para Técnicos:**
-      - **Propósito de Negocio:** Garantizar la operatividad del técnico en zonas de baja o nula conectividad.
-      - **Tareas Técnicas:** Implementar `Service Workers` e `IndexedDB` para el funcionamiento sin conexión.
-  3.  **Dashboard de Gerencia (`MANAGER`):**
-      - **Propósito de Negocio:** Proporcionar al rol `MANAGER` KPIs y gráficos de alto nivel para el análisis estratégico del negocio, incluyendo métricas del nuevo sistema de ticketing (ej. tiempo medio de resolución).
-      - **Tareas Técnicas:** Crear endpoints de agregación en el backend y desarrollar componentes de visualización de datos.
+
+  1.  **Módulo de Informes de Consumo y Rentabilidad:**
+
+      - **Estado:** `COMPLETADO`
+      - [cite_start]**Descripción:** Se ha desarrollado un completo módulo de informes que permite a los roles `ADMIN` y `MANAGER` analizar la rentabilidad por cliente y periodo. [cite: 25, 26] La funcionalidad incluye:
+        - **API de Agregación:** Un backend robusto que calcula los costes totales basándose en los consumos registrados.
+        - **Interfaz Interactiva:** Una página de informes con filtros por cliente y fecha.
+        - **Funcionalidad de Desglose (Drill-Down):** Los usuarios pueden expandir los resultados para ver el detalle de productos consumidos y, desde ahí, navegar hasta el parte de trabajo original donde se registró el consumo.
+        - [cite_start]**Exportación de Datos:** Capacidad para exportar los informes generados a formato CSV para su uso en facturación o análisis externo. [cite: 126]
+
+  2.  **Dashboard de Gerencia y Rol "Camaleón":**
+
+      - **Estado:** `PLANIFICADO`
+      - [cite_start]**Propósito de Negocio:** Proporcionar al rol `MANAGER` un centro de mando estratégico con KPIs y gráficos para el análisis del negocio. [cite: 29]
+      - **Evolución del Diseño:** Basado en las necesidades del negocio, este rol se implementará con un **"Selector de Vista"**. Esto permitirá al gerente operar con tres perfiles distintos desde su misma cuenta:
+        - [cite_start]**Vista de Gerencia (por defecto):** El dashboard con KPIs de alto nivel (rentabilidad, eficiencia, estado de incidencias). [cite: 98]
+        - **Vista de Administración:** Acceso completo a las funcionalidades del rol `ADMIN` para poder cubrir ausencias o realizar tareas operativas.
+        - **Vista de Técnico:** Capacidad para visualizar la ruta y rellenar partes de trabajo, ideal para gerentes que también realizan trabajo de campo.
+      - [cite_start]**Tareas Técnicas:** Crear los nuevos endpoints de agregación para los KPIs, diseñar los componentes de visualización de datos e implementar la arquitectura de "vistas conmutables" en el frontend. [cite: 30]
+
+  3.  **Alertas Proactivas por Umbrales de Parámetros:**
+
+      - **Estado:** `PLANIFICADO`
+      - **Propósito de Negocio:** Transformar el sistema de un modo reactivo a uno proactivo, notificando automáticamente al personal de oficina cuando un parámetro medido en campo está fuera de su rango de seguridad.
+      - **Tareas Técnicas:**
+        - **Fase 1 (Backend):** Modificar el servicio de envío de partes de trabajo (`visits.service.ts`) para que compare los valores numéricos con los umbrales de la `PoolConfiguration` y genere una `Notification` automática si se excede el rango.
+        - **Fase 2 (Configuración):** Desarrollar una nueva sección en la interfaz que permita a cada usuario (Admin/Manager) configurar qué tipo de alertas desea recibir.
+
+  4.  **Modo Offline (PWA) para Técnicos:**
+      - **Estado:** `PLANIFICADO`
+      - [cite_start]**Propósito de Negocio:** Garantizar la operatividad del técnico en zonas de baja o nula conectividad, como garajes o sótanos. [cite: 27]
+      - [cite_start]**Tareas Técnicas:** Implementar `Service Workers` e `IndexedDB` para el funcionamiento sin conexión y la sincronización de datos. [cite: 28]
