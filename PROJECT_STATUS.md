@@ -2,74 +2,77 @@
 
 **Filosofía de este documento:** Este no es solo un registro de tareas, es el pulso del proyecto. Refleja nuestro compromiso con la excelencia, documentando no solo _qué_ hemos hecho, sino _por qué_ lo hemos hecho y el _valor_ que cada fase aporta al producto final. Está diseñado para ser la fuente de verdad para cualquier miembro del equipo, presente o futuro.
 
-_Última actualización: 13 de julio de 2025, 05:30 CEST_
+_Última actualización: 13 de julio de 2025, 06:15 CEST_
 
 ---
 
-## 1. Visión Estratégica Actual: Hacia el "Motor Financiero"
+## 1. Visión Estratégica Actual: Sprint Final hacia la Versión 1.0
 
-Tras completar con éxito los módulos operativos y de ticketing, el enfoque estratégico del proyecto se centra en la **Fase 8: La construcción del Motor Financiero**. El objetivo es dotar a la plataforma de una inteligencia de negocio sin precedentes en el sector, permitiendo una gestión financiera y de rentabilidad granular, flexible y adaptada a los múltiples modelos de negocio de las empresas de mantenimiento.
+El proyecto entra en su fase final de desarrollo para la Versión 1.0. El objetivo es consolidar una aplicación funcional, robusta y con funcionalidades diferenciales clave. Durante los próximos 3 días, el enfoque será total en la implementación de las herramientas de gestión financiera, análisis y supervisión proactiva que definirán el producto para su presentación.
 
 ---
 
 ## 2. Hitos de Desarrollo Validados
 
-### ✅ **Hito Completado: Módulo de Informes de Consumo v1**
+### ✅ **Módulo de Informes de Consumo v1**
 
 - **Estado:** `COMPLETADO Y VALIDADO`
-- **Resumen:** Se ha implementado con éxito la primera versión del módulo de informes. Esta base nos proporciona una visión de la **rentabilidad interna** (basada en el coste de los productos) y la infraestructura técnica (API, componentes de UI, exportación a CSV) sobre la que construiremos el motor financiero completo.
+- **Resumen:** Se ha implementado con éxito la primera versión del módulo de informes. Esta base nos proporciona una visión de la **rentabilidad interna** (basada en el coste de los productos) y la infraestructura técnica (API, componentes de UI, exportación a CSV, desglose interactivo) sobre la que construiremos el motor financiero completo.
 
-### ✅ **Hito Previo: Flujo de Trabajo Avanzado para Incidencias (Ticketing)**
+### ✅ **Flujo de Trabajo Avanzado para Incidencias (Ticketing)**
 
-- **Estado:** `COMPLETADO Y VALIDADO`
-- **Resumen:** Se finalizó la implementación del sistema de ticketing avanzado, creando un flujo de comunicación bidireccional y completamente trazable entre administradores y técnicos.
+- [cite_start]**Estado:** `COMPLETADO Y VALIDADO` [cite: 36]
+- [cite_start]**Resumen:** Se ha finalizado la implementación del sistema de ticketing avanzado, que transforma la gestión de incidencias reactiva en un proceso colaborativo y completamente trazable. [cite: 37] La comunicación bidireccional y las notificaciones para todas las partes implicadas están plenamente funcionales.
 
 ---
 
-## 3. Tareas Inmediatas / Plan de Acción (Próximos 3 Días)
+## 3. Plan de Acción y Tareas Pendientes
 
-El objetivo es implementar las funcionalidades clave del "Motor Financiero". Se ha dividido el trabajo en pasos lógicos y priorizados para maximizar la eficiencia.
+### **Plan de Ataque para la Versión 1.0 (Próximos 3 Días)**
 
-### **PASO 1 (Prioridad Máxima): Evolucionar la Base de Datos**
+Esta es la máxima prioridad actual para cumplir con el objetivo de la presentación.
 
-- **Estado:** `PENDIENTE`
-- **Objetivo:** Modificar el `schema.prisma` para dar soporte a la nueva lógica financiera. Es el cimiento indispensable para todo lo demás.
-- **Tareas Técnicas:**
-  - **En el modelo `Product`:** Añadir los campos `salePrice` (PVP) y `taxRate` (IVA %).
-  - **En el modelo `Client`:** Añadir los campos `monthlyFee` (Cuota Fija Mensual) y `billingModel` (un `Enum` con los modelos: `FEE_PLUS_MATERIALS`, `ALL_INCLUSIVE`, `SERVICE_ONLY`).
-  - **Crear nuevos modelos:**
-    - `ProductCategory`: Para agrupar productos por familias (ej. "Cloros").
-    - `ClientProductPricing`: Para definir reglas de descuento específicas por cliente, ya sea a un producto individual o a una familia de productos completa.
-    - `Expense`: Para registrar gastos manuales (combustible, salarios, etc.) que afectan a la rentabilidad global.
-
-### **PASO 2: Adaptar el Backend para la Nueva Lógica**
+#### **DÍA 1: La Gran Refundación (Cimientos del Backend)**
 
 - **Estado:** `PENDIENTE`
-- **Objetivo:** Actualizar la API y los servicios para que puedan gestionar y utilizar la nueva estructura de datos.
+- **Objetivo:** Modificar el `schema.prisma` para dar soporte a TODAS las nuevas funcionalidades de la v1.0.
 - **Tareas Técnicas:**
-  - Crear los endpoints CRUD para gestionar las `ProductCategory`.
-  - Crear los endpoints para que el `ADMIN` pueda definir las reglas de `ClientProductPricing` desde la ficha de un cliente.
-  - Modificar el servicio de informes (`reports.service.ts`) para que pueda generar un nuevo **"Informe para Facturación"**, que utilizará `salePrice`, `monthlyFee` y las reglas de descuento, en lugar del `cost` interno.
+  - **Motor Financiero:** Añadir campos `salePrice` (PVP), `taxRate` (IVA), `monthlyFee` (Cuota Fija) y `billingModel` (Modelo de Contrato).
+  - **Precios Avanzados:** Crear los nuevos modelos `ProductCategory` y `ClientProductPricing` (para reglas de descuento).
+  - **Historial de Pagos:** Crear el nuevo modelo `Payment` para registrar los pagos.
+  - **Gastos Adicionales:** Crear el nuevo modelo `Expense` para el registro de gastos manuales.
+  - **Actualizar Seed:** Modificar el script de `seed.ts` para generar datos de prueba para toda esta nueva estructura.
 
-### **PASO 3: Implementar la Configuración en el Frontend**
+#### **DÍA 2: Construcción de APIs y Lógica de Negocio (Backend)**
 
 - **Estado:** `PENDIENTE`
-- **Objetivo:** Crear las interfaces necesarias para que el administrador configure la parte financiera de cada cliente.
+- **Objetivo:** Desarrollar todos los endpoints de la API necesarios para las nuevas funcionalidades.
 - **Tareas Técnicas:**
-  - En la página de detalle del cliente (`ClientDetailPage`), añadir un nuevo panel de "Configuración de Facturación".
-  - En este panel, el `ADMIN` podrá seleccionar el `billingModel`, establecer la `monthlyFee` y gestionar la tabla de reglas de descuento para ese cliente.
+  - **API Financiera:** Crear los endpoints para gestionar las reglas de precios, gastos y pagos.
+  - **API de Alertas:** Implementar la lógica en `visits.service.ts` para comprobar umbrales y crear notificaciones.
+  - **API de Dashboard:** Crear los endpoints de agregación de datos para los KPIs del Dashboard de Gerencia.
+  - **Evolución de Informes:** Actualizar el `reports.service.ts` para generar el "Informe para Facturación".
 
-### **PASO 4: Actualizar la Interfaz de Informes**
+#### **DÍA 3: Maratón de Frontend e Integración Final**
 
 - **Estado:** `PENDIENTE`
-- **Objetivo:** Darle al usuario la capacidad de generar tanto el informe de rentabilidad interna como el nuevo informe para facturación.
+- **Objetivo:** Construir todas las interfaces de usuario necesarias y conectarlas con el backend.
 - **Tareas Técnicas:**
-  - Añadir un selector o un botón en la `ConsumptionReportPage` para elegir el tipo de informe a generar.
-  - Ajustar la tabla de resultados y el desglose para mostrar los datos de facturación (precios con IVA, descuentos aplicados, etc.) cuando se seleccione ese modo.
+  - **Ficha de Cliente:** Añadir la sección de "Configuración de Facturación".
+  - **Página de Informes:** Implementar el selector de modo ("Rentabilidad" vs "Facturación").
+  - **Historial de Pagos:** Añadir la pestaña y formulario de pagos en la ficha del cliente.
+  - **Dashboard de Gerencia:** Construir la primera versión del `ManagerDashboard.tsx` con los KPIs principales y el "Selector de Vista".
+
+### **Tareas de Refinamiento (Pendientes de Menor Prioridad)**
+
+Estas son las tareas que teníamos pendientes del hito anterior. Se abordarán una vez finalizado el sprint de la v1.0 para pulir la aplicación.
+
+- [cite_start]**Refinamiento de UI del Módulo de Incidencias:** Realizar una pasada de pulido visual sobre las nuevas interfaces (`IncidentDetailPage` y los nuevos elementos en `MyRoutePage`). [cite: 59]
+- [cite_start]**Mejora a Notificaciones en Tiempo Real:** Implementar la lógica para que la campana de notificaciones se actualice de forma instantánea (ej. con WebSockets) en lugar de por sondeo, cuando un técnico completa una tarea o añade un comentario. [cite: 58]
 
 ---
 
 ## 4. Bloqueos Actuales
 
 - **ESTADO:** `SIN BLOQUEOS`
-- **Descripción:** No existen impedimentos técnicos para comenzar la implementación del "Motor Financiero".
+- [cite_start]**Descripción:** El bloqueo crítico de frontend (`TypeError` en el `DateTimePicker`) que afectaba al módulo de incidencias ha sido **resuelto**. [cite: 60, 63] Actualmente no existen impedimentos técnicos para continuar con el desarrollo planificado.
