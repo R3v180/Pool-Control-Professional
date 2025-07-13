@@ -2,58 +2,74 @@
 
 **Filosofía de este documento:** Este no es solo un registro de tareas, es el pulso del proyecto. Refleja nuestro compromiso con la excelencia, documentando no solo _qué_ hemos hecho, sino _por qué_ lo hemos hecho y el _valor_ que cada fase aporta al producto final. Está diseñado para ser la fuente de verdad para cualquier miembro del equipo, presente o futuro.
 
-_Última actualización: 13 de julio de 2025, 04:45 CEST_
+_Última actualización: 13 de julio de 2025, 05:30 CEST_
 
 ---
 
-## 1. Visión Estratégica Actual: De la Operativa al Análisis de Negocio
+## 1. Visión Estratégica Actual: Hacia el "Motor Financiero"
 
-El proyecto ha evolucionado con éxito más allá de la simple digitalización de la operativa diaria. Hemos entrado en una fase estratégica clave, enfocada en transformar los datos operativos en **inteligencia de negocio accionable**. El objetivo es dotar a la plataforma de herramientas que permitan un análisis profundo de la rentabilidad y la eficiencia, sentando las bases para una gestión empresarial basada en datos.
+Tras completar con éxito los módulos operativos y de ticketing, el enfoque estratégico del proyecto se centra en la **Fase 8: La construcción del Motor Financiero**. El objetivo es dotar a la plataforma de una inteligencia de negocio sin precedentes en el sector, permitiendo una gestión financiera y de rentabilidad granular, flexible y adaptada a los múltiples modelos de negocio de las empresas de mantenimiento.
 
 ---
 
-## 2. Hitos de Desarrollo y Entregables Validados
+## 2. Hitos de Desarrollo Validados
 
-### ✅ **Hito Completado: Flujo de Trabajo Avanzado para Incidencias (Ticketing)**
+### ✅ **Hito Completado: Módulo de Informes de Consumo v1**
 
 - **Estado:** `COMPLETADO Y VALIDADO`
-- **Resumen:** Se ha finalizado con éxito la implementación del sistema de ticketing avanzado, que transforma la gestión de incidencias reactiva en un proceso colaborativo y completamente trazable.
-- **Detalles de Valor Aportado:**
-  - **Comunicación Bidireccional Completa:** Cuando un administrador comenta, asigna o cambia el plazo de una tarea, el técnico responsable recibe una notificación instantánea. De igual manera, cuando el técnico actualiza el estado de la tarea o añade un comentario, el administrador es notificado. [cite_start]Esto crea un bucle de comunicación cerrado y eficiente. [cite: 37]
-  - [cite_start]**Trazabilidad Total:** Cada acción, comentario o cambio de estado sobre una tarea de incidencia queda registrado en un historial de auditoría inmutable, asociado al usuario que realizó la acción. [cite: 41, 1071]
-  - [cite_start]**Resolución de Bloqueos Críticos:** Se ha solucionado el `TypeError` que impedía al técnico interactuar con el selector de fechas (`DateTimePicker`), desbloqueando así por completo el flujo de trabajo del técnico. [cite: 23, 61]
+- **Resumen:** Se ha implementado con éxito la primera versión del módulo de informes. Esta base nos proporciona una visión de la **rentabilidad interna** (basada en el coste de los productos) y la infraestructura técnica (API, componentes de UI, exportación a CSV) sobre la que construiremos el motor financiero completo.
 
-### 🚧 **Hito Actual: Módulo de Informes de Consumo y Rentabilidad (Fase 8)**
+### ✅ **Hito Previo: Flujo de Trabajo Avanzado para Incidencias (Ticketing)**
 
-- **Estado:** `EN PROGRESO (Backend: 100% | Frontend: 100% - Funcionalidad Base)`
-- **Objetivo Estratégico:** Proporcionar a los roles de `ADMIN` y `MANAGER` una herramienta poderosa para analizar los costes operativos, entender la rentabilidad por cliente y facilitar los procesos de facturación.
-- **Detalles de Implementación y Valor Aportado:**
-
-  - **Backend (API de Reportes - COMPLETADO):**
-
-    - **Nuevo Módulo de Reportes:** Se ha creado una nueva sección en la API (`/api/reports`) dedicada a la inteligencia de negocio.
-    - **Endpoint de Agregación de Datos (`GET /api/reports/consumption`):** Se ha desarrollado un potente endpoint que acepta filtros por rango de fechas y cliente. Este realiza consultas complejas a la base de datos para agregar todos los consumos, calcular los costes totales multiplicando cantidad por el coste del producto y agrupar los resultados por cliente.
-    - **Endpoint de Desglose (`GET /api/reports/consumption/details`):** Se ha creado un segundo endpoint para soportar la funcionalidad de "drill-down", permitiendo consultar en qué visitas específicas se consumió un producto determinado.
-
-  - **Frontend (Interfaz de Informes - COMPLETADO):**
-    - **Nueva Página de Informes:** Se ha creado y enlazado en el menú la nueva página "Informe de Consumos" (`ConsumptionReportPage.tsx`).
-    - **Filtros Intuitivos:** Se ha implementado un panel de filtros rediseñado, utilizando selectores de fecha individuales (`DatePickerInput`) para una mejor experiencia de usuario y un selector de clientes que permite filtrar por un cliente específico o por todos.
-    - **Visualización de KPIs:** La página muestra tarjetas con los indicadores clave del periodo seleccionado (Coste Total, Nº de Visitas), ofreciendo una visión rápida del rendimiento.
-    - **Tabla de Resumen Expandible (Drill-Down):** La tabla principal muestra el coste total por cliente. Cada fila es expandible, permitiendo al usuario hacer clic para ver una sub-tabla con el desglose detallado de qué productos específicos componen ese coste.
-    - **Interconexión y Trazabilidad:** El desglose de productos es interactivo. Al hacer clic en un producto, se abre una ventana modal que lista todas las visitas en las que se usó, mostrando la fecha, el técnico y la cantidad. Cada una de esas visitas es un enlace directo al parte de trabajo original, permitiendo una auditoría completa del consumo.
-    - **Funcionalidad de Exportación:** Se ha implementado y validado un botón "Exportar a CSV" que permite al usuario descargar los datos del informe para su uso en herramientas externas como Excel.
+- **Estado:** `COMPLETADO Y VALIDADO`
+- **Resumen:** Se finalizó la implementación del sistema de ticketing avanzado, creando un flujo de comunicación bidireccional y completamente trazable entre administradores y técnicos.
 
 ---
 
-## 3. Tareas Inmediatas y Próximos Pasos
+## 3. Tareas Inmediatas / Plan de Acción (Próximos 3 Días)
 
-1.  **Planificar el Rol de Gerencia y su Dashboard:** Basado en nuestra última conversación, el siguiente gran objetivo es el rol de `MANAGER`. Debemos definir y empezar a construir su dashboard principal, que será la primera de sus "vistas" conmutables (Gerencia, Administración, Técnico).
-2.  **Implementar Alertas de Umbrales de Parámetros:** Añadir la lógica en el backend para que el sistema genere notificaciones automáticas cuando un técnico registre un valor de parámetro (ej. pH, cloro) que esté fuera de los umbrales definidos en la ficha de la piscina.
-3.  **Refinar el Módulo de Informes:** Aunque funcional, se pueden añadir mejoras como gráficos visuales de los costes o filtros más avanzados.
+El objetivo es implementar las funcionalidades clave del "Motor Financiero". Se ha dividido el trabajo en pasos lógicos y priorizados para maximizar la eficiencia.
+
+### **PASO 1 (Prioridad Máxima): Evolucionar la Base de Datos**
+
+- **Estado:** `PENDIENTE`
+- **Objetivo:** Modificar el `schema.prisma` para dar soporte a la nueva lógica financiera. Es el cimiento indispensable para todo lo demás.
+- **Tareas Técnicas:**
+  - **En el modelo `Product`:** Añadir los campos `salePrice` (PVP) y `taxRate` (IVA %).
+  - **En el modelo `Client`:** Añadir los campos `monthlyFee` (Cuota Fija Mensual) y `billingModel` (un `Enum` con los modelos: `FEE_PLUS_MATERIALS`, `ALL_INCLUSIVE`, `SERVICE_ONLY`).
+  - **Crear nuevos modelos:**
+    - `ProductCategory`: Para agrupar productos por familias (ej. "Cloros").
+    - `ClientProductPricing`: Para definir reglas de descuento específicas por cliente, ya sea a un producto individual o a una familia de productos completa.
+    - `Expense`: Para registrar gastos manuales (combustible, salarios, etc.) que afectan a la rentabilidad global.
+
+### **PASO 2: Adaptar el Backend para la Nueva Lógica**
+
+- **Estado:** `PENDIENTE`
+- **Objetivo:** Actualizar la API y los servicios para que puedan gestionar y utilizar la nueva estructura de datos.
+- **Tareas Técnicas:**
+  - Crear los endpoints CRUD para gestionar las `ProductCategory`.
+  - Crear los endpoints para que el `ADMIN` pueda definir las reglas de `ClientProductPricing` desde la ficha de un cliente.
+  - Modificar el servicio de informes (`reports.service.ts`) para que pueda generar un nuevo **"Informe para Facturación"**, que utilizará `salePrice`, `monthlyFee` y las reglas de descuento, en lugar del `cost` interno.
+
+### **PASO 3: Implementar la Configuración en el Frontend**
+
+- **Estado:** `PENDIENTE`
+- **Objetivo:** Crear las interfaces necesarias para que el administrador configure la parte financiera de cada cliente.
+- **Tareas Técnicas:**
+  - En la página de detalle del cliente (`ClientDetailPage`), añadir un nuevo panel de "Configuración de Facturación".
+  - En este panel, el `ADMIN` podrá seleccionar el `billingModel`, establecer la `monthlyFee` y gestionar la tabla de reglas de descuento para ese cliente.
+
+### **PASO 4: Actualizar la Interfaz de Informes**
+
+- **Estado:** `PENDIENTE`
+- **Objetivo:** Darle al usuario la capacidad de generar tanto el informe de rentabilidad interna como el nuevo informe para facturación.
+- **Tareas Técnicas:**
+  - Añadir un selector o un botón en la `ConsumptionReportPage` para elegir el tipo de informe a generar.
+  - Ajustar la tabla de resultados y el desglose para mostrar los datos de facturación (precios con IVA, descuentos aplicados, etc.) cuando se seleccione ese modo.
 
 ---
 
 ## 4. Bloqueos Actuales
 
 - **ESTADO:** `SIN BLOQUEOS`
-- **Descripción:** El bloqueo crítico de frontend que afectaba al `DateTimePicker` en el módulo de incidencias ha sido **resuelto**. Actualmente no existen impedimentos técnicos para continuar con el desarrollo planificado.
+- **Descripción:** No existen impedimentos técnicos para comenzar la implementación del "Motor Financiero".
