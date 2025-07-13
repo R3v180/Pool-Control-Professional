@@ -1,5 +1,6 @@
 // filename: packages/client/src/router/index.tsx
-// Version: 1.9.1 (FIX: Allow technicians to access IncidentDetailPage)
+// version: 2.0.0 (FEAT: Add consumption report route)
+
 import { createBrowserRouter } from 'react-router-dom';
 import { LoginPage } from '../features/auth/pages/LoginPage.js';
 import { TenantsPage } from '../features/superadmin/pages/TenantsPage.js';
@@ -15,6 +16,8 @@ import { WorkOrderPage } from '../features/technician/pages/WorkOrderPage.js';
 import { AdminDashboard } from '../features/admin/pages/AdminDashboard.js';
 import { IncidentsHistoryPage } from '../features/admin/pages/IncidentsHistoryPage.js';
 import { IncidentDetailPage } from '../features/admin/pages/incidents/IncidentDetailPage.js';
+// ✅ 1. IMPORTAR LA NUEVA PÁGINA
+import { ConsumptionReportPage } from '../features/admin/pages/reports/ConsumptionReportPage.js'; 
 import { useAuth } from '../providers/AuthProvider.js';
 import {
   AppLayout,
@@ -25,10 +28,8 @@ import {
 } from './components.js';
 
 // --- Componente Despachador de Dashboard ---
-// Este componente decide qué página principal mostrar según el rol del usuario.
 const RoleBasedDashboard = () => {
   const { user } = useAuth();
-
   switch (user?.role) {
     case 'ADMIN':
       return <AdminDashboard />;
@@ -114,10 +115,20 @@ export const router = createBrowserRouter([
               },
             ],
           },
-          // --- RUTA CORREGIDA PARA EL DETALLE DE INCIDENCIA ---
+          // ✅ 2. AÑADIR LA NUEVA RUTA DEL INFORME
+          {
+            path: 'reports/consumption',
+            element: <AdminRoute />,
+            children: [
+              {
+                index: true,
+                element: <ConsumptionReportPage />,
+              }
+            ]
+          },
           {
             path: 'incidents/:notificationId',
-            element: <ProtectedRoute />, // <-- CAMBIO APLICADO: de AdminRoute a ProtectedRoute
+            element: <ProtectedRoute />,
             children: [
               {
                 index: true,

@@ -1,6 +1,6 @@
 // filename: packages/server/prisma/seed.ts
-// version: 3.4.2 (FIXED - Removed redundant deleteMany calls)
-// description: Versión corregida que elimina la limpieza inicial para ser compatible con `prisma migrate reset`.
+// version: 3.5.0 (FEAT: Add rich consumption seed data)
+// description: Versión que añade datos de consumo adicionales para probar los informes.
 
 import { PrismaClient } from '@prisma/client';
 import type { Frequency, ParameterTemplate, ScheduledTaskTemplate, User, Pool, Product } from '@prisma/client';
@@ -13,6 +13,8 @@ import { parameterData, taskData } from './data/catalogs.js';
 import { clientsData } from './data/clients.js';
 import { productData } from './data/products.js';
 import { incidentTasksData } from './data/incident-tasks.js';
+// ✅ 1. IMPORTAR LOS NUEVOS DATOS DE CONSUMO
+import { consumptionsData } from './data/consumptions.js';
 
 const prisma = new PrismaClient();
 
@@ -121,6 +123,36 @@ async function main() {
   await prisma.visitResult.createMany({ data: [ { visitId: classifiedVisit.id, parameterName: 'Temperatura del Agua', value: '24', parameterUnit: '°C' }, { visitId: classifiedVisit.id, parameterName: 'Presión del Filtro', value: '1.5', parameterUnit: 'bar' }, ] });
   await prisma.notification.create({ data: { message: classifiedVisitNotes, visitId: classifiedVisit.id, tenantId: mainTenant.id, userId: adminUser.id, priority: 'HIGH',  resolutionDeadline: tomorrow, } });
   console.log('   - 1 incidencia PENDIENTE CLASIFICADA (Prioridad ALTA) creada.');
+
+  // ✅ 2. AÑADIR LA NUEVA SECCIÓN PARA CREAR CONSUMOS ADICIONALES
+  console.log('   - Creando consumos de productos adicionales...');
+  const allVisits = await prisma.visit.findMany();
+  let consumptionCount = 0;
+
+  for (const consumptionSeed of consumptionsData) {
+    const visit = allVisits.find(v => v.notes?.includes(consumptionSeed.visitNotesIdentifier));
+    if (!visit) {
+      console.warn(`   - ⚠️  No se encontró la visita para el consumo con identificador: "${consumptionSeed.visitNotesIdentifier}"`);
+      continue;
+    }
+
+    for (const consumption of consumptionSeed.consumptions) {
+      const product = createdProducts.find(p => p.name === consumption.productName);
+      if (!product) {
+        console.warn(`   - ⚠️  No se encontró el producto: "${consumption.productName}"`);
+        continue;
+      }
+      await prisma.consumption.create({
+        data: {
+          visitId: visit.id,
+          productId: product.id,
+          quantity: consumption.quantity,
+        }
+      });
+      consumptionCount++;
+    }
+  }
+  console.log(`     - ${consumptionCount} registros de consumo adicionales creados.`);
 
   // 6. --- SIMULACIÓN DE TICKETING AVANZADO ---
   console.log('   - Creando tareas de incidencia y logs de auditoría...');

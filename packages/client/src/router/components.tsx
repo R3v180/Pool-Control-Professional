@@ -1,5 +1,5 @@
 // filename: packages/client/src/router/components.tsx
-// version: 1.7.0 (FEAT: Enable notifications for Technicians)
+// version: 1.8.0 (FEAT: Add reports link to navbar)
 
 import { AppShell, Burger, Group, NavLink, Title, Button, Indicator, ActionIcon, Popover, Text, Stack } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
@@ -34,7 +34,7 @@ const NotificationBell = () => {
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 60000); // Refresca cada minuto
+    const interval = setInterval(fetchNotifications, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -42,13 +42,12 @@ const NotificationBell = () => {
     if (!notification.isRead) {
       try {
         await apiClient.post(`/notifications/${notification.id}/read`);
-        fetchNotifications(); // Vuelve a cargar para actualizar el estado visual
+        fetchNotifications();
       } catch (error) {
         console.error('Failed to mark notification as read', error);
       }
     }
     
-    // Lógica unificada para navegar al detalle del incidente correcto.
     const incidentId = notification.parentNotificationId || notification.id;
     navigate(`/incidents/${incidentId}`);
     
@@ -125,7 +124,6 @@ export const AppLayout = () => {
             <Title order={3}>Pool Control Professional</Title>
           </Group>
           <Group>
-            { /* ✅ CAMBIO: Ahora la campana se muestra para ADMIN y TECHNICIAN */ }
             {(user?.role === 'ADMIN' || user?.role === 'TECHNICIAN') && <NotificationBell />}
             <Button variant="light" onClick={handleLogout}>Cerrar Sesión</Button>
           </Group>
@@ -159,6 +157,13 @@ export const AppLayout = () => {
               component={Link}
               to="/incidents-history"
               label="Historial de Incidencias"
+              onClick={toggle}
+            />
+            {/* ✅ AÑADIDO: Enlace a la nueva página de informes */}
+            <NavLink
+              component={Link}
+              to="/reports/consumption"
+              label="Informe de Consumos"
               onClick={toggle}
             />
             <NavLink label="Catálogos" defaultOpened>
