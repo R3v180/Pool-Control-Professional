@@ -1,5 +1,6 @@
 // filename: packages/client/src/router/components.tsx
-// version: 1.6.5 (Add navigation link to Product Catalog page)
+// version: 1.7.0 (FEAT: Enable notifications for Technicians)
+
 import { AppShell, Burger, Group, NavLink, Title, Button, Indicator, ActionIcon, Popover, Text, Stack } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Navigate, Outlet, Link, useNavigate } from 'react-router-dom';
@@ -12,6 +13,7 @@ interface Notification {
   id: string;
   message: string;
   visitId: string | null;
+  parentNotificationId: string | null; 
   isRead: boolean;
 }
 
@@ -32,28 +34,23 @@ const NotificationBell = () => {
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 60000);
+    const interval = setInterval(fetchNotifications, 60000); // Refresca cada minuto
     return () => clearInterval(interval);
   }, []);
 
   const handleNotificationClick = async (notification: Notification) => {
     if (!notification.isRead) {
-      setNotifications(current =>
-        current.map(n =>
-          n.id === notification.id ? { ...n, isRead: true } : n
-        )
-      );
       try {
         await apiClient.post(`/notifications/${notification.id}/read`);
+        fetchNotifications(); // Vuelve a cargar para actualizar el estado visual
       } catch (error) {
         console.error('Failed to mark notification as read', error);
-        fetchNotifications();
       }
     }
     
-    if (notification.visitId) {
-      navigate(`/visits/${notification.visitId}`);
-    }
+    // Lógica unificada para navegar al detalle del incidente correcto.
+    const incidentId = notification.parentNotificationId || notification.id;
+    navigate(`/incidents/${incidentId}`);
     
     setPopoverOpened(false);
   };
@@ -128,7 +125,8 @@ export const AppLayout = () => {
             <Title order={3}>Pool Control Professional</Title>
           </Group>
           <Group>
-            {user?.role === 'ADMIN' && <NotificationBell />}
+            { /* ✅ CAMBIO: Ahora la campana se muestra para ADMIN y TECHNICIAN */ }
+            {(user?.role === 'ADMIN' || user?.role === 'TECHNICIAN') && <NotificationBell />}
             <Button variant="light" onClick={handleLogout}>Cerrar Sesión</Button>
           </Group>
         </Group>
@@ -198,7 +196,7 @@ export const AppLayout = () => {
 
         {/* Enlaces solo para el rol SUPER_ADMIN */}
         {user?.role === 'SUPER_ADMIN' && (
-           <NavLink 
+          <NavLink 
               component={Link} 
               to="/superadmin/tenants" 
               label="Gestión de Tenants" 

@@ -1,8 +1,11 @@
 // filename: packages/server/src/api/incident-tasks/incident-tasks.service.ts
-// version: 1.2.1 (FIXED - Removed unused actorId parameter)
+// version: 1.5.1 (FIX: Correctly compare nullable dates)
 
 import { PrismaClient } from '@prisma/client';
 import type { IncidentTask, IncidentPriority, IncidentTaskStatus, IncidentTaskLog } from '@prisma/client';
+// ✅ Se elimina 'isEqual' que no se usa y causaba el error
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const prisma = new PrismaClient();
 
@@ -42,7 +45,6 @@ export const createIncidentTask = async (data: CreateIncidentTaskInput, actorId:
       tenantId: data.tenantId,
     },
   });
-
   await prisma.incidentTaskLog.create({
     data: {
       action: 'CREATION',
@@ -51,23 +53,84 @@ export const createIncidentTask = async (data: CreateIncidentTaskInput, actorId:
       userId: actorId,
     }
   });
-
   return task;
 };
 
 export const getTasksByNotificationId = async (notificationId: string, tenantId: string): Promise<IncidentTask[]> => {
-  return prisma.incidentTask.findMany({ where: { notificationId, tenantId }, include: { assignedTo: { select: { id: true, name: true, }, }, }, orderBy: { createdAt: 'asc', }, });
+  return prisma.incidentTask.findMany({
+    where: { notificationId, tenantId },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      status: true,
+      priority: true,
+      deadline: true,
+      resolutionNotes: true,
+      assignedTo: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      createdAt: true,
+      updatedAt: true,
+      tenantId: true,
+      notificationId: true,
+      assignedToId: true,
+      logs: false,
+    },
+    orderBy: { createdAt: 'asc' },
+  });
 };
+
 export const getTasksAssignedToUser = async (userId: string): Promise<IncidentTask[]> => {
   return prisma.incidentTask.findMany({ where: { assignedToId: userId, status: { in: ['PENDING', 'IN_PROGRESS'], }, }, include: { notification: { include: { visit: { include: { pool: { select: { name: true } } } } } } }, orderBy: { priority: 'desc', }, });
 };
 
-// --- CORRECCIÓN: Se elimina el parámetro `actorId` no utilizado ---
 export const updateIncidentTask = async (id: string, data: UpdateIncidentTaskInput): Promise<IncidentTask> => {
-    return prisma.incidentTask.update({
-        where: { id },
-        data,
+  return prisma.$transaction(async (tx) => {
+    // 1. Obtenemos el estado de la tarea ANTES de la actualización
+    const originalTask = await tx.incidentTask.findUniqueOrThrow({
+      where: { id },
+      include: { assignedTo: true }
     });
+
+    // 2. Realizamos la actualización
+    const updatedTask = await tx.incidentTask.update({
+        where: { id },
+        data: {
+          ...data,
+          deadline: data.deadline ? new Date(data.deadline) : null,
+        },
+        include: { assignedTo: true, notification: true }
+    });
+
+    // 3. Comparamos el plazo (deadline) de forma segura
+    const originalDeadline = originalTask.deadline;
+    const updatedDeadline = updatedTask.deadline;
+    
+    // ✅ LA SOLUCIÓN: Comparamos el valor numérico de las fechas, que maneja null/undefined correctamente.
+    if (originalDeadline?.getTime() !== updatedDeadline?.getTime() && updatedTask.assignedTo) {
+      const formattedDeadline = updatedDeadline 
+        ? format(updatedDeadline, "d MMMM yyyy 'a las' HH:mm", { locale: es })
+        : 'eliminado';
+      
+      const message = `El plazo para tu tarea "${updatedTask.title}" ha sido actualizado a: ${formattedDeadline}.`;
+      
+      // Creamos la notificación para el técnico
+      await tx.notification.create({
+        data: {
+          message,
+          tenantId: updatedTask.tenantId,
+          userId: updatedTask.assignedTo.id,
+          parentNotificationId: updatedTask.notificationId,
+        }
+      });
+    }
+
+    return updatedTask;
+  });
 };
 
 export const deleteIncidentTask = async (id: string): Promise<void> => {
@@ -99,6 +162,7 @@ export const updateTaskStatus = async (taskId: string, actorId: string, status: 
           message: `La tarea "${task.title}" ha sido completada.`,
           tenantId: task.tenantId,
           userId: task.notification.userId, 
+          parentNotificationId: task.notificationId,
         }
       });
     }
@@ -108,30 +172,46 @@ export const updateTaskStatus = async (taskId: string, actorId: string, status: 
 
 export const addTaskLog = async (taskId: string, actorId: string, data: AddLogInput) => {
   return prisma.$transaction(async (tx) => {
-    const task = await tx.incidentTask.update({
+    const task = await tx.incidentTask.findUnique({
       where: { id: taskId },
-      data: { deadline: data.newDeadline ? new Date(data.newDeadline) : undefined },
       include: { assignedTo: true, notification: true },
     });
 
-    if (!task.assignedTo) throw new Error("La tarea no tiene un asignado.");
+    if (!task || !task.assignedTo) throw new Error("Tarea o técnico asignado no encontrados.");
+
+    let logDetails = data.details;
+    let notificationMessage = `Actualización sobre "${task.title}": ${data.details}`;
+    let logAction: any = 'COMMENT';
+
+    if (data.newDeadline) {
+      const formattedDeadline = format(new Date(data.newDeadline), "d MMMM yyyy 'a las' HH:mm", { locale: es });
+      logDetails = `[SOLICITUD DE APLAZAMIENTO] ${data.details}. Se solicita nuevo plazo para: ${formattedDeadline}.`;
+      notificationMessage = `Solicitud de aplazamiento de ${task.assignedTo.name} para la tarea "${task.title}".`;
+      logAction = 'DEADLINE_REQUEST';
+    }
 
     const log = await tx.incidentTaskLog.create({
       data: {
-        action: 'COMMENT',
-        details: data.details,
+        action: logAction,
+        details: logDetails,
         incidentTaskId: taskId,
         userId: actorId,
       }
     });
 
-    await tx.notification.create({
-      data: {
-        message: `Actualización de ${task.assignedTo.name} en la tarea "${task.title}": ${data.details}`,
-        tenantId: task.tenantId,
-        userId: task.notification.userId,
-      }
-    });
+    const authorIsTechnician = actorId === task.assignedToId;
+    const recipientId = authorIsTechnician ? task.notification.userId : task.assignedToId;
+
+    if (recipientId) {
+        await tx.notification.create({
+            data: {
+                message: notificationMessage,
+                tenantId: task.tenantId,
+                userId: recipientId,
+                parentNotificationId: task.notificationId, 
+            }
+        });
+    }
 
     return log;
   });
@@ -143,4 +223,39 @@ export const getTaskLogs = async (taskId: string): Promise<IncidentTaskLog[]> =>
         include: { user: { select: { name: true } } },
         orderBy: { createdAt: 'asc' },
     });
+};
+
+export const updateTaskDeadline = async (taskId: string, deadline: string, actorId: string): Promise<IncidentTask> => {
+  return prisma.$transaction(async (tx) => {
+    const actor = await tx.user.findUniqueOrThrow({ where: { id: actorId } });
+    
+    const updatedTask = await tx.incidentTask.update({
+      where: { id: taskId },
+      data: { deadline: new Date(deadline) },
+      include: { assignedTo: true }
+    });
+
+    const formattedDeadline = format(new Date(deadline), "d MMMM yyyy 'a las' HH:mm", { locale: es });
+    await tx.incidentTaskLog.create({
+      data: {
+        action: 'DEADLINE_UPDATE',
+        details: `[PLAZO ACTUALIZADO] El plazo ha sido modificado por ${actor.name} a: ${formattedDeadline}.`,
+        incidentTaskId: taskId,
+        userId: actorId,
+      }
+    });
+
+    if (updatedTask.assignedTo) {
+      await tx.notification.create({
+        data: {
+          message: `El plazo para tu tarea "${updatedTask.title}" ha sido actualizado por el administrador.`,
+          tenantId: updatedTask.tenantId,
+          userId: updatedTask.assignedTo.id,
+          parentNotificationId: updatedTask.notificationId,
+        }
+      });
+    }
+
+    return updatedTask;
+  });
 };

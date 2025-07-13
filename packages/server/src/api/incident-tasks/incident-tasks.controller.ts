@@ -1,5 +1,5 @@
 // filename: packages/server/src/api/incident-tasks/incident-tasks.controller.ts
-// version: 1.2.1 (FIXED - Removed actorId from updateIncidentTask call)
+// version: 1.3.1 (Cleaned)
 
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
@@ -12,6 +12,7 @@ import {
   updateTaskStatus,
   addTaskLog,
   getTaskLogs,
+  updateTaskDeadline,
 } from './incident-tasks.service.js';
 
 export const getMyAssignedTasksHandler = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -27,12 +28,17 @@ export const createIncidentTaskHandler = async (req: AuthRequest, res: Response,
   try {
     const tenantId = req.user?.tenantId;
     const actorId = req.user?.id;
-    if (!tenantId || !actorId) { return res.status(403).json({ success: false, message: 'Acción no permitida.' }); }
+
+    if (!tenantId || !actorId) {
+      return res.status(403).json({ success: false, message: 'Acción no permitida. Usuario o tenant no identificado.' });
+    }
 
     const input = { ...req.body, tenantId };
     const newTask = await createIncidentTask(input, actorId);
     res.status(201).json({ success: true, data: newTask });
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const getTasksByNotificationHandler = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -51,10 +57,11 @@ export const updateIncidentTaskHandler = async (req: AuthRequest, res: Response,
     const { id } = req.params;
     if (!id) { return res.status(400).json({ success: false, message: 'El ID de la tarea es requerido.' }); }
     
-    // --- CORRECCIÓN: Se elimina el `actorId` de la llamada ---
     const updatedTask = await updateIncidentTask(id, req.body);
     res.status(200).json({ success: true, data: updatedTask });
-  } catch (error) { next(error); }
+  } catch (error) { 
+    next(error); 
+  }
 };
 
 export const deleteIncidentTaskHandler = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -103,6 +110,22 @@ export const getTaskLogsHandler = async (req: AuthRequest, res: Response, next: 
         
         const logs = await getTaskLogs(taskId);
         res.status(200).json({ success: true, data: logs });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const updateTaskDeadlineHandler = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const { id: taskId } = req.params;
+        const actorId = req.user?.id;
+        const { deadline } = req.body;
+        if (!taskId) { return res.status(400).json({ success: false, message: 'El ID de la tarea es requerido.'}); }
+        if (!actorId) { return res.status(401).json({ success: false, message: 'Usuario no autenticado.'}); }
+        if (typeof deadline !== 'string' || !deadline) { return res.status(400).json({ success: false, message: 'Se requiere un plazo (deadline) válido.'}); }
+
+        const updatedTask = await updateTaskDeadline(taskId, deadline, actorId);
+        res.status(200).json({ success: true, data: updatedTask });
     } catch (error) {
         next(error);
     }

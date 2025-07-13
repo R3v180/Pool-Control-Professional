@@ -1,6 +1,5 @@
 // filename: packages/server/src/api/incident-tasks/incident-tasks.routes.ts
-// version: 1.2.0 (Adds status, log, and get-logs routes)
-// description: Añade los endpoints para el ciclo de vida y auditoría de una tarea.
+// version: 1.3.0 (Adds route to update a task's deadline)
 
 import { Router } from 'express';
 import {
@@ -9,9 +8,10 @@ import {
   updateIncidentTaskHandler,
   deleteIncidentTaskHandler,
   getMyAssignedTasksHandler,
-  updateTaskStatusHandler, // <-- Importar
-  addTaskLogHandler,       // <-- Importar
-  getTaskLogsHandler,      // <-- Importar
+  updateTaskStatusHandler,
+  addTaskLogHandler,
+  getTaskLogsHandler,
+  updateTaskDeadlineHandler, // <-- 1. Importar el nuevo manejador (aún no creado)
 } from './incident-tasks.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
 
@@ -25,10 +25,11 @@ incidentTasksRouter.get('/by-notification/:notificationId', getTasksByNotificati
 incidentTasksRouter.post('/', createIncidentTaskHandler);
 
 // --- Rutas para una Tarea Específica por ID ---
-incidentTasksRouter.get('/:id/logs', getTaskLogsHandler); // Obtener historial de una tarea
-incidentTasksRouter.post('/:id/log', addTaskLogHandler);   // Añadir un comentario/log
-incidentTasksRouter.patch('/:id/status', updateTaskStatusHandler); // Cambiar estado
-incidentTasksRouter.patch('/:id', updateIncidentTaskHandler);      // Editar detalles generales
-incidentTasksRouter.delete('/:id', deleteIncidentTaskHandler);     // Eliminar tarea
+incidentTasksRouter.get('/:id/logs', getTaskLogsHandler);
+incidentTasksRouter.post('/:id/log', addTaskLogHandler);
+incidentTasksRouter.patch('/:id/status', updateTaskStatusHandler);
+incidentTasksRouter.patch('/:id/deadline', updateTaskDeadlineHandler); // <-- 2. Añadir la nueva ruta
+incidentTasksRouter.patch('/:id', updateIncidentTaskHandler);
+incidentTasksRouter.delete('/:id', deleteIncidentTaskHandler);
 
 export default incidentTasksRouter;

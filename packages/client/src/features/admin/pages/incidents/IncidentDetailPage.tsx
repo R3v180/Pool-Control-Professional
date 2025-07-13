@@ -1,18 +1,18 @@
 // filename: packages/client/src/features/admin/pages/incidents/IncidentDetailPage.tsx
-// version: 2.3.8 (DEFINITIVE_FIX: Using 'as any' to bypass TS inference issue)
+// version: 2.8.0 (Cleaned)
 
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Container, Title, Loader, Alert, Paper, Text, Breadcrumbs, Button, Group,
-  Modal, TextInput, Stack, Textarea, Select, Badge, Card, ActionIcon, Divider, SimpleGrid, Image
+  Modal, TextInput, Stack, Textarea, Select, Badge, Card, ActionIcon, Divider, SimpleGrid, Image, Tooltip
 } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
 import 'dayjs/locale/es';
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
 import apiClient from '../../../../api/apiClient';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useAuth } from '../../../../providers/AuthProvider';
 
@@ -20,15 +20,17 @@ import { useAuth } from '../../../../providers/AuthProvider';
 type IncidentStatus = 'PENDING' | 'RESOLVED';
 type IncidentPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
 type IncidentTaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+type LogAction = 'CREATION' | 'STATUS_CHANGE' | 'COMMENT' | 'DEADLINE_REQUEST' | 'DEADLINE_UPDATE';
+
 interface User { id: string; name: string; }
 interface IncidentImage { id: string; url: string; }
-interface IncidentTaskLog { id: string, action: string, details: string, createdAt: string, user: { name: string } }
+interface IncidentTaskLog { id: string, action: LogAction, details: string, createdAt: string, user: { name: string } }
 interface IncidentTask {
   id: string; title: string; description: string | null; status: IncidentTaskStatus;
   priority: IncidentPriority; deadline: string | null; assignedTo: User | null; resolutionNotes: string | null;
 }
 interface NotificationDetails {
-  id: string; message: string; status: IncidentStatus; priority: IncidentPriority | null; createdAt: string;
+  id:string; message: string; status: IncidentStatus; priority: IncidentPriority | null; createdAt: string;
   images: IncidentImage[];
   visit: { id: string; pool: { name: string; }; technician: { name: string } | null; } | null;
 }
@@ -45,6 +47,8 @@ const TechnicianTaskView = ({ tasks, onUpdate }: { tasks: IncidentTask[], onUpda
 
   const [comment, setComment] = useState('');
   const [newDeadline, setNewDeadline] = useState<Date | null>(null);
+  const [logs, setLogs] = useState<IncidentTaskLog[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   
   const handleStatusChange = async (status: IncidentTaskStatus, resolutionNotes?: string) => {
     if (!myTask) return;
@@ -52,20 +56,42 @@ const TechnicianTaskView = ({ tasks, onUpdate }: { tasks: IncidentTask[], onUpda
     onUpdate();
   };
 
+  const fetchLogs = async () => {
+    if (!myTask) return;
+    try {
+      const response = await apiClient.get<ApiResponse<IncidentTaskLog[]>>(`/incident-tasks/${myTask.id}/logs`);
+      setLogs(response.data.data);
+    } catch {
+      alert('No se pudo cargar el historial de la tarea.');
+    }
+  };
+
   const handleAddLog = async () => {
     if (!myTask || !comment) return;
     await apiClient.post(`/incident-tasks/${myTask.id}/log`, {
       details: comment,
-      newDeadline: newDeadline ? newDeadline.toISOString() : undefined,
+      newDeadline: newDeadline instanceof Date ? newDeadline.toISOString() : undefined,
     });
     setComment('');
     setNewDeadline(null);
-    onUpdate();
+    if(showHistory) {
+      fetchLogs();
+    }
+  };
+
+  const toggleHistory = () => {
+    const willBeOpen = !showHistory;
+    setShowHistory(willBeOpen);
+    if (willBeOpen && logs.length === 0) {
+      fetchLogs();
+    }
   };
 
   if (!myTask) {
     return <Alert color="orange">No tienes una tarea específica asignada para esta incidencia.</Alert>
   }
+
+  const isOverdue = myTask.deadline && new Date(myTask.deadline) < new Date() && myTask.status !== 'COMPLETED';
 
   return (
     <Stack>
@@ -74,7 +100,35 @@ const TechnicianTaskView = ({ tasks, onUpdate }: { tasks: IncidentTask[], onUpda
       <Group>
         <Badge color={taskStatusColors[myTask.status]}>{myTask.status}</Badge>
         <Badge color={priorityColors[myTask.priority]}>Prioridad: {myTask.priority}</Badge>
+        <Button variant="subtle" size="xs" onClick={toggleHistory}>
+          {showHistory ? 'Ocultar Historial' : 'Ver Historial'}
+        </Button>
       </Group>
+
+      {myTask.deadline && (
+       <Text size="sm" c={isOverdue ? 'red' : 'dimmed'} fw={isOverdue ? 700 : 400} mt="xs">
+          Plazo: {format(new Date(myTask.deadline), 'eeee, d MMMM yyyy, HH:mm', { locale: es })} {isOverdue && '(VENCIDA)'}
+        </Text>
+      )}
+
+      {showHistory && (
+        <Paper withBorder p="md" mt="sm">
+            <Title order={5} mb="sm">Historial de la Tarea</Title>
+            <Stack gap="xs">
+                {logs.length > 0 
+                    ? logs.map(log => (
+                        <Paper key={log.id} p="xs" bg="gray.0" radius="sm">
+                            <Text size="xs">
+                                <strong>{log.user.name}</strong> ({format(new Date(log.createdAt), 'dd/MM HH:mm')})
+                            </Text>
+                            <Text size="sm" mt={4}>{log.details}</Text>
+                        </Paper>
+                    ))
+                    : <Text size="sm" c="dimmed">No hay entradas en el historial.</Text>
+                }
+            </Stack>
+        </Paper>
+      )}
 
       <Paper withBorder p="md" mt="lg">
         <Title order={4} mb="md">Acciones</Title>
@@ -98,9 +152,7 @@ const TechnicianTaskView = ({ tasks, onUpdate }: { tasks: IncidentTask[], onUpda
           locale="es"
           clearable
           value={newDeadline}
-          // Using 'as any' to bypass a persistent but likely incorrect TS inference error.
-          // The state itself remains strongly typed as <Date | null>.
-          onChange={setNewDeadline as any} // <-- CORRECCIÓN FINAL
+          onChange={setNewDeadline as any}
           mt="sm"
         />
         <Button mt="md" onClick={handleAddLog} disabled={!comment}>Enviar Actualización</Button>
@@ -118,18 +170,14 @@ const AdminIncidentView = ({ notification, tasks, technicians, onUpdate }: { not
   const [editingTask, setEditingTask] = useState<IncidentTask | null>(null);
   const [logs, setLogs] = useState<IncidentTaskLog[]>([]);
   const [selectedTaskForLogs, setSelectedTaskForLogs] = useState<IncidentTask | null>(null);
+  const [adminComment, setAdminComment] = useState('');
   
   const form = useForm({
     initialValues: {
-      title: '',
-      description: '',
-      priority: 'NORMAL' as IncidentPriority,
-      assignedToId: null as string | null,
-      deadline: null as Date | null,
+      title: '', description: '', priority: 'NORMAL' as IncidentPriority,
+      assignedToId: null as string | null, deadline: null as Date | null,
     },
-    validate: {
-      title: (value) => (value.trim().length < 5 ? 'El título es demasiado corto.' : null),
-    },
+    validate: { title: (value) => (value.trim().length < 5 ? 'El título es demasiado corto.' : null) },
   });
 
   const handleOpenModal = (task: IncidentTask | null = null) => {
@@ -137,11 +185,8 @@ const AdminIncidentView = ({ notification, tasks, technicians, onUpdate }: { not
     if (task) {
       const deadlineDate = task.deadline ? new Date(task.deadline) : null;
       form.setValues({
-        title: task.title,
-        description: task.description || '',
-        priority: task.priority,
-        assignedToId: task.assignedTo?.id || null,
-        deadline: deadlineDate,
+        title: task.title, description: task.description || '', priority: task.priority,
+        assignedToId: task.assignedTo?.id || null, deadline: deadlineDate,
       });
     } else {
       form.reset();
@@ -151,14 +196,28 @@ const AdminIncidentView = ({ notification, tasks, technicians, onUpdate }: { not
   };
 
   const handleSubmit = async (values: typeof form.values) => {
-    if (!notification.id) return;
-    const payload = { ...values, deadline: values.deadline instanceof Date ? values.deadline.toISOString() : null };
+    const isNewTask = !editingTask;
+    const taskId = isNewTask ? null : editingTask.id;
+
+    const payload: { [key: string]: any } = {
+      title: values.title,
+      description: values.description,
+      priority: values.priority,
+      assignedToId: values.assignedToId,
+      deadline: values.deadline instanceof Date ? values.deadline.toISOString() : null,
+    };
+
     try {
-      if (editingTask) { await apiClient.patch(`/incident-tasks/${editingTask.id}`, payload);
-      } else { await apiClient.post('/incident-tasks', { ...payload, notificationId: notification.id }); }
+      if (isNewTask) {
+        await apiClient.post('/incident-tasks', { ...payload, notificationId: notification.id });
+      } else {
+        await apiClient.patch(`/incident-tasks/${taskId}`, payload);
+      }
       onUpdate();
       closeModal();
-    } catch (err: any) { form.setErrors({ title: err.response?.data?.message || 'Error al guardar la tarea.' }); }
+    } catch (err: any) {
+      form.setErrors({ title: err.response?.data?.message || 'Error al guardar la tarea.' });
+    }
   };
 
   const handleDelete = async (taskId: string) => {
@@ -168,14 +227,74 @@ const AdminIncidentView = ({ notification, tasks, technicians, onUpdate }: { not
   const handleViewLogs = async (task: IncidentTask) => {
     if (selectedTaskForLogs?.id === task.id) {
       setSelectedTaskForLogs(null);
+      setLogs([]);
       return;
     }
     setSelectedTaskForLogs(task);
-    const response = await apiClient.get<ApiResponse<IncidentTaskLog[]>>(`/incident-tasks/${task.id}/logs`);
-    setLogs(response.data.data);
+    try {
+      const response = await apiClient.get<ApiResponse<IncidentTaskLog[]>>(`/incident-tasks/${task.id}/logs`);
+      setLogs(response.data.data);
+    } catch {
+      alert('No se pudo cargar el historial de la tarea.');
+    }
+  };
+
+  useEffect(() => {
+    if (tasks.length === 1 && !selectedTaskForLogs) {
+      if (tasks[0]) {
+        handleViewLogs(tasks[0]);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tasks]); 
+  
+  const handleAcceptDeadline = async (taskId: string, logDetails: string) => {
+    const dateString = logDetails.split('para: ')[1];
+    if (!dateString) return;
+    const newDate = parse(dateString.replace(' a las', ''), "d MMMM yyyy HH:mm", new Date(), { locale: es });
+    if (isNaN(newDate.getTime())) return;
+    
+    try {
+      await apiClient.patch(`/incident-tasks/${taskId}/deadline`, { deadline: newDate.toISOString() });
+      onUpdate();
+    } catch {
+      alert('No se pudo aceptar el nuevo plazo.');
+    }
+  };
+
+  const handleAdminComment = async (taskId: string) => {
+    if (!adminComment.trim()) return;
+    try {
+      await apiClient.post(`/incident-tasks/${taskId}/log`, { details: adminComment });
+      setAdminComment('');
+      const taskToUpdate = tasks.find(t => t.id === taskId);
+      if (taskToUpdate) {
+        handleViewLogs(taskToUpdate);
+      }
+      onUpdate();
+    } catch {
+      alert('No se pudo enviar el comentario.');
+    }
   };
   
   const technicianOptions = technicians.map(t => ({ value: t.id, label: t.name }));
+
+  const renderLogEntry = (log: IncidentTaskLog, taskId: string) => {
+    const isRequest = log.action === 'DEADLINE_REQUEST';
+    return (
+        <Paper key={log.id} p="xs" withBorder={isRequest} shadow={isRequest ? "sm" : "none"} radius="md" bg={isRequest ? 'blue.0' : 'gray.0'}>
+            <Text size="xs">
+                <strong>{log.user.name}</strong> ({format(new Date(log.createdAt), 'dd/MM HH:mm', { locale: es })})
+            </Text>
+            <Text size="sm" mt={4}>{log.details}</Text>
+            {isRequest && (
+                <Group mt="xs">
+                    <Button size="xs" color="green" onClick={() => handleAcceptDeadline(taskId, log.details)}>Aceptar Plazo</Button>
+                </Group>
+            )}
+        </Paper>
+    );
+  };
 
   return (
     <>
@@ -186,7 +305,13 @@ const AdminIncidentView = ({ notification, tasks, technicians, onUpdate }: { not
             <Textarea label="Descripción" {...form.getInputProps('description')} />
             <Select label="Prioridad" data={['LOW', 'NORMAL', 'HIGH', 'CRITICAL']} required {...form.getInputProps('priority')} />
             <Select label="Asignar a" data={technicianOptions} clearable {...form.getInputProps('assignedToId')} />
-            <DateTimePicker label="Plazo Límite" locale="es" clearable {...form.getInputProps('deadline')} />
+            <DateTimePicker
+              label="Plazo Límite"
+              locale="es"
+              clearable
+              value={form.values.deadline}
+              onChange={(value) => form.setFieldValue('deadline', value ? new Date(value) : null)}
+            />
             <Button type="submit" mt="md">{editingTask ? 'Guardar Cambios' : 'Crear Tarea'}</Button>
           </Stack>
         </form>
@@ -197,7 +322,7 @@ const AdminIncidentView = ({ notification, tasks, technicians, onUpdate }: { not
       <Stack>
         {tasks.length > 0 ? (
           tasks.map(task => {
-            const isOverdue = task.deadline && new Date(task.deadline) < new Date() && task.status === 'PENDING';
+            const isOverdue = task.deadline && new Date(task.deadline) < new Date() && task.status !== 'COMPLETED';
             return (
               <Card key={task.id} withBorder shadow="sm" p="md" style={ isOverdue ? { borderLeft: '4px solid var(--mantine-color-red-7)' } : {}}>
                 <Group justify="space-between" align="flex-start">
@@ -212,21 +337,34 @@ const AdminIncidentView = ({ notification, tasks, technicians, onUpdate }: { not
                     </Group>
                     {task.deadline && <Text size="xs" c={isOverdue ? 'red' : 'dimmed'} fw={isOverdue ? 700 : 400}>Plazo: {format(new Date(task.deadline), 'd MMM yyyy, HH:mm', { locale: es })} {isOverdue && '(VENCIDA)'}</Text>}
                     {task.resolutionNotes && <Textarea value={task.resolutionNotes} readOnly label="Notas de Resolución" mt="xs" />}
-                    {selectedTaskForLogs?.id === task.id && logs.length > 0 && (
-                      <Paper withBorder p="xs" mt="sm" radius="md">
-                        <Text size="xs" fw={700} mb="xs">Historial de la Tarea:</Text>
-                        <Stack gap="xs">
-                          {logs.map(log => <Text size="xs" key={log.id}><strong>{log.user.name}</strong> ({format(new Date(log.createdAt), 'dd/MM HH:mm')}) - {log.details}</Text>)}
-                        </Stack>
-                      </Paper>
+                    
+                    {selectedTaskForLogs?.id === task.id && (
+                      <Stack mt="sm" gap="xs">
+                        {logs.length > 0 
+                            ? logs.map(log => renderLogEntry(log, task.id))
+                            : <Text size="xs" c="dimmed">No hay historial para esta tarea.</Text>
+                        }
+                        <Textarea
+                          placeholder="Escribe una respuesta o nueva instrucción para el técnico..."
+                          value={adminComment}
+                          onChange={(e) => setAdminComment(e.currentTarget.value)}
+                          minRows={2}
+                        />
+                        <Button size="xs" onClick={() => handleAdminComment(task.id)} disabled={!adminComment.trim()}>Enviar Comentario</Button>
+                      </Stack>
                     )}
+
                   </Stack>
                   <Stack>
-                    <Button.Group orientation="vertical">
-                      <Button variant="subtle" size="xs" onClick={() => handleOpenModal(task)}>Editar</Button>
-                      <Button variant="subtle" size="xs" onClick={() => handleViewLogs(task)}>Ver Historial</Button>
+                    <Tooltip label="Editar detalles de la tarea">
+                      <ActionIcon variant="default" onClick={() => handleOpenModal(task)}>✏️</ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Ver/Ocultar diálogo e historial">
+                      <ActionIcon variant="default" onClick={() => handleViewLogs(task)}>💬</ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Eliminar tarea">
                       <ActionIcon color="red" variant="subtle" onClick={() => handleDelete(task.id)}>🗑️</ActionIcon>
-                    </Button.Group>
+                    </Tooltip>
                   </Stack>
                 </Group>
               </Card>
@@ -291,7 +429,7 @@ export function IncidentDetailPage() {
 
       <Paper withBorder p="md" mb="xl">
         <Group justify="space-between"><Title order={4}>Reporte Original</Title><Badge color={notification.status === 'PENDING' ? 'orange' : 'green'} size="lg">{notification.status}</Badge></Group>
-        <Text size="sm" c="dimmed" mt="xs">Reportado por {notification.visit?.technician?.name || 'N/A'} el {format(new Date(notification.createdAt), 'd MMM yyyy, HH:mm', { locale: es })}</Text>
+        <Text size="sm" c="dimmed" mt="xs">Reportado por {notification.visit?.technician?.name || 'Sistema'} el {format(new Date(notification.createdAt), 'd MMM yyyy, HH:mm', { locale: es })}</Text>
         <Textarea value={notification.message} readOnly minRows={2} mt="md" label="Mensaje del técnico" />
         {notification.images && notification.images.length > 0 && (
           <><Text fw={500} size="sm" mt="md">Imágenes Adjuntas:</Text><SimpleGrid cols={{ base: 2, sm: 4, lg: 6 }} mt="xs">{notification.images.map(image => (<Paper key={image.id} withBorder radius="md" style={{ cursor: 'pointer' }} onClick={() => handleImageClick(image.url)}><Image src={image.url} height={100} radius="md" fit="cover" /></Paper>))}</SimpleGrid></>

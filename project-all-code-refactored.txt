@@ -1824,20 +1824,20 @@ export function ClientsPage() {
 
 // ====== [16] packages/client/src/features/admin/pages/incidents/IncidentDetailPage.tsx ======
 // filename: packages/client/src/features/admin/pages/incidents/IncidentDetailPage.tsx
-// version: 2.3.4 (FINAL, FINAL FIX)
+// version: 2.6.8 (FIX: Explicitly build payload on task update)
 
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Container, Title, Loader, Alert, Paper, Text, Breadcrumbs, Button, Group,
-  Modal, TextInput, Stack, Textarea, Select, Badge, Card, ActionIcon, Divider, SimpleGrid, Image
+  Modal, TextInput, Stack, Textarea, Select, Badge, Card, ActionIcon, Divider, SimpleGrid, Image, Tooltip
 } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
 import 'dayjs/locale/es';
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
 import apiClient from '../../../../api/apiClient';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useAuth } from '../../../../providers/AuthProvider';
 
@@ -1845,15 +1845,17 @@ import { useAuth } from '../../../../providers/AuthProvider';
 type IncidentStatus = 'PENDING' | 'RESOLVED';
 type IncidentPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
 type IncidentTaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+type LogAction = 'CREATION' | 'STATUS_CHANGE' | 'COMMENT' | 'DEADLINE_REQUEST' | 'DEADLINE_UPDATE';
+
 interface User { id: string; name: string; }
 interface IncidentImage { id: string; url: string; }
-interface IncidentTaskLog { id: string, action: string, details: string, createdAt: string, user: { name: string } }
+interface IncidentTaskLog { id: string, action: LogAction, details: string, createdAt: string, user: { name: string } }
 interface IncidentTask {
   id: string; title: string; description: string | null; status: IncidentTaskStatus;
   priority: IncidentPriority; deadline: string | null; assignedTo: User | null; resolutionNotes: string | null;
 }
 interface NotificationDetails {
-  id: string; message: string; status: IncidentStatus; priority: IncidentPriority | null; createdAt: string;
+  id:string; message: string; status: IncidentStatus; priority: IncidentPriority | null; createdAt: string;
   images: IncidentImage[];
   visit: { id: string; pool: { name: string; }; technician: { name: string } | null; } | null;
 }
@@ -1870,6 +1872,8 @@ const TechnicianTaskView = ({ tasks, onUpdate }: { tasks: IncidentTask[], onUpda
 
   const [comment, setComment] = useState('');
   const [newDeadline, setNewDeadline] = useState<Date | null>(null);
+  const [logs, setLogs] = useState<IncidentTaskLog[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   
   const handleStatusChange = async (status: IncidentTaskStatus, resolutionNotes?: string) => {
     if (!myTask) return;
@@ -1877,20 +1881,42 @@ const TechnicianTaskView = ({ tasks, onUpdate }: { tasks: IncidentTask[], onUpda
     onUpdate();
   };
 
+  const fetchLogs = async () => {
+    if (!myTask) return;
+    try {
+      const response = await apiClient.get<ApiResponse<IncidentTaskLog[]>>(`/incident-tasks/${myTask.id}/logs`);
+      setLogs(response.data.data);
+    } catch {
+      alert('No se pudo cargar el historial de la tarea.');
+    }
+  };
+
   const handleAddLog = async () => {
     if (!myTask || !comment) return;
     await apiClient.post(`/incident-tasks/${myTask.id}/log`, {
       details: comment,
-      newDeadline: newDeadline ? newDeadline.toISOString() : undefined,
+      newDeadline: newDeadline instanceof Date ? newDeadline.toISOString() : undefined,
     });
     setComment('');
     setNewDeadline(null);
-    onUpdate();
+    if(showHistory) {
+      fetchLogs();
+    }
+  };
+
+  const toggleHistory = () => {
+    const willBeOpen = !showHistory;
+    setShowHistory(willBeOpen);
+    if (willBeOpen && logs.length === 0) {
+      fetchLogs();
+    }
   };
 
   if (!myTask) {
     return <Alert color="orange">No tienes una tarea específica asignada para esta incidencia.</Alert>
   }
+
+  const isOverdue = myTask.deadline && new Date(myTask.deadline) < new Date() && myTask.status !== 'COMPLETED';
 
   return (
     <Stack>
@@ -1899,7 +1925,35 @@ const TechnicianTaskView = ({ tasks, onUpdate }: { tasks: IncidentTask[], onUpda
       <Group>
         <Badge color={taskStatusColors[myTask.status]}>{myTask.status}</Badge>
         <Badge color={priorityColors[myTask.priority]}>Prioridad: {myTask.priority}</Badge>
+        <Button variant="subtle" size="xs" onClick={toggleHistory}>
+          {showHistory ? 'Ocultar Historial' : 'Ver Historial'}
+        </Button>
       </Group>
+
+      {myTask.deadline && (
+        <Text size="sm" c={isOverdue ? 'red' : 'dimmed'} fw={isOverdue ? 700 : 400} mt="xs">
+          Plazo: {format(new Date(myTask.deadline), 'eeee, d MMMM yyyy, HH:mm', { locale: es })} {isOverdue && '(VENCIDA)'}
+        </Text>
+      )}
+
+      {showHistory && (
+        <Paper withBorder p="md" mt="sm">
+            <Title order={5} mb="sm">Historial de la Tarea</Title>
+            <Stack gap="xs">
+                {logs.length > 0 
+                    ? logs.map(log => (
+                        <Paper key={log.id} p="xs" bg="gray.0" radius="sm">
+                            <Text size="xs">
+                                <strong>{log.user.name}</strong> ({format(new Date(log.createdAt), 'dd/MM HH:mm')})
+                            </Text>
+                            <Text size="sm" mt={4}>{log.details}</Text>
+                        </Paper>
+                    ))
+                    : <Text size="sm" c="dimmed">No hay entradas en el historial.</Text>
+                }
+            </Stack>
+        </Paper>
+      )}
 
       <Paper withBorder p="md" mt="lg">
         <Title order={4} mb="md">Acciones</Title>
@@ -1923,7 +1977,7 @@ const TechnicianTaskView = ({ tasks, onUpdate }: { tasks: IncidentTask[], onUpda
           locale="es"
           clearable
           value={newDeadline}
-          onChange={setNewDeadline} // <-- CORRECCIÓN APLICADA
+          onChange={setNewDeadline as any}
           mt="sm"
         />
         <Button mt="md" onClick={handleAddLog} disabled={!comment}>Enviar Actualización</Button>
@@ -1941,13 +1995,30 @@ const AdminIncidentView = ({ notification, tasks, technicians, onUpdate }: { not
   const [editingTask, setEditingTask] = useState<IncidentTask | null>(null);
   const [logs, setLogs] = useState<IncidentTaskLog[]>([]);
   const [selectedTaskForLogs, setSelectedTaskForLogs] = useState<IncidentTask | null>(null);
+  const [adminComment, setAdminComment] = useState('');
   
-  const form = useForm({ initialValues: { title: '', description: '', priority: 'NORMAL' as IncidentPriority, assignedToId: null as string | null, deadline: null as Date | null, }, validate: { title: (value) => (value.trim().length < 5 ? 'El título es demasiado corto.' : null) } });
+  const form = useForm({
+    initialValues: {
+      title: '', description: '', priority: 'NORMAL' as IncidentPriority,
+      assignedToId: null as string | null, deadline: null as Date | null,
+    },
+    validate: { title: (value) => (value.trim().length < 5 ? 'El título es demasiado corto.' : null) },
+  });
 
   const handleOpenModal = (task: IncidentTask | null = null) => {
     setEditingTask(task);
     if (task) {
-      form.setValues({ title: task.title, description: task.description || '', priority: task.priority, assignedToId: task.assignedTo?.id || null, deadline: task.deadline ? new Date(task.deadline) : null, });
+      let deadlineDate: Date | null = null;
+      if (task.deadline) {
+        const parsed = new Date(task.deadline);
+        if (!isNaN(parsed.getTime())) {
+          deadlineDate = parsed;
+        }
+      }
+      form.setValues({
+        title: task.title, description: task.description || '', priority: task.priority,
+        assignedToId: task.assignedTo?.id || null, deadline: deadlineDate,
+      });
     } else {
       form.reset();
       form.setFieldValue('priority', 'NORMAL');
@@ -1956,14 +2027,29 @@ const AdminIncidentView = ({ notification, tasks, technicians, onUpdate }: { not
   };
 
   const handleSubmit = async (values: typeof form.values) => {
-    if (!notification.id) return;
-    const payload = { ...values, deadline: values.deadline instanceof Date ? values.deadline.toISOString() : null };
+    const isNewTask = !editingTask;
+    const taskId = isNewTask ? null : editingTask.id;
+
+    // --- CAMBIO APLICADO: Construcción explícita del payload ---
+    const payload: { [key: string]: any } = {
+      title: values.title,
+      description: values.description,
+      priority: values.priority,
+      assignedToId: values.assignedToId,
+      deadline: values.deadline instanceof Date ? values.deadline.toISOString() : null,
+    };
+
     try {
-      if (editingTask) { await apiClient.patch(`/incident-tasks/${editingTask.id}`, payload);
-      } else { await apiClient.post('/incident-tasks', { ...payload, notificationId: notification.id }); }
+      if (isNewTask) {
+        await apiClient.post('/incident-tasks', { ...payload, notificationId: notification.id });
+      } else {
+        await apiClient.patch(`/incident-tasks/${taskId}`, payload);
+      }
       onUpdate();
       closeModal();
-    } catch (err: any) { form.setErrors({ title: err.response?.data?.message || 'Error al guardar la tarea.' }); }
+    } catch (err: any) {
+      form.setErrors({ title: err.response?.data?.message || 'Error al guardar la tarea.' });
+    }
   };
 
   const handleDelete = async (taskId: string) => {
@@ -1973,14 +2059,74 @@ const AdminIncidentView = ({ notification, tasks, technicians, onUpdate }: { not
   const handleViewLogs = async (task: IncidentTask) => {
     if (selectedTaskForLogs?.id === task.id) {
       setSelectedTaskForLogs(null);
+      setLogs([]);
       return;
     }
     setSelectedTaskForLogs(task);
-    const response = await apiClient.get<ApiResponse<IncidentTaskLog[]>>(`/incident-tasks/${task.id}/logs`);
-    setLogs(response.data.data);
+    try {
+      const response = await apiClient.get<ApiResponse<IncidentTaskLog[]>>(`/incident-tasks/${task.id}/logs`);
+      setLogs(response.data.data);
+    } catch {
+      alert('No se pudo cargar el historial de la tarea.');
+    }
+  };
+
+  useEffect(() => {
+    if (tasks.length === 1 && !selectedTaskForLogs) {
+      if (tasks[0]) {
+        handleViewLogs(tasks[0]);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tasks]); 
+  
+  const handleAcceptDeadline = async (taskId: string, logDetails: string) => {
+    const dateString = logDetails.split('para: ')[1];
+    if (!dateString) return;
+    const newDate = parse(dateString.replace(' a las', ''), "d MMMM yyyy HH:mm", new Date(), { locale: es });
+    if (isNaN(newDate.getTime())) return;
+    
+    try {
+      await apiClient.patch(`/incident-tasks/${taskId}/deadline`, { deadline: newDate.toISOString() });
+      onUpdate();
+    } catch {
+      alert('No se pudo aceptar el nuevo plazo.');
+    }
+  };
+
+  const handleAdminComment = async (taskId: string) => {
+    if (!adminComment.trim()) return;
+    try {
+      await apiClient.post(`/incident-tasks/${taskId}/log`, { details: adminComment });
+      setAdminComment('');
+      const taskToUpdate = tasks.find(t => t.id === taskId);
+      if (taskToUpdate) {
+        handleViewLogs(taskToUpdate);
+      }
+      onUpdate();
+    } catch {
+      alert('No se pudo enviar el comentario.');
+    }
   };
   
   const technicianOptions = technicians.map(t => ({ value: t.id, label: t.name }));
+
+  const renderLogEntry = (log: IncidentTaskLog, taskId: string) => {
+    const isRequest = log.action === 'DEADLINE_REQUEST';
+    return (
+        <Paper key={log.id} p="xs" withBorder={isRequest} shadow={isRequest ? "sm" : "none"} radius="md" bg={isRequest ? 'blue.0' : 'gray.0'}>
+            <Text size="xs">
+                <strong>{log.user.name}</strong> ({format(new Date(log.createdAt), 'dd/MM HH:mm', { locale: es })})
+            </Text>
+            <Text size="sm" mt={4}>{log.details}</Text>
+            {isRequest && (
+                <Group mt="xs">
+                    <Button size="xs" color="green" onClick={() => handleAcceptDeadline(taskId, log.details)}>Aceptar Plazo</Button>
+                </Group>
+            )}
+        </Paper>
+    );
+  };
 
   return (
     <>
@@ -2002,7 +2148,7 @@ const AdminIncidentView = ({ notification, tasks, technicians, onUpdate }: { not
       <Stack>
         {tasks.length > 0 ? (
           tasks.map(task => {
-            const isOverdue = task.deadline && new Date(task.deadline) < new Date() && task.status === 'PENDING';
+            const isOverdue = task.deadline && new Date(task.deadline) < new Date() && task.status !== 'COMPLETED';
             return (
               <Card key={task.id} withBorder shadow="sm" p="md" style={ isOverdue ? { borderLeft: '4px solid var(--mantine-color-red-7)' } : {}}>
                 <Group justify="space-between" align="flex-start">
@@ -2017,21 +2163,34 @@ const AdminIncidentView = ({ notification, tasks, technicians, onUpdate }: { not
                     </Group>
                     {task.deadline && <Text size="xs" c={isOverdue ? 'red' : 'dimmed'} fw={isOverdue ? 700 : 400}>Plazo: {format(new Date(task.deadline), 'd MMM yyyy, HH:mm', { locale: es })} {isOverdue && '(VENCIDA)'}</Text>}
                     {task.resolutionNotes && <Textarea value={task.resolutionNotes} readOnly label="Notas de Resolución" mt="xs" />}
-                    {selectedTaskForLogs?.id === task.id && logs.length > 0 && (
-                      <Paper withBorder p="xs" mt="sm" radius="md">
-                        <Text size="xs" fw={700} mb="xs">Historial de la Tarea:</Text>
-                        <Stack gap="xs">
-                          {logs.map(log => <Text size="xs" key={log.id}><strong>{log.user.name}</strong> ({format(new Date(log.createdAt), 'dd/MM HH:mm')}) - {log.details}</Text>)}
-                        </Stack>
-                      </Paper>
+                    
+                    {selectedTaskForLogs?.id === task.id && (
+                      <Stack mt="sm" gap="xs">
+                        {logs.length > 0 
+                            ? logs.map(log => renderLogEntry(log, task.id))
+                            : <Text size="xs" c="dimmed">No hay historial para esta tarea.</Text>
+                        }
+                        <Textarea
+                          placeholder="Escribe una respuesta o nueva instrucción para el técnico..."
+                          value={adminComment}
+                          onChange={(e) => setAdminComment(e.currentTarget.value)}
+                          minRows={2}
+                        />
+                        <Button size="xs" onClick={() => handleAdminComment(task.id)} disabled={!adminComment.trim()}>Enviar Comentario</Button>
+                      </Stack>
                     )}
+
                   </Stack>
                   <Stack>
-                    <Button.Group orientation="vertical">
-                      <Button variant="subtle" size="xs" onClick={() => handleOpenModal(task)}>Editar</Button>
-                      <Button variant="subtle" size="xs" onClick={() => handleViewLogs(task)}>Ver Historial</Button>
+                    <Tooltip label="Editar detalles de la tarea">
+                      <ActionIcon variant="default" onClick={() => handleOpenModal(task)}>✏️</ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Ver/Ocultar diálogo e historial">
+                      <ActionIcon variant="default" onClick={() => handleViewLogs(task)}>💬</ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Eliminar tarea">
                       <ActionIcon color="red" variant="subtle" onClick={() => handleDelete(task.id)}>🗑️</ActionIcon>
-                    </Button.Group>
+                    </Tooltip>
                   </Stack>
                 </Group>
               </Card>
@@ -2096,7 +2255,7 @@ export function IncidentDetailPage() {
 
       <Paper withBorder p="md" mb="xl">
         <Group justify="space-between"><Title order={4}>Reporte Original</Title><Badge color={notification.status === 'PENDING' ? 'orange' : 'green'} size="lg">{notification.status}</Badge></Group>
-        <Text size="sm" c="dimmed" mt="xs">Reportado por {notification.visit?.technician?.name || 'N/A'} el {format(new Date(notification.createdAt), 'd MMM yyyy, HH:mm', { locale: es })}</Text>
+        <Text size="sm" c="dimmed" mt="xs">Reportado por {notification.visit?.technician?.name || 'Sistema'} el {format(new Date(notification.createdAt), 'd MMM yyyy, HH:mm', { locale: es })}</Text>
         <Textarea value={notification.message} readOnly minRows={2} mt="md" label="Mensaje del técnico" />
         {notification.images && notification.images.length > 0 && (
           <><Text fw={500} size="sm" mt="md">Imágenes Adjuntas:</Text><SimpleGrid cols={{ base: 2, sm: 4, lg: 6 }} mt="xs">{notification.images.map(image => (<Paper key={image.id} withBorder radius="md" style={{ cursor: 'pointer' }} onClick={() => handleImageClick(image.url)}><Image src={image.url} height={100} radius="md" fit="cover" /></Paper>))}</SimpleGrid></>
@@ -2998,8 +3157,7 @@ export function MyRoutePage() {
 
 // ====== [22] packages/client/src/features/technician/pages/WorkOrderPage.tsx ======
 // filename: packages/client/src/features/technician/pages/WorkOrderPage.tsx
-// version: 2.0.0
-// description: Integra la subida de imágenes para incidencias y su visualización.
+// version: 2.0.2 (REFACTOR: Remove redundant incident management modals)
 
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
@@ -3031,8 +3189,6 @@ import {
   SimpleGrid,
   Image,
 } from '@mantine/core';
-import { DateTimePicker } from '@mantine/dates';
-import 'dayjs/locale/es';
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
 import apiClient from '../../../api/apiClient';
@@ -3055,7 +3211,6 @@ interface Notification {
     images: IncidentImage[];
 }
 
-// (Otros tipos se mantienen igual)
 interface VisitResult { parameterName: string; parameterUnit: string | null; value: string; }
 interface Product { id: string; name: string; unit: string; }
 interface Consumption { quantity: number; product: Product; }
@@ -3075,9 +3230,6 @@ interface ApiResponse<T> { success: boolean; data: T; }
 
 // --- Componente de Solo Lectura (para el Admin) ---
 const ReadOnlyWorkOrder = ({ visit }: { visit: VisitDetails }) => {
-  const navigate = useNavigate();
-  const [resolutionModalOpened, { open: openResolutionModal, close: closeResolutionModal }] = useDisclosure(false);
-  const [classifyModalOpened, { open: openClassifyModal, close: closeClassifyModal }] = useDisclosure(false);
   const [imageModalOpened, { open: openImageModal, close: closeImageModal }] = useDisclosure(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
@@ -3088,20 +3240,11 @@ const ReadOnlyWorkOrder = ({ visit }: { visit: VisitDetails }) => {
     openImageModal();
   };
 
-  // (Lógica de formularios de resolución y clasificación sin cambios)
-  const resolutionForm = useForm({ initialValues: { resolutionNotes: '' }, validate: { resolutionNotes: (value) => value.trim().length < 10 ? 'Las notas de resolución son demasiado cortas.' : null },});
-  const classificationForm = useForm({ initialValues: { priority: incidentNotification?.priority || 'NORMAL', deadline: incidentNotification?.resolutionDeadline ? new Date(incidentNotification.resolutionDeadline) : null, }, validate: { priority: (value) => !value ? 'Debe seleccionar una prioridad.' : null } });
-  const handleResolveIncident = async (values: { resolutionNotes: string }) => { if (!incidentNotification) return; await apiClient.post(`/notifications/${incidentNotification.id}/resolve`, values); closeResolutionModal(); navigate('/incidents-history'); };
-  const handleClassifyIncident = async (values: { priority: IncidentPriority, deadline: Date | null }) => { if (!incidentNotification) return; const deadlineDate = values.deadline ? new Date(values.deadline) : null; await apiClient.patch(`/notifications/${incidentNotification.id}/classify`, { priority: values.priority, deadline: deadlineDate ? deadlineDate.toISOString() : null }); closeClassifyModal(); navigate('/incidents-history'); };
-
   return (
     <>
       <Modal opened={imageModalOpened} onClose={closeImageModal} title="Imagen de la Incidencia" centered size="xl">
         {selectedImage && <Image src={selectedImage} />}
       </Modal>
-      {/* (Modales de resolución y clasificación sin cambios) */}
-      <Modal opened={resolutionModalOpened} onClose={closeResolutionModal} title="Gestionar Incidencia" centered><form onSubmit={resolutionForm.onSubmit(handleResolveIncident)}><Stack><Text c="dimmed">Notas del Técnico:</Text><Paper withBorder p="sm" bg="gray.0">{visit.notes || 'N/A'}</Paper><Textarea label="Notas de Resolución (Admin)" placeholder="Ej: Cliente contactado..." required minRows={3} {...resolutionForm.getInputProps('resolutionNotes')}/><Button type="submit" mt="md" color="green">Marcar como Resuelta</Button></Stack></form></Modal>
-      <Modal opened={classifyModalOpened} onClose={closeClassifyModal} title="Clasificar Incidencia" centered><form onSubmit={classificationForm.onSubmit(handleClassifyIncident)}><Stack><Select label="Establecer Prioridad" data={['LOW', 'NORMAL', 'HIGH', 'CRITICAL']} required {...classificationForm.getInputProps('priority')} /><DateTimePicker label="Establecer Plazo de Resolución (opcional)" placeholder="Seleccione fecha y hora" locale="es" clearable {...classificationForm.getInputProps('deadline')} /><Button type="submit" mt="md">Guardar Clasificación</Button></Stack></form></Modal>
 
       <Container>
           <Breadcrumbs><Link to="/">Dashboard</Link><Text>{visit.pool.name}</Text></Breadcrumbs>
@@ -3119,7 +3262,6 @@ const ReadOnlyWorkOrder = ({ visit }: { visit: VisitDetails }) => {
                       <Text fw={500} mt="sm">Notas del Técnico:</Text>
                       <Paper withBorder p="sm" bg="gray.0" mt="xs"><Text>{visit.notes || 'No se dejaron notas.'}</Text></Paper>
                       
-                      {/* --- NUEVA SECCIÓN: VISUALIZACIÓN DE IMÁGENES --- */}
                       {incidentNotification && incidentNotification.images.length > 0 && (
                         <>
                           <Text fw={500} mt="lg">Imágenes Adjuntas:</Text>
@@ -3134,13 +3276,26 @@ const ReadOnlyWorkOrder = ({ visit }: { visit: VisitDetails }) => {
                       )}
 
                       {visit.hasIncident && incidentNotification && (
-                        <>
+                        <Paper withBorder p="sm" mt="md" shadow="xs" bg={incidentNotification.status === 'RESOLVED' ? 'gray.0' : 'yellow.0'}>
                             {incidentNotification.status === 'RESOLVED' ? (
-                                <Stack mt="md" gap="xs"><Badge color="green" size="lg">INCIDENCIA RESUELTA</Badge><Text fw={500} mt="sm">Notas de Resolución (Admin):</Text><Paper withBorder p="sm" bg="green.0" mt="xs"><Text>{incidentNotification.resolutionNotes}</Text></Paper></Stack>
+                                <Stack mt="md" gap="xs">
+                                  <Badge color="green" size="lg">INCIDENCIA RESUELTA</Badge>
+                                  <Text fw={500} mt="sm">Notas de Resolución (Admin):</Text>
+                                  <Paper withBorder p="sm" bg="green.0" mt="xs"><Text>{incidentNotification.resolutionNotes}</Text></Paper>
+                                </Stack>
                             ) : (
-                                <Group mt="md"><Badge color="red" size="lg">INCIDENCIA PENDIENTE</Badge><Button onClick={openClassifyModal} variant="outline">Clasificar</Button><Button onClick={openResolutionModal} color="green">Resolver</Button></Group>
+                                <Group>
+                                  <Badge color="red" size="lg" variant="filled">INCIDENCIA PENDIENTE</Badge>
+                                  <Button 
+                                    component={Link} 
+                                    to={`/incidents/${incidentNotification.id}`}
+                                    variant="light"
+                                  >
+                                    Gestionar Incidencia →
+                                  </Button>
+                                </Group>
                             )}
-                        </>
+                        </Paper>
                       )}
                   </div>
               </Stack>
@@ -3152,6 +3307,7 @@ const ReadOnlyWorkOrder = ({ visit }: { visit: VisitDetails }) => {
 
 
 // --- Componente de Formulario Editable (para el Técnico) ---
+// (Este componente no ha sido modificado)
 interface UploadedFile { file: File; progress: number; url?: string; error?: string; }
 const EditableWorkOrder = ({ visit, products, onSubmit }: { visit: VisitDetails; products: Product[], onSubmit: (values: any) => Promise<void> }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -3210,7 +3366,6 @@ const EditableWorkOrder = ({ visit, products, onSubmit }: { visit: VisitDetails;
     setIsSubmitting(false);
   };
   
-  // (Renderizado de campos de parámetros, tareas y consumos sin cambios)
   const productOptions = products.map(p => ({ value: p.id, label: `${p.name} (${p.unit})` }));
   const consumptionFields = form.values.consumptions.map((_, index) => <Grid key={index} align="flex-end"><Grid.Col span={7}><Select label={index === 0 ? 'Producto' : ''} placeholder="Seleccione un producto" data={productOptions} {...form.getInputProps(`consumptions.${index}.productId`)} required /></Grid.Col><Grid.Col span={3}><NumberInput label={index === 0 ? 'Cantidad' : ''} placeholder="0.0" min={0} decimalScale={2} {...form.getInputProps(`consumptions.${index}.quantity`)} required /></Grid.Col><Grid.Col span={2}><ActionIcon color="red" onClick={() => form.removeListItem('consumptions', index)}>🗑️</ActionIcon></Grid.Col></Grid>);
   const parametersToMeasure = visit.pool.configurations.filter(c => c.parameterTemplate);
@@ -3235,7 +3390,6 @@ const EditableWorkOrder = ({ visit, products, onSubmit }: { visit: VisitDetails;
               <Textarea label="Notas de la visita" placeholder="Cualquier observación relevante..." {...form.getInputProps('notes')} />
               <Checkbox label="Reportar como Incidencia" description="Marcar si hay un problema para el administrador." {...form.getInputProps('hasIncident', { type: 'checkbox' })} />
               
-              {/* --- NUEVO COMPONENTE: SUBIDA DE IMÁGENES --- */}
               {form.values.hasIncident && (
                 <Stack mt="sm" gap="xs">
                   <FileInput label="Adjuntar Fotos" placeholder="Seleccionar imágenes..." multiple accept="image/png,image/jpeg" onChange={handleImageUpload} />
@@ -3269,7 +3423,7 @@ const EditableWorkOrder = ({ visit, products, onSubmit }: { visit: VisitDetails;
 export function WorkOrderPage() {
   const { visitId } = useParams<{ visitId: string }>();
   const navigate = useNavigate();
-  const [visit, setVisit] = useState<VisitDetails | null>(null);
+  const [visit, setVisit] = useState<VisitDetails | null>(null); // <-- LÍNEA CORREGIDA
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -3415,7 +3569,7 @@ export const useAuth = (): AuthContextType => {
 
 // ====== [25] packages/client/src/router/components.tsx ======
 // filename: packages/client/src/router/components.tsx
-// version: 1.6.5 (Add navigation link to Product Catalog page)
+// version: 1.6.8 (FEAT: Use parentNotificationId for robust navigation)
 import { AppShell, Burger, Group, NavLink, Title, Button, Indicator, ActionIcon, Popover, Text, Stack } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Navigate, Outlet, Link, useNavigate } from 'react-router-dom';
@@ -3428,6 +3582,7 @@ interface Notification {
   id: string;
   message: string;
   visitId: string | null;
+  parentNotificationId: string | null; // <-- Añadido nuevo campo
   isRead: boolean;
 }
 
@@ -3439,6 +3594,7 @@ const NotificationBell = () => {
 
   const fetchNotifications = async () => {
     try {
+      // La API debería devolver el nuevo campo parentNotificationId
       const response = await apiClient.get<{ success: boolean; data: Notification[] }>('/notifications');
       setNotifications(response.data.data);
     } catch (error) {
@@ -3467,9 +3623,10 @@ const NotificationBell = () => {
       }
     }
     
-    if (notification.visitId) {
-      navigate(`/visits/${notification.visitId}`);
-    }
+    // --- CAMBIO APLICADO ---
+    // Lógica unificada para navegar al detalle del incidente correcto.
+    const incidentId = notification.parentNotificationId || notification.id;
+    navigate(`/incidents/${incidentId}`);
     
     setPopoverOpened(false);
   };
@@ -3677,7 +3834,7 @@ export const TechnicianRoute = () => {
 
 // ====== [26] packages/client/src/router/index.tsx ======
 // filename: packages/client/src/router/index.tsx
-// Version: 1.9.0 (Add route for IncidentDetailPage)
+// Version: 1.9.1 (FIX: Allow technicians to access IncidentDetailPage)
 import { createBrowserRouter } from 'react-router-dom';
 import { LoginPage } from '../features/auth/pages/LoginPage.js';
 import { TenantsPage } from '../features/superadmin/pages/TenantsPage.js';
@@ -3692,7 +3849,7 @@ import { MyRoutePage } from '../features/technician/pages/MyRoutePage.js';
 import { WorkOrderPage } from '../features/technician/pages/WorkOrderPage.js';
 import { AdminDashboard } from '../features/admin/pages/AdminDashboard.js';
 import { IncidentsHistoryPage } from '../features/admin/pages/IncidentsHistoryPage.js';
-import { IncidentDetailPage } from '../features/admin/pages/incidents/IncidentDetailPage.js'; // <-- 1. Importar la nueva página
+import { IncidentDetailPage } from '../features/admin/pages/incidents/IncidentDetailPage.js';
 import { useAuth } from '../providers/AuthProvider.js';
 import {
   AppLayout,
@@ -3792,10 +3949,10 @@ export const router = createBrowserRouter([
               },
             ],
           },
-          // --- NUEVA RUTA PARA EL DETALLE DE INCIDENCIA ---
+          // --- RUTA CORREGIDA PARA EL DETALLE DE INCIDENCIA ---
           {
             path: 'incidents/:notificationId',
-            element: <AdminRoute />,
+            element: <ProtectedRoute />, // <-- CAMBIO APLICADO: de AdminRoute a ProtectedRoute
             children: [
               {
                 index: true,
@@ -5014,7 +5171,7 @@ export const deleteClient = async (id: string): Promise<Client> => {
 
 // ====== [44] packages/server/src/api/incident-tasks/incident-tasks.controller.ts ======
 // filename: packages/server/src/api/incident-tasks/incident-tasks.controller.ts
-// version: 1.2.1 (FIXED - Removed actorId from updateIncidentTask call)
+// version: 1.3.1 (FIX: Correctly narrow type of actorId)
 
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
@@ -5027,6 +5184,7 @@ import {
   updateTaskStatus,
   addTaskLog,
   getTaskLogs,
+  updateTaskDeadline,
 } from './incident-tasks.service.js';
 
 export const getMyAssignedTasksHandler = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -5042,12 +5200,20 @@ export const createIncidentTaskHandler = async (req: AuthRequest, res: Response,
   try {
     const tenantId = req.user?.tenantId;
     const actorId = req.user?.id;
-    if (!tenantId || !actorId) { return res.status(403).json({ success: false, message: 'Acción no permitida.' }); }
+
+    // --- CAMBIO APLICADO: Guarda de validación más explícita ---
+    if (!tenantId || !actorId) {
+      // Esta guarda asegura que ni tenantId ni actorId pueden ser undefined más allá de este punto.
+      return res.status(403).json({ success: false, message: 'Acción no permitida. Usuario o tenant no identificado.' });
+    }
 
     const input = { ...req.body, tenantId };
+    // TypeScript ahora sabe que actorId es de tipo 'string'
     const newTask = await createIncidentTask(input, actorId);
     res.status(201).json({ success: true, data: newTask });
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const getTasksByNotificationHandler = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -5066,7 +5232,6 @@ export const updateIncidentTaskHandler = async (req: AuthRequest, res: Response,
     const { id } = req.params;
     if (!id) { return res.status(400).json({ success: false, message: 'El ID de la tarea es requerido.' }); }
     
-    // --- CORRECCIÓN: Se elimina el `actorId` de la llamada ---
     const updatedTask = await updateIncidentTask(id, req.body);
     res.status(200).json({ success: true, data: updatedTask });
   } catch (error) { next(error); }
@@ -5123,11 +5288,27 @@ export const getTaskLogsHandler = async (req: AuthRequest, res: Response, next: 
     }
 };
 
+export const updateTaskDeadlineHandler = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const { id: taskId } = req.params;
+        const actorId = req.user?.id;
+        const { deadline } = req.body;
+
+        if (!taskId) { return res.status(400).json({ success: false, message: 'El ID de la tarea es requerido.'}); }
+        if (!actorId) { return res.status(401).json({ success: false, message: 'Usuario no autenticado.'}); }
+        if (typeof deadline !== 'string' || !deadline) { return res.status(400).json({ success: false, message: 'Se requiere un plazo (deadline) válido.'}); }
+
+        const updatedTask = await updateTaskDeadline(taskId, deadline, actorId);
+        res.status(200).json({ success: true, data: updatedTask });
+    } catch (error) {
+        next(error);
+    }
+};
+
 
 // ====== [45] packages/server/src/api/incident-tasks/incident-tasks.routes.ts ======
 // filename: packages/server/src/api/incident-tasks/incident-tasks.routes.ts
-// version: 1.2.0 (Adds status, log, and get-logs routes)
-// description: Añade los endpoints para el ciclo de vida y auditoría de una tarea.
+// version: 1.3.0 (Adds route to update a task's deadline)
 
 import { Router } from 'express';
 import {
@@ -5136,9 +5317,10 @@ import {
   updateIncidentTaskHandler,
   deleteIncidentTaskHandler,
   getMyAssignedTasksHandler,
-  updateTaskStatusHandler, // <-- Importar
-  addTaskLogHandler,       // <-- Importar
-  getTaskLogsHandler,      // <-- Importar
+  updateTaskStatusHandler,
+  addTaskLogHandler,
+  getTaskLogsHandler,
+  updateTaskDeadlineHandler, // <-- 1. Importar el nuevo manejador (aún no creado)
 } from './incident-tasks.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
 
@@ -5152,21 +5334,24 @@ incidentTasksRouter.get('/by-notification/:notificationId', getTasksByNotificati
 incidentTasksRouter.post('/', createIncidentTaskHandler);
 
 // --- Rutas para una Tarea Específica por ID ---
-incidentTasksRouter.get('/:id/logs', getTaskLogsHandler); // Obtener historial de una tarea
-incidentTasksRouter.post('/:id/log', addTaskLogHandler);   // Añadir un comentario/log
-incidentTasksRouter.patch('/:id/status', updateTaskStatusHandler); // Cambiar estado
-incidentTasksRouter.patch('/:id', updateIncidentTaskHandler);      // Editar detalles generales
-incidentTasksRouter.delete('/:id', deleteIncidentTaskHandler);     // Eliminar tarea
+incidentTasksRouter.get('/:id/logs', getTaskLogsHandler);
+incidentTasksRouter.post('/:id/log', addTaskLogHandler);
+incidentTasksRouter.patch('/:id/status', updateTaskStatusHandler);
+incidentTasksRouter.patch('/:id/deadline', updateTaskDeadlineHandler); // <-- 2. Añadir la nueva ruta
+incidentTasksRouter.patch('/:id', updateIncidentTaskHandler);
+incidentTasksRouter.delete('/:id', deleteIncidentTaskHandler);
 
 export default incidentTasksRouter;
 
 
 // ====== [46] packages/server/src/api/incident-tasks/incident-tasks.service.ts ======
 // filename: packages/server/src/api/incident-tasks/incident-tasks.service.ts
-// version: 1.2.1 (FIXED - Removed unused actorId parameter)
+// version: 1.4.2 (FIX: Explicitly select 'deadline' field in query)
 
 import { PrismaClient } from '@prisma/client';
 import type { IncidentTask, IncidentPriority, IncidentTaskStatus, IncidentTaskLog } from '@prisma/client';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const prisma = new PrismaClient();
 
@@ -5219,14 +5404,40 @@ export const createIncidentTask = async (data: CreateIncidentTaskInput, actorId:
   return task;
 };
 
+// --- CAMBIO APLICADO ---
 export const getTasksByNotificationId = async (notificationId: string, tenantId: string): Promise<IncidentTask[]> => {
-  return prisma.incidentTask.findMany({ where: { notificationId, tenantId }, include: { assignedTo: { select: { id: true, name: true, }, }, }, orderBy: { createdAt: 'asc', }, });
+  return prisma.incidentTask.findMany({
+    where: { notificationId, tenantId },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      status: true,
+      priority: true,
+      deadline: true, // Aseguramos que este campo se incluya
+      resolutionNotes: true,
+      assignedTo: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      // Incluimos los campos que nos faltaban
+      createdAt: true,
+      updatedAt: true,
+      tenantId: true,
+      notificationId: true,
+      assignedToId: true,
+      logs: false, // No necesitamos los logs aquí
+    },
+    orderBy: { createdAt: 'asc' },
+  });
 };
+
 export const getTasksAssignedToUser = async (userId: string): Promise<IncidentTask[]> => {
   return prisma.incidentTask.findMany({ where: { assignedToId: userId, status: { in: ['PENDING', 'IN_PROGRESS'], }, }, include: { notification: { include: { visit: { include: { pool: { select: { name: true } } } } } } }, orderBy: { priority: 'desc', }, });
 };
 
-// --- CORRECCIÓN: Se elimina el parámetro `actorId` no utilizado ---
 export const updateIncidentTask = async (id: string, data: UpdateIncidentTaskInput): Promise<IncidentTask> => {
     return prisma.incidentTask.update({
         where: { id },
@@ -5263,6 +5474,7 @@ export const updateTaskStatus = async (taskId: string, actorId: string, status: 
           message: `La tarea "${task.title}" ha sido completada.`,
           tenantId: task.tenantId,
           userId: task.notification.userId, 
+          parentNotificationId: task.notificationId,
         }
       });
     }
@@ -5272,30 +5484,46 @@ export const updateTaskStatus = async (taskId: string, actorId: string, status: 
 
 export const addTaskLog = async (taskId: string, actorId: string, data: AddLogInput) => {
   return prisma.$transaction(async (tx) => {
-    const task = await tx.incidentTask.update({
+    const task = await tx.incidentTask.findUnique({
       where: { id: taskId },
-      data: { deadline: data.newDeadline ? new Date(data.newDeadline) : undefined },
       include: { assignedTo: true, notification: true },
     });
 
-    if (!task.assignedTo) throw new Error("La tarea no tiene un asignado.");
+    if (!task || !task.assignedTo) throw new Error("Tarea o técnico asignado no encontrados.");
+
+    let logDetails = data.details;
+    let notificationMessage = `Actualización sobre "${task.title}": ${data.details}`;
+    let logAction = 'COMMENT';
+
+    if (data.newDeadline) {
+      const formattedDeadline = format(new Date(data.newDeadline), "d MMMM yyyy 'a las' HH:mm", { locale: es });
+      logDetails = `[SOLICITUD DE APLAZAMIENTO] ${data.details}. Se solicita nuevo plazo para: ${formattedDeadline}.`;
+      notificationMessage = `Solicitud de aplazamiento de ${task.assignedTo.name} para la tarea "${task.title}".`;
+      logAction = 'DEADLINE_REQUEST';
+    }
 
     const log = await tx.incidentTaskLog.create({
       data: {
-        action: 'COMMENT',
-        details: data.details,
+        action: logAction,
+        details: logDetails,
         incidentTaskId: taskId,
         userId: actorId,
       }
     });
 
-    await tx.notification.create({
-      data: {
-        message: `Actualización de ${task.assignedTo.name} en la tarea "${task.title}": ${data.details}`,
-        tenantId: task.tenantId,
-        userId: task.notification.userId,
-      }
-    });
+    const authorIsTechnician = actorId === task.assignedToId;
+    const recipientId = authorIsTechnician ? task.notification.userId : task.assignedToId;
+
+    if (recipientId) {
+        await tx.notification.create({
+            data: {
+                message: notificationMessage,
+                tenantId: task.tenantId,
+                userId: recipientId,
+                parentNotificationId: task.notificationId, 
+            }
+        });
+    }
 
     return log;
   });
@@ -5307,6 +5535,41 @@ export const getTaskLogs = async (taskId: string): Promise<IncidentTaskLog[]> =>
         include: { user: { select: { name: true } } },
         orderBy: { createdAt: 'asc' },
     });
+};
+
+export const updateTaskDeadline = async (taskId: string, deadline: string, actorId: string): Promise<IncidentTask> => {
+  return prisma.$transaction(async (tx) => {
+    const actor = await tx.user.findUniqueOrThrow({ where: { id: actorId } });
+    
+    const updatedTask = await tx.incidentTask.update({
+      where: { id: taskId },
+      data: { deadline: new Date(deadline) },
+      include: { assignedTo: true }
+    });
+
+    const formattedDeadline = format(new Date(deadline), "d MMMM yyyy 'a las' HH:mm", { locale: es });
+    await tx.incidentTaskLog.create({
+      data: {
+        action: 'DEADLINE_UPDATE',
+        details: `[PLAZO ACTUALIZADO] El plazo ha sido modificado por ${actor.name} a: ${formattedDeadline}.`,
+        incidentTaskId: taskId,
+        userId: actorId,
+      }
+    });
+
+    if (updatedTask.assignedTo) {
+      await tx.notification.create({
+        data: {
+          message: `El plazo para tu tarea "${updatedTask.title}" ha sido actualizado por el administrador.`,
+          tenantId: updatedTask.tenantId,
+          userId: updatedTask.assignedTo.id,
+          parentNotificationId: updatedTask.notificationId,
+        }
+      });
+    }
+
+    return updatedTask;
+  });
 };
 
 
