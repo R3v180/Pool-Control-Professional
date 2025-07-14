@@ -1,9 +1,9 @@
 // filename: packages/server/prisma/seed.ts
-// version: 3.5.0 (FEAT: Add rich consumption seed data)
-// description: Versión que añade datos de consumo adicionales para probar los informes.
+// version: 4.0.2 (Final)
+// description: Versión final compatible con el schema 3.0.4.
 
 import { PrismaClient } from '@prisma/client';
-import type { Frequency, ParameterTemplate, ScheduledTaskTemplate, User, Pool, Product } from '@prisma/client';
+import type { Frequency, ParameterTemplate, ScheduledTaskTemplate, User, Pool, Product, Client, ProductCategory } from '@prisma/client';
 import { hashPassword } from '../src/utils/password.utils.js';
 import { subDays, addDays } from 'date-fns';
 
@@ -13,8 +13,9 @@ import { parameterData, taskData } from './data/catalogs.js';
 import { clientsData } from './data/clients.js';
 import { productData } from './data/products.js';
 import { incidentTasksData } from './data/incident-tasks.js';
-// ✅ 1. IMPORTAR LOS NUEVOS DATOS DE CONSUMO
-import { consumptionsData } from './data/consumptions.js';
+import { productCategoriesData } from './data/product-categories.js';
+import { clientPricingRulesData } from './data/financial-rules.js';
+import { paymentsData, expensesData } from './data/transactions.js';
 
 const prisma = new PrismaClient();
 
@@ -29,10 +30,7 @@ const getRandomItems = <T>(arr: T[], count: number): T[] => {
 
 // --- Script Principal ---
 async function main() {
-  console.log('🌱 Empezando el proceso de seeding para la demo...');
-
-  // La limpieza de la base de datos la realiza el comando `prisma migrate reset`.
-  // No es necesario (y es problemático) hacerlo aquí de nuevo.
+  console.log('🌱 Empezando el proceso de seeding para la demo v4.0 (con motor financiero)...');
 
   // 1. --- CREACIÓN DE ENTIDADES DEL SISTEMA ---
   const systemTenant = await prisma.tenant.create({
@@ -61,24 +59,53 @@ async function main() {
   const technicians = createdUsers.filter(u => u.role === 'TECHNICIAN');
   if (!adminUser || technicians.length < 3) throw new Error('Seeding fallido: No se encontraron suficientes usuarios admin o técnicos.');
 
-  // 3. --- CREACIÓN DE CATÁLOGOS ---
-  const createdParams = await prisma.parameterTemplate.createManyAndReturn({ data: parameterData.map(p => ({ ...p, tenantId: mainTenant.id })) });
-  console.log(`\n📊 Creados ${createdParams.length} parámetros en el catálogo de Parámetros.`);
-  const createdTasks = await prisma.scheduledTaskTemplate.createManyAndReturn({ data: taskData.map(t => ({ ...t, tenantId: mainTenant.id })) });
-  console.log(`📋 Creadas ${createdTasks.length} tareas en el catálogo de Tareas.`);
-  
+  // 3. --- CREACIÓN DE CATÁLOGOS Y ENTIDADES FINANCIERAS BASE ---
+  console.log('\n- Fase de creación de catálogos y finanzas -');
+
+  const createdParams: ParameterTemplate[] = [];
+  for (const p of parameterData) {
+    const param = await prisma.parameterTemplate.create({ data: { ...p, tenantId: mainTenant.id } });
+    createdParams.push(param);
+  }
+  console.log(`📊 Creados ${createdParams.length} parámetros en el catálogo.`);
+
+  const createdTasks: ScheduledTaskTemplate[] = [];
+  for (const t of taskData) {
+    const task = await prisma.scheduledTaskTemplate.create({ data: { ...t, tenantId: mainTenant.id } });
+    createdTasks.push(task);
+  }
+  console.log(`📋 Creadas ${createdTasks.length} tareas en el catálogo.`);
+
+  const createdCategories: ProductCategory[] = [];
+  for (const catData of productCategoriesData) {
+    const category = await prisma.productCategory.create({ data: { ...catData, tenantId: mainTenant.id } });
+    createdCategories.push(category);
+  }
+  console.log(`📁 Creadas ${createdCategories.length} categorías de productos.`);
+
   const createdProducts: Product[] = [];
   for (const prodData of productData) {
-      const product = await prisma.product.create({ data: { ...prodData, tenantId: mainTenant.id }});
-      createdProducts.push(product);
+    const { categoryName, ...restOfProdData } = prodData;
+    const category = createdCategories.find(c => c.name === categoryName);
+    const product = await prisma.product.create({
+      data: {
+        ...restOfProdData,
+        tenantId: mainTenant.id,
+        categoryId: category?.id,
+      },
+    });
+    createdProducts.push(product);
   }
-  console.log(`📦 Creados ${createdProducts.length} productos en el catálogo de Productos.`);
+  console.log(`📦 Creados ${createdProducts.length} productos en el catálogo.`);
 
   // 4. --- CREACIÓN DE CLIENTES Y PISCINAS ---
+  console.log('\n- Fase de creación de clientes y piscinas -');
   const allPools: Pool[] = [];
+  const createdClients: Client[] = [];
   for (const data of clientsData) {
     const client = await prisma.client.create({ data: { ...data.client, tenantId: mainTenant.id } });
-    console.log(`\n👨‍💼 Cliente creado: ${client.name}`);
+    createdClients.push(client);
+    console.log(`\n👨‍💼 Cliente creado: ${client.name} (Modelo: ${client.billingModel})`);
     for (const poolData of data.pools) {
       const pool = await prisma.pool.create({ data: { ...poolData, clientId: client.id, tenantId: mainTenant.id } });
       allPools.push(pool);
@@ -90,8 +117,50 @@ async function main() {
   }
   if (allPools.length < 5) throw new Error('Seeding fallido: No se crearon suficientes piscinas.');
 
-  // 5. --- SIMULACIÓN DE ACTIVIDAD RECIENTE ---
-  console.log('\n⚙️  Simulando escenario de demo...');
+  // 5. --- CREACIÓN DE REGLAS DE PRECIOS Y TRANSACCIONES ---
+  console.log('\n- Fase de creación de reglas de precios y transacciones -');
+  let rulesCount = 0;
+  for (const rule of clientPricingRulesData) {
+    const client = createdClients.find(c => c.name === rule.clientName);
+    if (!client) continue;
+
+    const product = rule.productName ? createdProducts.find(p => p.name === rule.productName) : null;
+    const category = rule.categoryName ? createdCategories.find(c => c.name === rule.categoryName) : null;
+
+    await prisma.clientProductPricing.create({
+      data: {
+        clientId: client.id,
+        productId: product?.id,
+        productCategoryId: category?.id,
+        discountPercentage: rule.discountPercentage,
+      },
+    });
+    rulesCount++;
+  }
+  console.log(`💰 Creadas ${rulesCount} reglas de precios personalizadas.`);
+
+  for (const payment of paymentsData) {
+    const client = createdClients.find(c => c.name === payment.clientName);
+    if (!client) continue;
+    await prisma.payment.create({
+      data: {
+        amount: payment.amount,
+        paymentDate: payment.paymentDate,
+        method: payment.method,
+        notes: payment.notes,
+        clientId: client.id,
+      },
+    });
+  }
+  console.log(`💳 Creados ${paymentsData.length} registros de pagos.`);
+
+  await prisma.expense.createMany({
+    data: expensesData.map(e => ({ ...e, tenantId: mainTenant.id })),
+  });
+  console.log(`💸 Creados ${expensesData.length} registros de gastos.`);
+
+  // 6. --- SIMULACIÓN DE ACTIVIDAD RECIENTE (VISITAS, INCIDENCIAS, ETC.) ---
+  console.log('\n- Fase de simulación de actividad operativa -');
   const today = new Date();
   const threeDaysAgo = subDays(today, 3);
   const tomorrow = addDays(today, 1);
@@ -124,38 +193,7 @@ async function main() {
   await prisma.notification.create({ data: { message: classifiedVisitNotes, visitId: classifiedVisit.id, tenantId: mainTenant.id, userId: adminUser.id, priority: 'HIGH',  resolutionDeadline: tomorrow, } });
   console.log('   - 1 incidencia PENDIENTE CLASIFICADA (Prioridad ALTA) creada.');
 
-  // ✅ 2. AÑADIR LA NUEVA SECCIÓN PARA CREAR CONSUMOS ADICIONALES
-  console.log('   - Creando consumos de productos adicionales...');
-  const allVisits = await prisma.visit.findMany();
-  let consumptionCount = 0;
-
-  for (const consumptionSeed of consumptionsData) {
-    const visit = allVisits.find(v => v.notes?.includes(consumptionSeed.visitNotesIdentifier));
-    if (!visit) {
-      console.warn(`   - ⚠️  No se encontró la visita para el consumo con identificador: "${consumptionSeed.visitNotesIdentifier}"`);
-      continue;
-    }
-
-    for (const consumption of consumptionSeed.consumptions) {
-      const product = createdProducts.find(p => p.name === consumption.productName);
-      if (!product) {
-        console.warn(`   - ⚠️  No se encontró el producto: "${consumption.productName}"`);
-        continue;
-      }
-      await prisma.consumption.create({
-        data: {
-          visitId: visit.id,
-          productId: product.id,
-          quantity: consumption.quantity,
-        }
-      });
-      consumptionCount++;
-    }
-  }
-  console.log(`     - ${consumptionCount} registros de consumo adicionales creados.`);
-
-  // 6. --- SIMULACIÓN DE TICKETING AVANZADO ---
-  console.log('   - Creando tareas de incidencia y logs de auditoría...');
+  // 7. --- SIMULACIÓN DE TICKETING AVANZADO ---
   const allNotifications = await prisma.notification.findMany({ where: { tenantId: mainTenant.id } });
   let taskCount = 0;
   for (const taskSeed of incidentTasksData) {
@@ -174,7 +212,7 @@ async function main() {
       await prisma.incidentTaskLog.create({ data: { action: 'STATUS_CHANGE', details: `Estado cambiado a ${createdTask.status}.`, incidentTaskId: createdTask.id, userId: assignedUser.id, }});
     }
   }
-  console.log(`     - ${taskCount} tareas de incidencia creadas con sus logs.`);
+  console.log(`   - ${taskCount} tareas de incidencia creadas con sus logs.`);
 
 
   console.log('\n\n✅ Seeding de demostración completado con éxito!');

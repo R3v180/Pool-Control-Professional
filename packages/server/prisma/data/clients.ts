@@ -1,16 +1,17 @@
 // filename: packages/server/prisma/data/clients.ts
-// version: 1.0.0
-// description: Datos de semilla para la cartera de clientes y sus piscinas de "Piscival S.L.".
+// version: 2.0.0
+// description: Añade modelo de facturación y cuota mensual a cada cliente.
+
+import type { BillingModel } from '@prisma/client';
 
 /**
  * Define la cartera de clientes de la empresa de prueba.
  * Cada cliente tiene un array de piscinas asociadas. Esta estructura anidada
  * facilita la creación de ambas entidades y sus relaciones en el script de seed.
- * La variedad de clientes (comunidad, chalet, hotel, gimnasio) y piscinas
- * (cloro/sal, tamaño, ubicación) permite probar múltiples escenarios.
+ * La variedad de clientes y modelos de facturación permite probar múltiples escenarios.
  */
 export const clientsData = [
-  // --- Cliente 1: Comunidad de Propietarios (Múltiples piscinas) ---
+  // --- Cliente 1: Comunidad de Propietarios (Cuota + Materiales) ---
   {
     client: {
       name: 'Comunidad de Propietarios "El Oasis"',
@@ -19,6 +20,9 @@ export const clientsData = [
       phone: '611223344',
       address: 'Calle de la Concordia, 1, 28080 Madrid',
       priceModifier: 1.0,
+      // --- NUEVOS DATOS ---
+      monthlyFee: 350.0,
+      billingModel: 'FEE_PLUS_MATERIALS' as BillingModel,
     },
     pools: [
       {
@@ -36,7 +40,7 @@ export const clientsData = [
     ],
   },
 
-  // --- Cliente 2: Chalet Privado (Piscina de Sal) ---
+  // --- Cliente 2: Chalet Privado (Todo Incluido) ---
   {
     client: {
       name: 'Chalet "Villa Sol"',
@@ -44,7 +48,10 @@ export const clientsData = [
       email: 'perez.lopez.familia@email.com',
       phone: '655667788',
       address: 'Avenida de la Brisa, 45, Urbanización Mirasierra, 28035 Madrid',
-      priceModifier: 1.1, // Cliente premium, paga un 10% más
+      priceModifier: 1.1, // Cliente premium, paga un 10% más sobre el PVP base si algo no estuviera incluido.
+      // --- NUEVOS DATOS ---
+      monthlyFee: 220.0,
+      billingModel: 'ALL_INCLUSIVE' as BillingModel,
     },
     pools: [
       {
@@ -56,7 +63,7 @@ export const clientsData = [
     ],
   },
 
-  // --- Cliente 3: Hotel (Gran volumen, uso intensivo) ---
+  // --- Cliente 3: Hotel (Solo paga materiales, sin cuota) ---
   {
     client: {
       name: 'Hotel "Costa Serena"',
@@ -64,7 +71,10 @@ export const clientsData = [
       email: 'mantenimiento@costaserena-hotel.com',
       phone: '911223344',
       address: 'Paseo del Relax, 2, 28010 Madrid',
-      priceModifier: 0.95, // Cliente grande con descuento del 5%
+      priceModifier: 0.95, // Cliente grande con descuento del 5% sobre el PVP base.
+      // --- NUEVOS DATOS ---
+      monthlyFee: 0.0,
+      billingModel: 'SERVICE_ONLY' as BillingModel,
     },
     pools: [
       {
@@ -76,7 +86,7 @@ export const clientsData = [
     ],
   },
 
-  // --- Cliente 4: Gimnasio (Piscina interior, "problemática") ---
+  // --- Cliente 4: Gimnasio (Cuota + Materiales) ---
   {
     client: {
       name: 'Gimnasio "Fisic-Center"',
@@ -85,13 +95,16 @@ export const clientsData = [
       phone: '918765432',
       address: 'Calle del Músculo, 12, 28020 Madrid',
       priceModifier: 1.0,
+      // --- NUEVOS DATOS ---
+      monthlyFee: 250.0,
+      billingModel: 'FEE_PLUS_MATERIALS' as BillingModel,
     },
     pools: [
       {
         name: 'Piscina Climatizada Interior',
         address: 'Calle del Músculo, 12, Sótano, 28020 Madrid',
         volume: 100,
-        type: 'Cloro', // Las piscinas interiores con cloro suelen generar cloraminas (olor a cloro)
+        type: 'Cloro',
       },
     ],
   },
