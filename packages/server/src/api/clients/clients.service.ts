@@ -1,13 +1,15 @@
 // filename: packages/server/src/api/clients/clients.service.ts
-// Version: 1.0.0 (Initial creation of the service for Client management)
+// Version: 1.1.1 (FIXED)
+// description: Elimina la importación no utilizada de BillingModel.
 import { PrismaClient } from '@prisma/client';
+// --- La importación de BillingModel ha sido eliminada de aquí ---
 import type { Client } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 // --- Tipos de Entrada (DTOs) ---
 export type CreateClientInput = Omit<Client, 'id' | 'createdAt' | 'updatedAt'>;
-export type UpdateClientInput = Partial<CreateClientInput>;
+export type UpdateClientInput = Partial<Omit<CreateClientInput, 'tenantId' | 'createdAt' | 'updatedAt'>>;
 
 // --- Funciones del Servicio ---
 

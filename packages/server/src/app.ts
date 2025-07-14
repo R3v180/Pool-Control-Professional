@@ -1,10 +1,10 @@
 // filename: packages/server/src/app.ts
-// version: 2.2.0 (Mount reportsRouter)
-
+// version: 2.6.0 (Mount dashboardRouter)
 import express from 'express';
 import type { Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+
 import { errorHandler } from './middleware/error.middleware.js';
 import authRouter from './api/auth/auth.routes.js';
 import tenantsRouter from './api/tenants/tenants.routes.js';
@@ -19,7 +19,12 @@ import notificationsRouter from './api/notifications/notifications.routes.js';
 import productsRouter from './api/products/products.routes.js';
 import incidentTasksRouter from './api/incident-tasks/incident-tasks.routes.js';
 import uploadsRouter from './api/uploads/uploads.routes.js';
-import reportsRouter from './api/reports/reports.routes.js'; // ✅ 1. IMPORTAR EL NUEVO ROUTER
+import productCategoriesRouter from './api/product-categories/product-categories.routes.js';
+import clientProductPricingRouter from './api/client-product-pricing/client-product-pricing.routes.js';
+import paymentsRouter from './api/payments/payments.routes.js';
+import expensesRouter from './api/expenses/expenses.routes.js';
+// --- 1. Importar el nuevo enrutador ---
+import dashboardRouter from './api/dashboard/dashboard.routes.js';
 
 // --- Instancia de la App ---
 const app = express();
@@ -31,6 +36,7 @@ app.use(cors({
 }));
 app.use(cookieParser());
 app.use(express.json());
+
 
 // --- Rutas de la API ---
 
@@ -51,7 +57,13 @@ app.use('/api/notifications', notificationsRouter);
 app.use('/api/products', productsRouter);
 app.use('/api/incident-tasks', incidentTasksRouter);
 app.use('/api/uploads', uploadsRouter);
-app.use('/api/reports', reportsRouter); // ✅ 2. MONTAR EL NUEVO ROUTER
+app.use('/api/product-categories', productCategoriesRouter);
+app.use('/api/client-product-pricing', clientProductPricingRouter);
+app.use('/api/payments', paymentsRouter);
+app.use('/api/expenses', expensesRouter);
+// --- 2. Montar el nuevo enrutador ---
+app.use('/api/dashboard', dashboardRouter);
+
 
 // --- Gestor de Errores ---
 app.use(errorHandler);

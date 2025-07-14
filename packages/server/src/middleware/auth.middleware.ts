@@ -1,22 +1,21 @@
+// filename: packages/server/src/middleware/auth.middleware.ts
+// version: 2.0.0 (FEAT: Implement 'View As' logic for Manager role)
+
 import type { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserRole } from '@prisma/client';
 import type { User } from '@prisma/client';
 import { verifyToken } from '../utils/jwt.utils.js';
 
 const prisma = new PrismaClient();
 
-// Creamos un tipo "seguro" para el usuario, omitiendo la contraseña.
 type SafeUser = Omit<User, 'password'>;
 
-// Extendemos la interfaz Request de Express para que use nuestro tipo SafeUser.
 export interface AuthRequest extends Request {
   user?: SafeUser;
 }
 
 /**
- * Middleware para proteger rutas. Verifica el token JWT de la cookie.
- * Si el token es válido, adjunta el usuario a la request y pasa al siguiente middleware.
- * Si no, devuelve un error 401 (No autorizado).
+ * Middleware para proteger rutas. Verifica el token JWT y maneja la suplantación de rol.
  */
 export const protect = async (
   req: AuthRequest,
@@ -38,7 +37,6 @@ export const protect = async (
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
-      // Seleccionamos todos los campos EXCEPTO la contraseña.
       select: {
         id: true,
         email: true,
@@ -53,8 +51,24 @@ export const protect = async (
     if (!user) {
       return res.status(401).json({ message: 'No autenticado: usuario no encontrado.' });
     }
+    
+    // --- ✅ INICIO DE LA LÓGICA DEL "ROL CAMALEÓN" ---
+    
+    const viewAsRoleHeader = req.headers['x-view-as-role'] as UserRole | undefined;
 
-    // Ahora `user` coincide con el tipo `SafeUser`, por lo que la asignación es válida.
+    // Solo un MANAGER puede cambiar de vista.
+    if (user.role === 'MANAGER' && viewAsRoleHeader) {
+      // Validamos que el rol que se quiere simular sea uno de los permitidos.
+      const allowedViews: UserRole[] = ['ADMIN', 'TECHNICIAN'];
+      if (allowedViews.includes(viewAsRoleHeader)) {
+        // Modificamos el rol del usuario EN LA REQUEST ACTUAL.
+        // La base de datos no se altera.
+        user.role = viewAsRoleHeader;
+      }
+    }
+    
+    // --- ✅ FIN DE LA LÓGICA ---
+
     req.user = user;
     next();
   } catch (error) {

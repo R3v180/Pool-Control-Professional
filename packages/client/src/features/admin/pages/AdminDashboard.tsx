@@ -1,6 +1,5 @@
 // filename: packages/client/src/features/admin/pages/AdminDashboard.tsx
-// version: 1.1.4
-// description: Corrige el acceso a los datos en la respuesta paginada de la API.
+// version: 2.0.0 (FEAT: Clickable visits and critical incident highlighting)
 
 import { useEffect, useState } from 'react';
 import { Container, Title, Grid, Paper, Text, Badge, Loader, Alert, Stack } from '@mantine/core';
@@ -18,6 +17,7 @@ interface Visit {
   technician: { name: string } | null;
 }
 
+// ✅ Se añade isCritical al tipo de notificación del frontend
 interface Notification {
   id: string;
   message: string;
@@ -40,7 +40,8 @@ export function AdminDashboard() {
       try {
         const [visitsResponse, notificationsResponse] = await Promise.all([
           apiClient.get('/visits/scheduled', { params: { date: new Date().toISOString() } }),
-          apiClient.get('/notifications/history')
+          // Usamos el endpoint de historial para obtener el flag 'isCritical'
+          apiClient.get('/notifications/history') 
         ]);
         
         const today = new Date().toDateString();
@@ -48,9 +49,9 @@ export function AdminDashboard() {
             new Date(v.timestamp).toDateString() === today
         );
         
-        // --- CORRECCIÓN AQUÍ ---
-        // Extraemos el array 'notifications' del objeto de respuesta.
+        // El endpoint de historial ya nos da las notificaciones con el flag 'isCritical'
         const allNotifications = notificationsResponse.data.data.notifications;
+        // Mostramos solo las que están pendientes en el dashboard
         const pendingNotifications = allNotifications.filter((n: any) => n.status === 'PENDING');
 
         setVisits(todayVisits);
@@ -66,12 +67,9 @@ export function AdminDashboard() {
     fetchData();
   }, []);
 
-  const handleIncidentClick = (notification: Notification) => {
-    if (notification.visitId) {
-      navigate(`/visits/${notification.visitId}`);
-    }
+  const handleCardClick = (path: string) => {
+    navigate(path);
   };
-
 
   if (isLoading) return <Loader size="xl" />;
   if (error) return <Alert color="red" title="Error">{error}</Alert>;
@@ -93,7 +91,14 @@ export function AdminDashboard() {
                   <Paper 
                     key={visit.id} 
                     withBorder p="sm" radius="md"
-                    style={{ opacity: visit.status === 'COMPLETED' ? 0.65 : 1 }}
+                    // ✅ Se añade el manejador de click y estilos para indicar que es interactivo
+                    onClick={() => handleCardClick(`/visits/${visit.id}`)}
+                    style={{ 
+                      cursor: 'pointer',
+                      opacity: visit.status === 'COMPLETED' ? 0.65 : 1,
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.boxShadow = 'var(--mantine-shadow-md)'}
+                    onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
                   >
                     <Grid align="center">
                       <Grid.Col span={8}>
@@ -129,10 +134,11 @@ export function AdminDashboard() {
                   <Paper 
                     key={notification.id} 
                     withBorder p="sm" radius="md" 
-                    onClick={() => handleIncidentClick(notification)}
+                    onClick={() => notification.visitId && handleCardClick(`/incidents/${notification.id}`)}
                     style={{ 
-                      cursor: 'pointer',
-                      backgroundColor: notification.isCritical ? 'var(--mantine-color-red-0)' : 'transparent'
+                      cursor: notification.visitId ? 'pointer' : 'default',
+                      // ✅ Se añade el borde rojo si la incidencia es crítica
+                      borderLeft: notification.isCritical ? '4px solid var(--mantine-color-red-7)' : undefined,
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.boxShadow = 'var(--mantine-shadow-md)'}
                     onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}

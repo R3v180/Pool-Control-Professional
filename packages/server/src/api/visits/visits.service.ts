@@ -1,6 +1,5 @@
 // filename: packages/server/src/api/visits/visits.service.ts
-// version: 2.0.1 (FIXED)
-// description: Corrige los errores de tipo y se alinea con el schema v2.2.0.
+// version: 2.1.0 (FEAT: Add threshold-based alerts on work order submission)
 
 import { PrismaClient } from '@prisma/client';
 import type { Visit } from '@prisma/client';
@@ -121,7 +120,7 @@ export const getVisitDetails = async (visitId: string) => {
       results: true, 
       notifications: {
         include: {
-          images: true, // Esto es correcto, 'images' es la relación en el modelo Notification
+          images: true,
         }
       },
       consumptions: {
@@ -177,15 +176,48 @@ export const submitWorkOrder = async (visitId: string, data: WorkOrderInput) => 
         }
     }
 
+    // --- ✅ INICIO DE LA NUEVA LÓGICA DE UMBRALES ---
+    const usersToNotify = await tx.user.findMany({
+      where: {
+        tenantId: visit.pool.tenantId,
+        role: { in: ['ADMIN', 'MANAGER'] }
+      },
+      select: { id: true }
+    });
+    const notificationsToCreate: { message: string; tenantId: string; userId: string; visitId: string; priority: 'HIGH' }[] = [];
+
     for (const [configId, value] of Object.entries(results)) {
-      if(value === '' || value === null) continue;
+      if(value === '' || value === null || typeof value !== 'number') continue;
+      
       const config = visit.pool.configurations.find(c => c.id === configId);
       if (config?.parameterTemplate) {
         await tx.visitResult.create({
           data: { visitId, value: String(value), parameterName: config.parameterTemplate.name, parameterUnit: config.parameterTemplate.unit, },
         });
+
+        const { minThreshold, maxThreshold, parameterTemplate: { name: paramName, unit } } = config;
+        let alertMessage = '';
+
+        if (minThreshold !== null && value < minThreshold) {
+            alertMessage = `Alerta en ${visit.pool.name}: ${paramName} está bajo (${value} ${unit || ''}). Límite inferior: ${minThreshold}.`;
+        } else if (maxThreshold !== null && value > maxThreshold) {
+            alertMessage = `Alerta en ${visit.pool.name}: ${paramName} está alto (${value} ${unit || ''}). Límite superior: ${maxThreshold}.`;
+        }
+
+        if (alertMessage) {
+          for (const user of usersToNotify) {
+            notificationsToCreate.push({
+              message: alertMessage,
+              tenantId: visit.pool.tenantId,
+              userId: user.id,
+              visitId: visit.id,
+              priority: 'HIGH'
+            });
+          }
+        }
       }
     }
+    // --- ✅ FIN DE LA NUEVA LÓGICA DE UMBRALES ---
     
     const completedTaskNames = Object.entries(completedTasks)
       .filter(([, completed]) => completed)
@@ -199,29 +231,46 @@ export const submitWorkOrder = async (visitId: string, data: WorkOrderInput) => 
       data: { notes, hasIncident: hasIncident || false, completedTasks: completedTaskNames, status: 'COMPLETED', },
     });
 
-    if (hasIncident) {
-      const admin = await tx.user.findFirst({
-        where: { tenantId: visit.pool.tenantId, role: 'ADMIN' },
-      });
-      if (admin) {
-        const notificationMessage = notes && notes.trim().length > 0 
+    if (hasIncident && usersToNotify.length > 0) {
+      const notificationMessage = notes && notes.trim().length > 0 
             ? notes 
             : `Incidencia reportada en ${visit.pool.name} por ${visit.technician?.name || 'un técnico'}`;
 
-        const newNotification = await tx.notification.create({
-          data: { message: notificationMessage, tenantId: visit.pool.tenantId, userId: admin.id, visitId: visit.id, status: 'PENDING', },
+      for (const user of usersToNotify) {
+        notificationsToCreate.push({
+            message: notificationMessage,
+            tenantId: visit.pool.tenantId,
+            userId: user.id,
+            visitId: visit.id,
+            priority: 'HIGH' // Incidencias manuales son siempre de alta prioridad
         });
-        
-        if (imageUrls.length > 0) {
-          // Aquí usamos el nombre correcto del modelo: `incidentImage`
-          await tx.incidentImage.createMany({
-            data: imageUrls.map(url => ({
-              url: url,
-              notificationId: newNotification.id,
-              uploaderId: visit.technicianId!,
-            })),
-          });
-        }
+      }
+    }
+    
+    if (notificationsToCreate.length > 0) {
+      const uniqueNotifications = Array.from(new Map(notificationsToCreate.map(item => [item.message, item])).values());
+      
+      const mainNotification = uniqueNotifications.find(n => n.message.startsWith('Incidencia reportada'));
+      let mainNotificationId: string | undefined;
+
+      if(mainNotification) {
+        const createdMainNotification = await tx.notification.create({ data: mainNotification });
+        mainNotificationId = createdMainNotification.id;
+      }
+      
+      const otherNotifications = uniqueNotifications.filter(n => !n.message.startsWith('Incidencia reportada'));
+      if (otherNotifications.length > 0) {
+          await tx.notification.createMany({ data: otherNotifications });
+      }
+
+      if (mainNotificationId && imageUrls.length > 0) {
+        await tx.incidentImage.createMany({
+          data: imageUrls.map(url => ({
+            url: url,
+            notificationId: mainNotificationId!,
+            uploaderId: visit.technicianId!,
+          })),
+        });
       }
     }
     

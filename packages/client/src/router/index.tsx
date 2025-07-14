@@ -1,6 +1,6 @@
 // filename: packages/client/src/router/index.tsx
-// version: 2.0.0 (FEAT: Add consumption report route)
-
+// Version: 2.1.1 (FIXED)
+// description: Versión completa y correcta del enrutador con el ManagerDashboard.
 import { createBrowserRouter } from 'react-router-dom';
 import { LoginPage } from '../features/auth/pages/LoginPage.js';
 import { TenantsPage } from '../features/superadmin/pages/TenantsPage.js';
@@ -16,8 +16,7 @@ import { WorkOrderPage } from '../features/technician/pages/WorkOrderPage.js';
 import { AdminDashboard } from '../features/admin/pages/AdminDashboard.js';
 import { IncidentsHistoryPage } from '../features/admin/pages/IncidentsHistoryPage.js';
 import { IncidentDetailPage } from '../features/admin/pages/incidents/IncidentDetailPage.js';
-// ✅ 1. IMPORTAR LA NUEVA PÁGINA
-import { ConsumptionReportPage } from '../features/admin/pages/reports/ConsumptionReportPage.js'; 
+import { ManagerDashboard } from '../features/manager/pages/ManagerDashboard.js';
 import { useAuth } from '../providers/AuthProvider.js';
 import {
   AppLayout,
@@ -29,16 +28,21 @@ import {
 
 // --- Componente Despachador de Dashboard ---
 const RoleBasedDashboard = () => {
-  const { user } = useAuth();
-  switch (user?.role) {
+  const { activeRole, user } = useAuth();
+
+  if (user?.role === 'SUPER_ADMIN') {
+    return <TenantsPage />;
+  }
+
+  switch (activeRole) {
     case 'ADMIN':
       return <AdminDashboard />;
     case 'TECHNICIAN':
       return <MyRoutePage />;
-    case 'SUPER_ADMIN':
-      return <TenantsPage />;
+    case 'MANAGER':
+      return <ManagerDashboard />;
     default:
-      return <div>Bienvenido.</div>;
+      return <div>Cargando...</div>;
   }
 };
 
@@ -59,7 +63,6 @@ export const router = createBrowserRouter([
             index: true,
             element: <RoleBasedDashboard />,
           },
-          // --- Sección de SuperAdmin ---
           {
             path: 'superadmin',
             element: <SuperAdminRoute />,
@@ -70,7 +73,6 @@ export const router = createBrowserRouter([
               },
             ],
           },
-          // --- Sección de Administración ---
           {
             path: 'planner',
             element: <AdminRoute />,
@@ -115,17 +117,6 @@ export const router = createBrowserRouter([
               },
             ],
           },
-          // ✅ 2. AÑADIR LA NUEVA RUTA DEL INFORME
-          {
-            path: 'reports/consumption',
-            element: <AdminRoute />,
-            children: [
-              {
-                index: true,
-                element: <ConsumptionReportPage />,
-              }
-            ]
-          },
           {
             path: 'incidents/:notificationId',
             element: <ProtectedRoute />,
@@ -154,7 +145,6 @@ export const router = createBrowserRouter([
               },
             ],
           },
-          // --- Sección de Técnico ---
           {
             path: 'my-route',
             element: <TechnicianRoute />,
