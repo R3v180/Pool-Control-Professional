@@ -1,10 +1,9 @@
 // filename: packages/server/src/app.ts
-// version: 2.7.0 (FEAT: Mount reportsRouter)
+// version: 2.9.0 (FEAT: Mount routeTemplatesRouter)
 import express from 'express';
 import type { Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-
 import { errorHandler } from './middleware/error.middleware.js';
 import authRouter from './api/auth/auth.routes.js';
 import tenantsRouter from './api/tenants/tenants.routes.js';
@@ -24,8 +23,9 @@ import clientProductPricingRouter from './api/client-product-pricing/client-prod
 import paymentsRouter from './api/payments/payments.routes.js';
 import expensesRouter from './api/expenses/expenses.routes.js';
 import dashboardRouter from './api/dashboard/dashboard.routes.js';
-// --- ✅ 1. Importar el enrutador de informes ---
 import reportsRouter from './api/reports/reports.routes.js';
+import zonesRouter from './api/zones/zones.routes.js';
+import routeTemplatesRouter from './api/route-templates/route-templates.routes.js'; // ✅ NUEVA IMPORTACIÓN
 
 // --- Instancia de la App ---
 const app = express();
@@ -37,7 +37,6 @@ app.use(cors({
 }));
 app.use(cookieParser());
 app.use(express.json());
-
 
 // --- Rutas de la API ---
 
@@ -63,8 +62,9 @@ app.use('/api/client-product-pricing', clientProductPricingRouter);
 app.use('/api/payments', paymentsRouter);
 app.use('/api/expenses', expensesRouter);
 app.use('/api/dashboard', dashboardRouter);
-// --- ✅ 2. Montar el enrutador de informes ---
 app.use('/api/reports', reportsRouter);
+app.use('/api/zones', zonesRouter);
+app.use('/api/route-templates', routeTemplatesRouter); // ✅ NUEVA RUTA MONTADA
 
 
 // --- Gestor de Errores ---

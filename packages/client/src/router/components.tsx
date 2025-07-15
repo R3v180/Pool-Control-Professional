@@ -1,5 +1,5 @@
 // filename: packages/client/src/router/components.tsx
-// version: 2.4.0 (REFACTOR: Rename ManagerRoute to FinancialAdminRoute and adjust logic)
+// version: 2.6.0 (FEAT: Add Master Routes link to Admin navigation)
 
 import { AppShell, Burger, Group, NavLink, Title, Button, Indicator, ActionIcon, Popover, Text, Stack, SegmentedControl } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
@@ -71,7 +71,7 @@ const NotificationBell = () => {
       </Popover.Target>
 
       <Popover.Dropdown>
-        <Stack>
+           <Stack>
           <Text fw={500}>Notificaciones</Text>
           {notifications.length > 0 ? (
             notifications.map(notification => (
@@ -105,7 +105,7 @@ export const AppLayout = () => {
   const [opened, { toggle }] = useDisclosure();
   const { user, logout, activeView, setViewAs, activeRole } = useAuth();
   const navigate = useNavigate();
-
+  
   const handleLogout = async () => {
     await logout();
     navigate('/login');
@@ -117,7 +117,7 @@ export const AppLayout = () => {
     if (role === 'ADMIN' || role === 'MANAGER') navigate('/');
     if (role === 'TECHNICIAN') navigate('/my-route');
   };
-
+  
   return (
     <AppShell
       header={{ height: 60 }}
@@ -129,14 +129,14 @@ export const AppLayout = () => {
           <Group>
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
             <Title order={3}>Pool Control Pro</Title>
-          </Group>
+           </Group>
           <Group>
             {user?.role === 'MANAGER' && (
               <SegmentedControl
                 value={activeView}
                 onChange={handleViewChange}
                 data={[
-                  { label: 'Gerencia', value: 'MANAGER' },
+                   { label: 'Gerencia', value: 'MANAGER' },
                   { label: 'Admin', value: 'ADMIN' },
                   { label: 'Técnico', value: 'TECHNICIAN' },
                 ]}
@@ -151,7 +151,7 @@ export const AppLayout = () => {
       <AppShell.Navbar p="md">
         {activeRole === 'MANAGER' && (
           <NavLink
-            component={Link}
+           component={Link}
             to="/"
             label="Dashboard de Gerencia"
             onClick={toggle}
@@ -161,12 +161,19 @@ export const AppLayout = () => {
         {activeRole === 'ADMIN' && (
           <>
             <NavLink component={Link} to="/" label="Dashboard de Admin" onClick={toggle} />
-            <NavLink component={Link} to="/planner" label="Planificador" onClick={toggle} />
+            
+            <NavLink label="Planificación" defaultOpened>
+                <NavLink component={Link} to="/planning/zones" label="Gestión de Zonas" onClick={toggle}/>
+                <NavLink component={Link} to="/planning/routes" label="Gestión de Rutas" onClick={toggle}/>
+                <NavLink component={Link} to="/planner" label="Planificador Semanal" onClick={toggle} />
+            </NavLink>
+
             <NavLink component={Link} to="/clients" label="Clientes" onClick={toggle} />
             <NavLink component={Link} to="/incidents-history" label="Gestión de Incidencias" onClick={toggle} />
             <NavLink label="Informes" defaultOpened>
                 <NavLink component={Link} to="/reports/invoicing" label="Informe para Facturación" onClick={toggle}/>
-            </NavLink>
+                <NavLink component={Link} to="/reports/consumption" label="Informe de Consumos" onClick={toggle}/>
+             </NavLink>
             <NavLink label="Catálogos" defaultOpened>
               <NavLink component={Link} to="/catalog/parameters" label="Parámetros" onClick={toggle} />
               <NavLink component={Link} to="/catalog/tasks" label="Tareas" onClick={toggle} />
@@ -178,7 +185,7 @@ export const AppLayout = () => {
                 <NavLink component={Link} to="/financials/expenses" label="Gastos Generales" onClick={toggle} />
             </NavLink>
           </>
-        )}
+         )}
 
         {activeRole === 'TECHNICIAN' && (
           <NavLink component={Link} to="/my-route" label="Mi Ruta de Hoy" onClick={toggle} />
@@ -195,21 +202,18 @@ export const AppLayout = () => {
     </AppShell>
   );
 };
-
 export const ProtectedRoute = () => {
   const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) return <div>Cargando...</div>;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return <Outlet />;
 };
-
 export const SuperAdminRoute = () => {
   const { user, isLoading } = useAuth();
   if (isLoading) return <div>Cargando...</div>;
   if (user?.role !== 'SUPER_ADMIN') return <Navigate to="/" replace />;
   return <Outlet />;
 };
-
 export const AdminRoute = () => {
   const { activeRole, isLoading } = useAuth();
   if (isLoading) return <div>Cargando...</div>;
@@ -218,7 +222,6 @@ export const AdminRoute = () => {
   }
   return <Outlet />;
 };
-
 export const TechnicianRoute = () => {
   const { activeRole, isLoading } = useAuth();
   if (isLoading) return <div>Cargando...</div>;
@@ -227,7 +230,6 @@ export const TechnicianRoute = () => {
   }
   return <Outlet />;
 };
-
 // Renombrado de ManagerRoute -> FinancialAdminRoute
 export const FinancialAdminRoute = () => {
     const { activeRole, isLoading } = useAuth();

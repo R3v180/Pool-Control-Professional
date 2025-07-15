@@ -1,5 +1,5 @@
 // filename: packages/server/src/api/visits/visits.routes.ts
-// Version: 2.0.0 (FEAT: Protect routes with granular ADMIN/TECHNICIAN authorization)
+// Version: 2.1.0 (FEAT: Add route for special visit creation)
 
 import { Router } from 'express';
 import { 
@@ -8,6 +8,7 @@ import {
   getMyRouteHandler,
   getVisitDetailsHandler,
   submitWorkOrderHandler,
+  createSpecialVisitHandler, // ✅ NUEVA IMPORTACIÓN
 } from './visits.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
 import { authorize } from '../../middleware/authorize.middleware.js';
@@ -21,19 +22,20 @@ visitsRouter.use(protect);
 visitsRouter.get('/scheduled', authorize('ADMIN'), getScheduledVisitsForWeekHandler);
 visitsRouter.post('/assign', authorize('ADMIN'), assignTechnicianHandler);
 
+// ✅ --- NUEVA RUTA PARA ÓRDENES DE TRABAJO ESPECIALES ---
+visitsRouter.post('/special', authorize('ADMIN'), createSpecialVisitHandler);
+
+
 // --- Rutas exclusivas para TECHNICIAN (y MANAGER en vista de Técnico) ---
 visitsRouter.get('/my-route', authorize('TECHNICIAN'), getMyRouteHandler);
 visitsRouter.post('/:id/complete', authorize('TECHNICIAN'), submitWorkOrderHandler);
 
-
 // --- Rutas compartidas por ADMIN y TECHNICIAN ---
-
 /**
  * @route   GET /api/visits/:id
  * @desc    Obtiene los detalles de una visita específica (para el Parte de Trabajo)
  * @access  Private (Admin, Technician)
  */
-// El ADMIN necesita ver los partes completados, el TECHNICIAN necesita ver los pendientes para rellenarlos.
 visitsRouter.get('/:id', authorize('ADMIN', 'TECHNICIAN'), getVisitDetailsHandler);
 
 export default visitsRouter;

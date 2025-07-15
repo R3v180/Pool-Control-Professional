@@ -1,10 +1,9 @@
-// ====== [101] packages/server/src/api/users/users.routes.ts ======
 // filename: packages/server/src/api/users/users.routes.ts
-// Version: 2.1.0 (FEAT: Adapt routes to use the new controller handler)
-// description: The route now points to the new handler for fetching assignable users (technicians and managers).
+// Version: 2.2.0 (FEAT: Add route to update user availability)
+// description: Adds a PATCH route for an admin to update a user's availability status.
 
 import { Router } from 'express';
-import { getAssignableUsersHandler } from './users.controller.js';
+import { getAssignableUsersHandler, updateUserAvailabilityHandler } from './users.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
 import { authorize } from '../../middleware/authorize.middleware.js';
 
@@ -19,5 +18,13 @@ usersRouter.use(protect);
  * @access  Private (Admin, Manager)
  */
 usersRouter.get('/technicians', authorize('ADMIN', 'MANAGER'), getAssignableUsersHandler);
+
+/**
+ * @route   PATCH /api/users/:id/availability
+ * @desc    Actualiza el estado de disponibilidad de un usuario.
+ * @access  Private (Admin)
+ */
+usersRouter.patch('/:id/availability', authorize('ADMIN'), updateUserAvailabilityHandler);
+
 
 export default usersRouter;

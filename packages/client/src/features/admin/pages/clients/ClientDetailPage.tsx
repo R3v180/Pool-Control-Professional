@@ -1,6 +1,6 @@
 // filename: packages/client/src/features/admin/pages/clients/ClientDetailPage.tsx
-// Version: 2.0.2 (FIXED)
-// description: Corrige la propiedad 'precision' por 'decimalScale' en NumberInput.
+// Version: 2.1.0 (FEAT: Add Zone assignment to Pool modal)
+// description: Fetches available zones and adds a Select input to the pool form.
 
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
@@ -14,7 +14,9 @@ import apiClient from '../../../../api/apiClient';
 
 // --- Tipos ---
 type BillingModel = 'SERVICE_ONLY' | 'FEE_PLUS_MATERIALS' | 'ALL_INCLUSIVE';
-interface Pool { id: string; name: string; address: string; volume: number | null; type: string | null; }
+// ✅ 1. Añadido zoneId a la interfaz de la Piscina
+interface Pool { id: string; name: string; address: string; volume: number | null; type: string | null; zoneId: string | null; }
+interface Zone { id: string; name: string; } // ✅ 2. Nueva interfaz para Zonas
 interface Client {
   id: string; name: string; contactPerson: string | null; email: string | null;
   phone: string | null; address: string | null; pools: Pool[];
@@ -35,30 +37,29 @@ interface ApiResponse<T> { success: boolean; data: T; }
 export function ClientDetailPage() {
   const { id: clientId } = useParams<{ id: string }>();
   const [client, setClient] = useState<Client | null>(null);
+  const [zones, setZones] = useState<Zone[]>([]); // ✅ 3. Nuevo estado para las zonas
   const [pricingRules, setPricingRules] = useState<PricingRule[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
   const [poolModalOpened, { open: openPoolModal, close: closePoolModal }] = useDisclosure(false);
   const [ruleModalOpened, { open: openRuleModal, close: closeRuleModal }] = useDisclosure(false);
-  
   const [editingPool, setEditingPool] = useState<Pool | null>(null);
 
   const clientInfoForm = useForm({
     initialValues: { monthlyFee: 0, billingModel: 'SERVICE_ONLY' as BillingModel },
   });
 
+  // ✅ 4. Añadido zoneId al formulario de la piscina
   const poolForm = useForm({
-    initialValues: { name: '', address: '', volume: null as number | null, type: '' },
+    initialValues: { name: '', address: '', volume: null as number | null, type: '', zoneId: null as string | null },
     validate: {
       name: (value) => (value.trim().length < 2 ? 'El nombre es demasiado corto' : null),
       address: (value) => (value.trim().length < 5 ? 'La dirección es demasiado corta' : null),
     },
   });
-  
   const ruleForm = useForm({
     initialValues: { type: 'product', targetId: '', discountPercentage: 0, },
     validate: {
@@ -71,13 +72,16 @@ export function ClientDetailPage() {
     if (!clientId) return;
     setIsLoading(true);
     try {
-      const [clientRes, rulesRes, productsRes, categoriesRes] = await Promise.all([
+      // ✅ 5. Se añade la petición de zonas al Promise.all
+      const [clientRes, rulesRes, productsRes, categoriesRes, zonesRes] = await Promise.all([
         apiClient.get<ApiResponse<Client>>(`/clients/${clientId}`),
         apiClient.get<ApiResponse<PricingRule[]>>(`/client-product-pricing/by-client/${clientId}`),
         apiClient.get<ApiResponse<Product[]>>('/products'),
         apiClient.get<ApiResponse<ProductCategory[]>>('/product-categories'),
+        apiClient.get<ApiResponse<Zone[]>>('/zones'),
       ]);
       setClient(clientRes.data.data);
+      setZones(zonesRes.data.data); // Guardamos las zonas en el estado
       setPricingRules(rulesRes.data.data);
       setProducts(productsRes.data.data);
       setProductCategories(categoriesRes.data.data);
@@ -96,7 +100,7 @@ export function ClientDetailPage() {
     fetchData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId]);
-  
+
   const handleClientInfoSubmit = async (values: typeof clientInfoForm.values) => {
     try {
       await apiClient.patch(`/clients/${clientId}`, values);
@@ -110,18 +114,21 @@ export function ClientDetailPage() {
   const handleOpenPoolModal = (pool: Pool | null = null) => {
     setEditingPool(pool);
     if (pool) {
+      // ✅ 6. Se establece el valor de zoneId al abrir el modal para editar
       poolForm.setValues({
         name: pool.name,
         address: pool.address,
         volume: pool.volume,
         type: pool.type || '',
+        zoneId: pool.zoneId || null,
       });
     } else {
       poolForm.reset();
     }
     openPoolModal();
   };
-  
+
+  // No se necesita cambiar handlePoolSubmit, ya que el zoneId se incluye automáticamente en 'values'
   const handlePoolSubmit = async (values: typeof poolForm.values) => {
     if (!clientId) return;
     try {
@@ -160,7 +167,7 @@ export function ClientDetailPage() {
         ruleForm.reset();
     } catch { ruleForm.setErrors({ targetId: 'Error al crear la regla. ¿Quizás ya existe?' }); }
   };
-
+  
   const handleRuleDelete = async (ruleId: string) => {
     if (window.confirm('¿Eliminar esta regla de precio?')) {
         try {
@@ -169,7 +176,7 @@ export function ClientDetailPage() {
         } catch { alert('No se pudo eliminar la regla.'); }
     }
   };
-
+  
   if (isLoading) return <Loader size="xl" />;
   if (error) return <Alert color="red" title="Error">{error}</Alert>;
   if (!client) return <Alert color="yellow">Cliente no encontrado.</Alert>;
@@ -177,6 +184,8 @@ export function ClientDetailPage() {
   const breadcrumbs = (<Breadcrumbs><Link to="/clients">Clientes</Link><Text>{client.name}</Text></Breadcrumbs>);
   const productOptions = products.map(p => ({ value: p.id, label: p.name }));
   const categoryOptions = productCategories.map(c => ({ value: c.id, label: c.name }));
+  // ✅ 7. Se preparan las opciones para el Select de Zonas
+  const zoneOptions = zones.map(z => ({ value: z.id, label: z.name }));
 
   return (
     <>
@@ -185,6 +194,16 @@ export function ClientDetailPage() {
           <Stack>
             <TextInput required label="Nombre de la Piscina" {...poolForm.getInputProps('name')} />
             <TextInput required label="Dirección de la Piscina" {...poolForm.getInputProps('address')} />
+            
+            {/* ✅ 8. Se añade el campo Select para las zonas */}
+            <Select
+              label="Asignar Zona"
+              placeholder="Sin asignar"
+              data={zoneOptions}
+              {...poolForm.getInputProps('zoneId')}
+              clearable
+            />
+
             <NumberInput label="Volumen (m³)" min={0} {...poolForm.getInputProps('volume')} />
             <Select label="Tipo de Piscina" data={['Cloro', 'Sal']} {...poolForm.getInputProps('type')} />
             <Button type="submit" mt="md">{editingPool ? 'Guardar Cambios' : 'Crear Piscina'}</Button>
@@ -195,13 +214,13 @@ export function ClientDetailPage() {
       <Modal opened={ruleModalOpened} onClose={closeRuleModal} title="Nueva Regla de Precio" centered>
         <form onSubmit={ruleForm.onSubmit(handleRuleSubmit)}>
             <Stack>
-                <Select label="Tipo de Regla" data={[{value: 'product', label: 'A un Producto'}, {value: 'category', label: 'A una Categoría'}]} {...ruleForm.getInputProps('type')} />
+                 <Select label="Tipo de Regla" data={[{value: 'product', label: 'A un Producto'}, {value: 'category', label: 'A una Categoría'}]} {...ruleForm.getInputProps('type')} />
                 {ruleForm.values.type === 'product' ? (
                     <Select label="Seleccione el Producto" data={productOptions} searchable required {...ruleForm.getInputProps('targetId')} />
                 ) : (
                     <Select label="Seleccione la Categoría" data={categoryOptions} searchable required {...ruleForm.getInputProps('targetId')} />
                 )}
-                <NumberInput label="Porcentaje de Descuento (%)" min={1} max={100} required {...ruleForm.getInputProps('discountPercentage')} />
+                 <NumberInput label="Porcentaje de Descuento (%)" min={1} max={100} required {...ruleForm.getInputProps('discountPercentage')} />
                 <Button type="submit" mt="md">Crear Regla</Button>
             </Stack>
         </form>
@@ -211,7 +230,7 @@ export function ClientDetailPage() {
         {breadcrumbs}
         <Title order={2} my="lg">{client.name}</Title>
         <Paper withBorder p="md" mb="xl">
-          <Title order={4} mb="xs">Información de Contacto</Title>
+           <Title order={4} mb="xs">Información de Contacto</Title>
           <Text><strong>Persona de contacto:</strong> {client.contactPerson || '-'}</Text>
           <Text><strong>Email:</strong> {client.email || '-'}</Text>
           <Text><strong>Teléfono:</strong> {client.phone || '-'}</Text>
@@ -229,63 +248,62 @@ export function ClientDetailPage() {
                     <Button onClick={() => handleOpenPoolModal()}>Añadir Piscina</Button>
                 </Group>
                 <Table striped withTableBorder>
-                  <Table.Thead><Table.Tr><Table.Th>Nombre</Table.Th><Table.Th>Dirección</Table.Th><Table.Th>Acciones</Table.Th></Table.Tr></Table.Thead>
+                   <Table.Thead><Table.Tr><Table.Th>Nombre</Table.Th><Table.Th>Dirección</Table.Th><Table.Th>Acciones</Table.Th></Table.Tr></Table.Thead>
                   <Table.Tbody>
                     {client.pools.length > 0 ? (
                       client.pools.map(pool => (
                         <Table.Tr key={pool.id}>
                           <Table.Td><Anchor component={Link} to={`/pools/${pool.id}`}>{pool.name}</Anchor></Table.Td>
-                          <Table.Td>{pool.address}</Table.Td>
+                           <Table.Td>{pool.address}</Table.Td>
                           <Table.Td>
                             <Group gap="xs">
                               <Button variant="subtle" size="xs" onClick={() => handleOpenPoolModal(pool)}>Editar</Button>
-                              <Button variant="subtle" size="xs" color="red" onClick={() => handlePoolDelete(pool.id)}>Eliminar</Button>
+                               <Button variant="subtle" size="xs" color="red" onClick={() => handlePoolDelete(pool.id)}>Eliminar</Button>
                             </Group>
                           </Table.Td>
-                        </Table.Tr>
+                         </Table.Tr>
                       ))
                     ) : (<Table.Tr><Table.Td colSpan={3}>Este cliente no tiene piscinas asociadas.</Table.Td></Table.Tr>)}
                   </Table.Tbody>
                 </Table>
-            </Tabs.Panel>
+             </Tabs.Panel>
 
             <Tabs.Panel value="pricing" pt="lg">
                 <Grid>
                     <Grid.Col span={{ base: 12, md: 5 }}>
                         <Paper withBorder p="md" shadow="sm">
-                            <Title order={4} mb="md">Condiciones del Contrato</Title>
+                             <Title order={4} mb="md">Condiciones del Contrato</Title>
                             <form onSubmit={clientInfoForm.onSubmit(handleClientInfoSubmit)}>
                                 <Stack>
-                                    {/* --- ✅ LÍNEA CORREGIDA --- */}
-                                    <NumberInput label="Cuota Mensual (€)" decimalScale={2} fixedDecimalScale {...clientInfoForm.getInputProps('monthlyFee')} />
-                                    <Select label="Modelo de Facturación" data={['SERVICE_ONLY', 'FEE_PLUS_MATERIALS', 'ALL_INCLUSIVE']} {...clientInfoForm.getInputProps('billingModel')} />
+                                     <NumberInput label="Cuota Mensual (€)" decimalScale={2} fixedDecimalScale {...clientInfoForm.getInputProps('monthlyFee')} />
+                                     <Select label="Modelo de Facturación" data={['SERVICE_ONLY', 'FEE_PLUS_MATERIALS', 'ALL_INCLUSIVE']} {...clientInfoForm.getInputProps('billingModel')} />
                                     <Button type="submit">Guardar Condiciones</Button>
                                 </Stack>
-                            </form>
+                         </form>
                         </Paper>
                     </Grid.Col>
                     <Grid.Col span={{ base: 12, md: 7 }}>
-                        <Group justify="space-between" align="center" mb="md">
+                         <Group justify="space-between" align="center" mb="md">
                             <Title order={4}>Reglas de Precios Personalizadas</Title>
                             <Button size="xs" onClick={openRuleModal}>+ Añadir Regla</Button>
                         </Group>
-                        <Table striped withTableBorder>
+                         <Table striped withTableBorder>
                             <Table.Thead><Table.Tr><Table.Th>Objetivo</Table.Th><Table.Th>Tipo</Table.Th><Table.Th>Descuento</Table.Th><Table.Th>Acciones</Table.Th></Table.Tr></Table.Thead>
                             <Table.Tbody>
-                                {pricingRules.length > 0 ? pricingRules.map(rule => (
+                                 {pricingRules.length > 0 ? pricingRules.map(rule => (
                                     <Table.Tr key={rule.id}>
                                         <Table.Td>{rule.product?.name || rule.productCategory?.name}</Table.Td>
-                                        <Table.Td>{rule.product ? 'Producto' : 'Categoría'}</Table.Td>
+                                          <Table.Td>{rule.product ? 'Producto' : 'Categoría'}</Table.Td>
                                         <Table.Td>{rule.discountPercentage}%</Table.Td>
-                                        <Table.Td><Button variant="subtle" color="red" size="xs" onClick={() => handleRuleDelete(rule.id)}>Eliminar</Button></Table.Td>
+                                         <Table.Td><Button variant="subtle" color="red" size="xs" onClick={() => handleRuleDelete(rule.id)}>Eliminar</Button></Table.Td>
                                     </Table.Tr>
                                 )) : <Table.Tr><Table.Td colSpan={4}>No hay reglas personalizadas.</Table.Td></Table.Tr>}
-                            </Table.Tbody>
+                               </Table.Tbody>
                         </Table>
                     </Grid.Col>
                 </Grid>
             </Tabs.Panel>
-        </Tabs>
+         </Tabs>
       </Container>
     </>
   );

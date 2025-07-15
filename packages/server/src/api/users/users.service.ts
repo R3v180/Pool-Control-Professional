@@ -1,7 +1,6 @@
-// ====== [102] packages/server/src/api/users/users.service.ts ======
 // filename: packages/server/src/api/users/users.service.ts
-// Version: 2.1.0 (FIX: Include isAvailable field in select query)
-// description: The function now includes the 'isAvailable' field to match the updated User type.
+// Version: 2.2.0 (FEAT: Add updateUserAvailability function)
+// description: Adds logic to update a user's availability status.
 
 import { PrismaClient } from '@prisma/client';
 import type { User } from '@prisma/client';
@@ -32,11 +31,42 @@ export const getAssignableUsersByTenant = async (
       tenantId: true,
       createdAt: true,
       updatedAt: true,
-      // ✅ CORRECCIÓN: Añadir el campo que faltaba.
       isAvailable: true, 
     },
     orderBy: {
       name: 'asc',
     },
   });
+};
+
+/**
+ * Actualiza el estado de disponibilidad de un usuario.
+ * @param userId - El ID del usuario a actualizar.
+ * @param tenantId - El ID del tenant para validación.
+ * @param isAvailable - El nuevo estado de disponibilidad.
+ * @returns El objeto del usuario actualizado.
+ */
+export const updateUserAvailability = async (
+  userId: string,
+  tenantId: string,
+  isAvailable: boolean
+): Promise<User> => {
+  // Se usa updateMany para asegurar que solo se actualice si el usuario
+  // pertenece al tenant correcto, evitando la modificación de datos ajenos.
+  const { count } = await prisma.user.updateMany({
+    where: {
+      id: userId,
+      tenantId: tenantId,
+    },
+    data: {
+      isAvailable: isAvailable,
+    },
+  });
+
+  if (count === 0) {
+    throw new Error('Usuario no encontrado o sin permisos para modificar.');
+  }
+
+  // Devolvemos el usuario actualizado completo para la respuesta de la API.
+  return prisma.user.findUniqueOrThrow({ where: { id: userId } });
 };

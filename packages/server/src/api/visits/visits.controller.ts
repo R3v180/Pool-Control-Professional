@@ -1,5 +1,5 @@
 // filename: packages/server/src/api/visits/visits.controller.ts
-// Version: 1.7.0 (Adapt assignTechnicianHandler to new logic)
+// Version: 1.8.0 (FEAT: Add handler for special visit creation)
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
 import { 
@@ -8,6 +8,7 @@ import {
   getVisitsForTechnicianOnDate,
   getVisitDetails,
   submitWorkOrder,
+  createSpecialVisit, // Importamos la nueva función del servicio
 } from './visits.service.js';
 
 /**
@@ -31,7 +32,6 @@ export const getScheduledVisitsForWeekHandler = async (
 
     const weekDate = new Date(date);
     const visits = await getScheduledVisitsForWeek(tenantId, weekDate);
-
     res.status(200).json({ success: true, data: visits });
   } catch (error) {
     next(error);
@@ -52,10 +52,7 @@ export const assignTechnicianHandler = async (
       return res.status(400).json({ message: 'visitId es requerido.' });
     }
     
-    // TODO: Verificar que la visita pertenece al tenant del admin
-    
     const assignedVisit = await assignTechnicianToVisit(visitId, technicianId);
-    
     res.status(200).json({ success: true, data: assignedVisit });
   } catch (error) {
     next(error);
@@ -78,7 +75,6 @@ export const getMyRouteHandler = async (
     
     const today = new Date();
     const visits = await getVisitsForTechnicianOnDate(technicianId, today);
-    
     res.status(200).json({ success: true, data: visits });
   } catch (error) {
     next(error);
@@ -125,10 +121,32 @@ export const submitWorkOrderHandler = async (
     }
     
     await submitWorkOrder(id, req.body);
-
     res.status(200).json({ success: true, message: 'Parte de trabajo guardado con éxito.' });
   } catch (error) {
     console.error('ERROR AL PROCESAR PARTE DE TRABAJO:', error); 
     next(error);
   }
+};
+
+// ✅ --- FUNCIÓN AÑADIDA Y EXPORTADA ---
+/**
+ * Maneja la creación de una visita especial (Orden de Trabajo Especial).
+ */
+export const createSpecialVisitHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+    try {
+        const { poolId, timestamp } = req.body;
+        if (!poolId || !timestamp) {
+            return res.status(400).json({ success: false, message: 'Los campos poolId y timestamp son obligatorios.' });
+        }
+
+        const newVisit = await createSpecialVisit(req.body);
+        res.status(201).json({ success: true, data: newVisit });
+
+    } catch (error) {
+        next(error);
+    }
 };

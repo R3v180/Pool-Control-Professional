@@ -45,261 +45,249 @@
 43. packages/server/prisma/data/incident-tasks.ts
 44. packages/server/prisma/data/product-categories.ts
 45. packages/server/prisma/data/products.ts
-46. packages/server/prisma/data/transactions.ts
-47. packages/server/prisma/data/users.ts
-48. packages/server/prisma/seed.ts
-49. packages/server/src/api/auth/auth.controller.ts
-50. packages/server/src/api/auth/auth.routes.ts
-51. packages/server/src/api/auth/auth.service.ts
-52. packages/server/src/api/client-product-pricing/client-product-pricing.controller.ts
-53. packages/server/src/api/client-product-pricing/client-product-pricing.routes.ts
-54. packages/server/src/api/client-product-pricing/client-product-pricing.service.ts
-55. packages/server/src/api/clients/clients.controller.ts
-56. packages/server/src/api/clients/clients.routes.ts
-57. packages/server/src/api/clients/clients.service.ts
-58. packages/server/src/api/dashboard/dashboard.controller.ts
-59. packages/server/src/api/dashboard/dashboard.routes.ts
-60. packages/server/src/api/dashboard/dashboard.service.ts
-61. packages/server/src/api/expenses/expenses.controller.ts
-62. packages/server/src/api/expenses/expenses.routes.ts
-63. packages/server/src/api/expenses/expenses.service.ts
-64. packages/server/src/api/incident-tasks/incident-tasks.controller.ts
-65. packages/server/src/api/incident-tasks/incident-tasks.routes.ts
-66. packages/server/src/api/incident-tasks/incident-tasks.service.ts
-67. packages/server/src/api/notifications/notifications.controller.ts
-68. packages/server/src/api/notifications/notifications.routes.ts
-69. packages/server/src/api/notifications/notifications.service.ts
-70. packages/server/src/api/parameters/parameters.controller.ts
-71. packages/server/src/api/parameters/parameters.routes.ts
-72. packages/server/src/api/parameters/parameters.service.ts
-73. packages/server/src/api/payments/payments.controller.ts
-74. packages/server/src/api/payments/payments.routes.ts
-75. packages/server/src/api/payments/payments.service.ts
-76. packages/server/src/api/pool-configurations/pool-configurations.controller.ts
-77. packages/server/src/api/pool-configurations/pool-configurations.routes.ts
-78. packages/server/src/api/pool-configurations/pool-configurations.service.ts
-79. packages/server/src/api/pools/pools.controller.ts
-80. packages/server/src/api/pools/pools.routes.ts
-81. packages/server/src/api/pools/pools.service.ts
-82. packages/server/src/api/product-categories/product-categories.controller.ts
-83. packages/server/src/api/product-categories/product-categories.routes.ts
-84. packages/server/src/api/product-categories/product-categories.service.ts
-85. packages/server/src/api/products/products.controller.ts
-86. packages/server/src/api/products/products.routes.ts
-87. packages/server/src/api/products/products.service.ts
-88. packages/server/src/api/reports/reports.controller.ts
-89. packages/server/src/api/reports/reports.routes.ts
-90. packages/server/src/api/reports/reports.service.ts
-91. packages/server/src/api/tasks/tasks.controller.ts
-92. packages/server/src/api/tasks/tasks.routes.ts
-93. packages/server/src/api/tasks/tasks.service.ts
-94. packages/server/src/api/tenants/tenants.controller.ts
-95. packages/server/src/api/tenants/tenants.routes.ts
-96. packages/server/src/api/tenants/tenants.service.ts
-97. packages/server/src/api/uploads/uploads.controller.ts
-98. packages/server/src/api/uploads/uploads.routes.ts
-99. packages/server/src/api/uploads/uploads.service.ts
-100. packages/server/src/api/users/users.controller.ts
-101. packages/server/src/api/users/users.routes.ts
-102. packages/server/src/api/users/users.service.ts
-103. packages/server/src/api/visits/visits.controller.ts
-104. packages/server/src/api/visits/visits.routes.ts
-105. packages/server/src/api/visits/visits.service.ts
-106. packages/server/src/app.ts
-107. packages/server/src/config/index.ts
-108. packages/server/src/middleware/auth.middleware.ts
-109. packages/server/src/middleware/authorize.middleware.ts
-110. packages/server/src/middleware/error.middleware.ts
-111. packages/server/src/server.ts
-112. packages/server/src/utils/jwt.utils.ts
-113. packages/server/src/utils/password.utils.ts
-114. packages/server/tsconfig.json
-115. tsconfig.json
+46. packages/server/prisma/data/route-templates.ts
+47. packages/server/prisma/data/transactions.ts
+48. packages/server/prisma/data/users.ts
+49. packages/server/prisma/data/zones.ts
+50. packages/server/prisma/seed.ts
+51. packages/server/src/api/auth/auth.controller.ts
+52. packages/server/src/api/auth/auth.routes.ts
+53. packages/server/src/api/auth/auth.service.ts
+54. packages/server/src/api/client-product-pricing/client-product-pricing.controller.ts
+55. packages/server/src/api/client-product-pricing/client-product-pricing.routes.ts
+56. packages/server/src/api/client-product-pricing/client-product-pricing.service.ts
+57. packages/server/src/api/clients/clients.controller.ts
+58. packages/server/src/api/clients/clients.routes.ts
+59. packages/server/src/api/clients/clients.service.ts
+60. packages/server/src/api/dashboard/dashboard.controller.ts
+61. packages/server/src/api/dashboard/dashboard.routes.ts
+62. packages/server/src/api/dashboard/dashboard.service.ts
+63. packages/server/src/api/expenses/expenses.controller.ts
+64. packages/server/src/api/expenses/expenses.routes.ts
+65. packages/server/src/api/expenses/expenses.service.ts
+66. packages/server/src/api/incident-tasks/incident-tasks.controller.ts
+67. packages/server/src/api/incident-tasks/incident-tasks.routes.ts
+68. packages/server/src/api/incident-tasks/incident-tasks.service.ts
+69. packages/server/src/api/notifications/notifications.controller.ts
+70. packages/server/src/api/notifications/notifications.routes.ts
+71. packages/server/src/api/notifications/notifications.service.ts
+72. packages/server/src/api/parameters/parameters.controller.ts
+73. packages/server/src/api/parameters/parameters.routes.ts
+74. packages/server/src/api/parameters/parameters.service.ts
+75. packages/server/src/api/payments/payments.controller.ts
+76. packages/server/src/api/payments/payments.routes.ts
+77. packages/server/src/api/payments/payments.service.ts
+78. packages/server/src/api/pool-configurations/pool-configurations.controller.ts
+79. packages/server/src/api/pool-configurations/pool-configurations.routes.ts
+80. packages/server/src/api/pool-configurations/pool-configurations.service.ts
+81. packages/server/src/api/pools/pools.controller.ts
+82. packages/server/src/api/pools/pools.routes.ts
+83. packages/server/src/api/pools/pools.service.ts
+84. packages/server/src/api/product-categories/product-categories.controller.ts
+85. packages/server/src/api/product-categories/product-categories.routes.ts
+86. packages/server/src/api/product-categories/product-categories.service.ts
+87. packages/server/src/api/products/products.controller.ts
+88. packages/server/src/api/products/products.routes.ts
+89. packages/server/src/api/products/products.service.ts
+90. packages/server/src/api/reports/reports.controller.ts
+91. packages/server/src/api/reports/reports.routes.ts
+92. packages/server/src/api/reports/reports.service.ts
+93. packages/server/src/api/tasks/tasks.controller.ts
+94. packages/server/src/api/tasks/tasks.routes.ts
+95. packages/server/src/api/tasks/tasks.service.ts
+96. packages/server/src/api/tenants/tenants.controller.ts
+97. packages/server/src/api/tenants/tenants.routes.ts
+98. packages/server/src/api/tenants/tenants.service.ts
+99. packages/server/src/api/uploads/uploads.controller.ts
+100. packages/server/src/api/uploads/uploads.routes.ts
+101. packages/server/src/api/uploads/uploads.service.ts
+102. packages/server/src/api/users/users.controller.ts
+103. packages/server/src/api/users/users.routes.ts
+104. packages/server/src/api/users/users.service.ts
+105. packages/server/src/api/visits/visits.controller.ts
+106. packages/server/src/api/visits/visits.routes.ts
+107. packages/server/src/api/visits/visits.service.ts
+108. packages/server/src/app.ts
+109. packages/server/src/config/index.ts
+110. packages/server/src/middleware/auth.middleware.ts
+111. packages/server/src/middleware/authorize.middleware.ts
+112. packages/server/src/middleware/error.middleware.ts
+113. packages/server/src/server.ts
+114. packages/server/src/utils/jwt.utils.ts
+115. packages/server/src/utils/password.utils.ts
+116. packages/server/tsconfig.json
+117. tsconfig.json
 
 
 # CONTENIDO DE ARCHIVOS
 
 
 // ====== [1] DEVELOPMENT_PLAN.md ======
+// ====== [1] DEVELOPMENT_PLAN.md ======
+
 # Plan de Desarrollo y Arquitectura: Pool-Control Professional
 
-**Filosofía del Documento:** Este no es solo un plan, es la narrativa arquitectónica y de negocio del proyecto. Sirve como la hoja de ruta para el trabajo futuro y, a la vez, como una crónica de las decisiones tomadas, garantizando un entendimiento profundo del sistema en cualquier punto de su ciclo de vida.
+**Filosofía del Documento:** Este no es solo un plan, es la narrativa arquitectónica y de negocio del proyecto. Sirve como la hoja de ruta para el trabajo futuro y, a la vez, como una crónica de las decisiones tomadas.
 
 ---
 
-## ✅ FASE 0 a 7: Fundación y Operativa Inteligente
+## ✅ FASE 0 a 8: Fundación, Operativa Inteligente y Business Intelligence
 
 - **Estado:** `COMPLETADA`
-- **Resumen:** Durante estas fases, se ha construido una plataforma operativa robusta y completa. Se ha digitalizado todo el flujo de trabajo, desde la configuración de catálogos y fichas de mantenimiento, hasta la planificación de rutas y la ejecución de partes de trabajo. La Fase 7 culminó con la implementación de un **sistema de ticketing avanzado**, que asegura una comunicación y resolución de incidencias eficiente y completamente trazable, sentando las bases para un control de calidad proactivo.
+- **Resumen:** Durante estas fases, se ha construido una plataforma operativa robusta y completa. Se ha digitalizado el flujo de trabajo, desde la gestión de catálogos y clientes hasta la ejecución de partes de trabajo y un sistema de ticketing avanzado. La Fase 8 culminó con la implementación de un **Dashboard de Gerencia Interactivo**, que proporciona KPIs dinámicos y navegables para un análisis de negocio en tiempo real.
 
 ---
 
-## 🚧 FASE 8 y Sprint Final v1.0: El Motor Financiero y la Inteligencia de Negocio
+## 🚧 FASE 9: El Motor de Planificación Avanzada (v2.0)
 
 - **Estado:** `EN PROGRESO`
-- **Intención Estratégica:** Esta es la fase crucial que eleva la plataforma de una herramienta operativa a un **socio estratégico para el negocio**. El objetivo es implementar un conjunto de funcionalidades de alto valor para la presentación de la v1.0, centrándonos en la gestión financiera, el análisis de datos y la supervisión proactiva.
+- **Intención Estratégica:** Transformar la planificación de una tarea manual y diaria a un **proceso de diseño estratégico y semi-automatizado**. El objetivo es reducir drásticamente el tiempo de gestión del `ADMIN`, optimizar las rutas de los técnicos y hacer el sistema escalable para manejar un gran volumen de clientes.
 
-- **Plan de Acción Detallado y Priorizado para la v1.0:**
+- **Plan de Acción Detallado para la v2.0:**
 
-  1.  **Módulo de Informes de Consumo y Rentabilidad v1:**
+  1.  **Diseño de la Arquitectura de Datos:**
 
       - **Estado:** `COMPLETADO`
-      - **Valor Aportado:** Se ha construido la base de la inteligencia de negocio. Esta primera versión del módulo permite a los administradores y gerentes responder a una pregunta fundamental: **"¿cuánto nos cuesta realmente cada cliente?"**. La implementación incluye una API de agregación, una interfaz interactiva con filtros y una potente funcionalidad de **desglose (drill-down)** que permite auditar un coste hasta el parte de trabajo original.
+      - **Valor Aportado:** Se ha rediseñado el `schema.prisma` para introducir los conceptos de **Zonas Geográficas** y **Rutas Maestras**. Esta nueva estructura permite una organización del trabajo mucho más lógica e intuitiva.
 
-  2.  **Mejoras de Usabilidad del Dashboard:**
+  2.  **Módulo de Gestión de Zonas y Rutas:**
 
       - **Estado:** `PENDIENTE`
-      - **Intención Estratégica:** Incrementar la eficiencia del `ADMIN` en su día a día mediante mejoras de alto impacto en la interfaz principal.
+      - **Intención Estratégica:** Dotar al `ADMIN` de las herramientas para diseñar la operativa de la empresa.
       - **Capacidades a Implementar:**
-        - **Navegación Directa:** Hacer que las tarjetas de "Visitas de Hoy" sean clicables para un acceso directo al detalle del parte de trabajo.
-        - **Visibilidad de Alertas:** Estandarizar y potenciar los indicadores visuales (bordes de color intenso) para las incidencias críticas, permitiendo una identificación inmediata.
+        - **Gestión de Zonas:** Una interfaz para crear, editar y eliminar las áreas de trabajo geográficas.
+        - **Diseño de Rutas Maestras:** Una interfaz para crear rutas (ej. "Lunes-Arenal"), asignarlas a un técnico habitual y a una o más zonas.
+        - **Gestión de Estacionalidad:** Permitir definir diferentes frecuencias de visita para una misma ruta según el periodo del año (ej. más visitas en verano).
 
-  3.  **Evolución a "Motor Financiero" (Facturación y Precios Avanzados):**
+  3.  **Automatización y Planificador Inteligente:**
 
-      - **Estado:** `PENDIENTE (Prioridad Máxima)`
-      - **Intención Estratégica:** Dotar al sistema de la flexibilidad necesaria para manejar los modelos de negocio y las estructuras de precios del mundo real, permitiendo generar informes listos para la facturación.
+      - **Estado:** `PENDIENTE`
+      - **Intención Estratégica:** Automatizar la generación del plan de trabajo semanal y dar al `ADMIN` las herramientas para gestionar las excepciones de forma eficiente.
       - **Capacidades a Implementar:**
-        - **Precios y Fiscalidad:** Diferenciación entre `cost` y `salePrice` (PVP) en los productos, y un campo `taxRate` (IVA) para futuros cálculos.
-        - **Modelos de Contrato:** Configuración por cliente de su `billingModel` (`Todo Incluido`, `Cuota + Materiales`, etc.) y su `monthlyFee` (cuota fija).
-        - **Reglas de Precios Flexibles:** Sistema para definir descuentos por cliente, aplicables a productos individuales o a familias de productos completas.
-        - **Historial de Pagos:** Implementación de la capacidad de registrar pagos para llevar un control de saldos pendientes por cliente.
-        - **Registro de Gastos:** Sistema para añadir gastos operativos manuales (combustible, salarios) para un cálculo de rentabilidad global preciso.
+        - **Generador Automático de Visitas:** Un proceso en el backend que leerá las Rutas Maestras y creará el calendario de visitas de forma automática.
+        - **Gestión de "Deuda Operativa":** El `PlannerPage` mostrará de forma destacada las visitas de días anteriores no completadas, obligando a su reprogramación.
+        - **Gestión de Bajas:** El `ADMIN` podrá marcar a un técnico como no disponible, moviendo sus visitas a una "bolsa de trabajo" para ser reasignadas fácilmente.
 
-  4.  **Dashboard de Gerencia y Rol "Camaleón":**
-
-      - **Estado:** `PENDIENTE (Prioridad Máxima)`
-      - **Intención Estratégica:** Crear el centro de mando definitivo para la dirección del negocio, combinando supervisión estratégica con capacidad de intervención operativa.
-      - **Capacidades a Implementar:**
-        - **Dashboard de KPIs:** Un panel con gráficos visuales sobre la rentabilidad, eficiencia del equipo y estado de las incidencias (ej. tiempo medio de resolución).
-        - **Selector de Vista:** Implementación de la funcionalidad del "rol camaleón", que permitirá al gerente cambiar su vista para actuar con todos los permisos de un `ADMIN` o un `TECHNICIAN`, garantizando la cobertura operativa con una auditoría completa de sus acciones.
-
-  5.  **Alertas Proactivas por Umbrales:**
-      - **Estado:** `PENDIENTE (Prioridad Máxima)`
-      - **Intención Estratégica:** Implementar un sistema de vigilancia automática para pasar de la corrección a la prevención de problemas, aportando un valor diferencial al servicio ofrecido.
-      - **Capacidades a Implementar:** Se implementará la lógica en el backend para que el sistema genere notificaciones automáticas cuando un valor de parámetro medido por un técnico esté fuera de los rangos de seguridad configurados.
+  4.  **Gestión de Tareas no Planificadas:**
+      - **Estado:** `PENDIENTE`
+      - **Intención Estratégica:** Integrar las urgencias y tareas únicas en el flujo de planificación.
+      - **Capacidades a Implementar:** Un sistema de **"Órdenes de Trabajo Especiales"** que pueden ser creadas y asignadas sobre la marcha en el `PlannerPage`.
 
 ---
 
-## ▶️ Visión Post-v1.0: Hacia el ERP Completo
+## ▶️ Visión Post-v2.0: Hacia el ERP Completo
 
-Una vez presentada y validada la v1.0, el desarrollo continuará con los siguientes grandes módulos para convertir la plataforma en una solución integral.
+Una vez consolidado el motor de planificación, el desarrollo continuará con los siguientes grandes módulos.
 
-- **Módulo de Gestión de Inventario:**
+- **Módulo de Estado de Cuentas y Cobros:**
 
   - **Estado:** `PLANIFICADO`
-  - **Propósito:** Optimizar la gestión de stock y las compras. Incluirá control de niveles de stock, definición de mínimos/máximos y generación de informes de necesidades o propuestas de compra.
+  - **Propósito:** Ofrecer una visión clara mes a mes del estado de facturación de cada cliente (Pagado, Pendiente, Atrasado) y facilitar la gestión de cobros.
+
+- **Alertas Proactivas por Umbrales:**
+
+  - **Estado:** `PLANIFICADO`
+  - **Propósito:** Implementar un sistema de vigilancia automática para pasar de la corrección a la prevención de problemas.
+
+- **Gestión de Inventario y Compras:**
+
+  - **Estado:** `PLANIFICADO`
+  - **Propósito:** Optimizar la gestión de stock, definir mínimos/máximos y generar propuestas de compra.
 
 - **Modo Offline (PWA) para Técnicos:**
-
   - **Estado:** `PLANIFICADO`
-  - **Propósito:** Garantizar la continuidad del negocio en campo, permitiendo a los técnicos trabajar sin conexión a internet.
-
-- **Módulo de Facturación y Contabilidad Completo:**
-  - **Estado:** `PLANIFICADO (Largo Plazo)`
-  - **Propósito:** Convertir la plataforma en una solución todo en uno, eliminando la necesidad de software de terceros para la facturación y contabilidad.
-  - **Capacidades Futuras:** Generación de facturas con validez legal, gestión de impuestos, presupuestos, pedidos a proveedores y, eventualmente, adaptación a las normativas contables de diferentes países.
+  - **Propósito:** Garantizar la continuidad del negocio en campo.
 
 
 
 // ====== [2] PROJECT_STATUS.md ======
+// ====== [2] PROJECT_STATUS.md ======
+
 # Estado del Proyecto y Crónica de Desarrollo: Pool-Control Professional
 
-**Filosofía de este documento:** Este no es solo un registro de tareas, es el pulso del proyecto. Refleja nuestro compromiso con la excelencia, documentando no solo _qué_ hemos hecho, sino _por qué_ lo hemos hecho y el _valor_ que cada fase aporta al producto final. Está diseñado para ser la fuente de verdad para cualquier miembro del equipo, presente o futuro.
+**Filosofía de este documento:** Este no es solo un registro de tareas, es el pulso del proyecto. Refleja nuestro compromiso con la excelencia, documentando no solo _qué_ hemos hecho, sino _por qué_ lo hemos hecho y el _valor_ que cada fase aporta al producto final.
 
-_Última actualización: 13 de julio de 2025, 06:30 CEST_
+_Última actualización: 15 de julio de 2025, 20:00 CEST_
 
 ---
 
-## 1. Visión Estratégica Actual: Sprint Final hacia la Versión 1.0
+## 1. Visión Estratégica Actual: Hacia la Planificación Inteligente v2.0
 
-El proyecto entra en su fase final de desarrollo para la Versión 1.0. El objetivo es consolidar una aplicación funcional, robusta y con funcionalidades diferenciales clave. Durante los próximos 3 días, el enfoque será total en la implementación de las herramientas de gestión financiera, análisis y supervisión proactiva que definirán el producto para su presentación.
+Tras una fase intensiva de desarrollo y estabilización, el proyecto se encuentra en un punto de inflexión. Se ha consolidado una base operativa robusta y se han implementado las primeras herramientas de inteligencia de negocio. El siguiente gran salto evolutivo es la implementación de un sistema de **planificación avanzada y semi-automatizada** que reducirá drásticamente la carga de trabajo administrativo y optimizará las operaciones de campo.
 
 ---
 
 ## 2. Hitos de Desarrollo Validados
 
-### ✅ **Módulo de Informes de Consumo y Rentabilidad v1**
+### ✅ **Dashboard de Gerencia Interactivo v1**
 
 - **Estado:** `COMPLETADO Y VALIDADO`
-- **Resumen:** Se ha implementado con éxito la primera versión del módulo de informes. Esta base nos proporciona una visión de la **rentabilidad interna** (basada en el coste de los productos) y una potente funcionalidad de **desglose interactivo (drill-down)** que permite auditar cualquier coste hasta el parte de trabajo original. La infraestructura técnica (API, componentes de UI, exportación a CSV) está lista para evolucionar.
+- **Resumen:** Se ha implementado con éxito un dashboard dinámico para el rol de Gerente. Los widgets son interactivos, permitiendo la navegación desde KPIs de alto nivel (coste de productos, incidencias abiertas) a las páginas de detalle correspondientes para un análisis en profundidad. Se ha añadido un selector de periodo para un análisis histórico.
 
-### ✅ **Flujo de Trabajo Avanzado para Incidencias (Ticketing)**
+### ✅ **Estabilización de la Plataforma y Refactorización del Backend**
 
 - **Estado:** `COMPLETADO Y VALIDADO`
-- **Resumen:** Se ha finalizado la implementación del sistema de ticketing avanzado, creando un flujo de comunicación bidireccional y completamente trazable entre administradores y técnicos. La comunicación y la resolución de problemas ahora son eficientes y auditables.
+- **Resumen:** Se ha llevado a cabo una fase crítica de depuración y refactorización. Se han resuelto inconsistencias entre el esquema de la base de datos y la lógica de los servicios, asegurando que todas las funcionalidades existentes (gestión de incidencias, informes, etc.) operan de forma estable y predecible.
+
+### ✅ **Coherencia del "Rol Camaleón"**
+
+- **Estado:** `COMPLETADO Y VALIDADO`
+- **Resumen:** Se ha mejorado la lógica de asignación para permitir que los usuarios con rol `MANAGER` puedan ser asignatarios directos de visitas y tareas de incidencia, cerrando un hueco funcional clave en el concepto del "Rol Camaleón".
 
 ---
 
-## 3. Plan de Acción y Tareas Pendientes
+## 3. Plan de Acción y Tareas Pendientes (Sprint v2.0)
 
-### **Plan de Ataque para la Versión 1.0 (Próximos 3 Días)**
+Esta es la máxima prioridad actual. El objetivo es construir el núcleo del nuevo motor de planificación.
 
-Esta es la máxima prioridad actual. El plan se ha detallado para maximizar el valor entregado en el sprint final.
+### **Fase 1: El Nuevo Núcleo de Datos (Backend)**
 
-#### **Mejoras de Usabilidad y UI (Tareas Rápidas)**
+- **Estado:** `COMPLETADO`
+- **Objetivo:** Modificar la estructura de la base de datos para dar soporte a la planificación avanzada.
+- **Tareas Técnicas Validadas:**
+  - **`schema.prisma`:** Se han añadido los nuevos modelos (`Zone`, `RouteTemplate`, `RouteTemplateSeason`, `SpecialWorkOrder`) y se han modificado los modelos existentes (`Pool`, `User`) para soportar la nueva lógica.
+  - **`seed.ts`:** El script de semillado ha sido completamente reescrito para poblar la base de datos con una estructura de datos coherente que incluye zonas, rutas maestras y visitas generadas automáticamente.
+
+### **Fase 2: Construcción de APIs y Lógica de Negocio (Backend)**
+
+- **Estado:** `PENDIENTE (Prioridad Máxima)`
+- **Objetivo:** Desarrollar todos los endpoints de la API necesarios para gestionar la nueva estructura de planificación.
+- **Tareas Técnicas:**
+  - **API de Zonas:** Crear el CRUD completo para `Zone`.
+  - **API de Rutas Maestras:** Crear el CRUD para `RouteTemplate` y sus `RouteTemplateSeason`.
+  - **Job de Generación de Visitas:** Implementar el script (`visit-generator.job.ts`) que se ejecutará periódicamente para generar las visitas de forma automática.
+  - **Evolución de API de Visitas:** Refactorizar el endpoint `GET /api/visits/scheduled` para que lea las visitas pre-generadas y devuelva también las visitas vencidas.
+
+### **Fase 3: Maratón de Frontend e Integración**
 
 - **Estado:** `PENDIENTE`
-- **Objetivo:** Implementar pequeñas mejoras de alto impacto en la interfaz actual para aumentar la eficiencia del `ADMIN`.
+- **Objetivo:** Construir todas las interfaces de usuario para la gestión de la planificación.
 - **Tareas Técnicas:**
-  - **Navegación desde el Dashboard:** Hacer que las tarjetas de "Visitas de Hoy" en el `AdminDashboard` sean clicables, permitiendo al administrador navegar directamente al detalle del parte de trabajo (`WorkOrderPage`) con un solo clic, de la misma forma que ya funciona con las incidencias.
-  - **Mejora Visual de Alertas:** Recuperar y estandarizar el indicador visual para las incidencias críticas. Además del fondo tenue, se añadirá un **borde izquierdo rojo intenso** a las incidencias vencidas o críticas en el `AdminDashboard`, replicando el estilo del `PlannerPage` para una coherencia visual y una identificación más rápida de los problemas urgentes.
+  - **Página de Gestión de Zonas:** Crear la interfaz para el CRUD de Zonas.
+  - **Páginas de Rutas Maestras:** Crear las interfaces para listar y configurar las `RouteTemplate`.
+  - **Refactorización del Planificador (`PlannerPage.tsx`):** Rediseñar la página para que visualice el plan generado, la columna de "Deuda Operativa" (visitas vencidas) y la de "Trabajo Huérfano" (por bajas).
+  - **Integrar Órdenes de Trabajo Especiales:** Añadir la funcionalidad para crear y asignar visitas únicas.
 
-#### **DÍA 1: La Gran Refundación (Cimientos del Backend)**
+### **Tareas de Futuras Iteraciones (Post-v2.0)**
 
-- **Estado:** `PENDIENTE`
-- **Objetivo:** Modificar el `schema.prisma` para dar soporte a TODAS las nuevas funcionalidades de la v1.0. Es el paso más crítico y bloqueante.
-- **Tareas Técnicas:**
-  - **Motor Financiero:** Añadir campos `salePrice` (PVP), `taxRate` (IVA), `monthlyFee` (Cuota Fija) y `billingModel` (Modelo de Contrato).
-  - **Precios Avanzados:** Crear los nuevos modelos `ProductCategory` (para familias de productos) y `ClientProductPricing` (para reglas de descuento).
-  - **Historial de Pagos:** Crear el nuevo modelo `Payment` para registrar los pagos de los clientes.
-  - **Gastos Adicionales:** Crear el nuevo modelo `Expense` para el registro de gastos manuales.
-  - **Actualizar Seed:** Modificar el script de `seed.ts` para generar datos de prueba realistas para toda esta nueva estructura.
-
-#### **DÍA 2: Construcción de APIs y Lógica de Negocio (Backend)**
-
-- **Estado:** `PENDIENTE`
-- **Objetivo:** Desarrollar todos los endpoints de la API necesarios.
-- **Tareas Técnicas:**
-  - **API Financiera:** Crear los endpoints para gestionar las reglas de precios, gastos y pagos.
-  - **API de Alertas:** Implementar la lógica en `visits.service.ts` para comprobar umbrales de parámetros y crear las notificaciones de alerta.
-  - **API de Dashboard:** Crear los endpoints de agregación de datos para los KPIs del Dashboard de Gerencia.
-  - **Evolución de Informes:** Actualizar el `reports.service.ts` para generar el "Informe para Facturación".
-
-#### **DÍA 3: Maratón de Frontend e Integración Final**
-
-- **Estado:** `PENDIENTE`
-- **Objetivo:** Construir todas las interfaces de usuario necesarias.
-- **Tareas Técnicas:**
-  - **Ficha de Cliente:** Añadir la sección de "Configuración de Facturación".
-  - **Página de Informes:** Implementar el selector de modo ("Rentabilidad" vs "Facturación").
-  - **Historial de Pagos:** Añadir la pestaña y formulario de pagos en la ficha del cliente.
-  - **Dashboard de Gerencia:** Construir la primera versión del `ManagerDashboard.tsx` con los KPIs principales y el "Selector de Vista".
-
-### **Tareas de Refinamiento (Post-v1.0)**
-
-Estas son las tareas que teníamos pendientes del hito anterior. Se abordarán después del sprint de la v1.0 para pulir la aplicación.
-
-- **Refinamiento de UI del Módulo de Incidencias:** Realizar una pasada de pulido visual sobre la interfaz de `IncidentDetailPage`.
-- **Mejora a Notificaciones en Tiempo Real:** Implementar WebSockets para que la campana de notificaciones se actualice de forma instantánea.
-
----
-
-## 4. Bloqueos Actuales
-
-- **ESTADO:** `SIN BLOQUEOS`
-- **Descripción:** El bloqueo crítico de frontend que afectaba al módulo de incidencias ha sido **resuelto**. No existen impedimentos técnicos para comenzar la implementación del plan.
+- **Alertas Proactivas por Umbrales.**
+- **Módulo de Estado de Cuentas por Cliente.**
+- **Optimización de Rutas con API de Mapas.**
+- **Gestión de Inventario.**
 
 
 
 // ====== [3] README.md ======
-# Pool-Control Professional: Especificación Funcional y Arquitectónica v10.0
+// ====== [3] README.md ======
+
+# Pool-Control Professional: Especificación Funcional y Arquitectónica v11.0
 
 | **Documentos de Apoyo:** | [Ver Plan de Desarrollo Estratégico](./DEVELOPMENT_PLAN.md) | [Ver Estado Actual del Proyecto](./PROJECT_STATUS.md) |
 | :----------------------- | :---------------------------------------------------------- | :---------------------------------------------------- |
 
 ---
 
-**Fecha de la Versión:** 13 de julio de 2025
+**Fecha de la Versión:** 15 de julio de 2025
 **Proyecto:** Plataforma SaaS de Gestión Integral para Empresas de Mantenimiento de Piscinas.
 
 ---
@@ -308,85 +296,76 @@ Estas son las tareas que teníamos pendientes del hito anterior. Se abordarán d
 
 **Pool-Control Professional** no es una aplicación de gestión más; es una plataforma SaaS (Software como Servicio) concebida para ser el **centro de operaciones digital, proactivo e inteligente** que impulsa a las empresas de mantenimiento de piscinas hacia una nueva era de eficiencia, control y rentabilidad.
 
-Nuestra misión es erradicar las ineficiencias sistémicas que lastran al sector: la dependencia del papel y la desorganización, la comunicación fragmentada que causa errores costosos, la falta de control sobre los costes de materiales y, sobre todo, la incapacidad de tomar decisiones estratégicas basadas en datos. A través de la digitalización, la automatización y la **inteligencia de negocio**, transformamos la gestión reactiva en una **operativa estandarizada, medible y, fundamentalmente, más rentable.**
+Nuestra misión es erradicar las ineficiencias sistémicas que lastran al sector. A través de la digitalización, la automatización y la **inteligencia de negocio**, transformamos la gestión reactiva en una **operativa estandarizada, medible y, fundamentalmente, más rentable.**
 
 ---
 
 ## 2. 👥 Definición de Roles: Un Ecosistema Conectado y Flexible
 
-La plataforma se fundamenta en un sistema de roles diseñado para que cada miembro del equipo tenga exactamente las herramientas que necesita, maximizando la eficiencia y la seguridad.
+La plataforma se fundamenta en un sistema de roles diseñado para maximizar la eficiencia y la seguridad.
 
-| Rol                  | Misión Principal                        | Capacidades Clave y Flujo de Trabajo Detallado                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| :------------------- | :-------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **SuperAdmin**       | **Gestionar la Plataforma SaaS.**       | Responsable del ciclo de vida de los tenants (las empresas clientes). Realiza el CRUD completo sobre los **Tenants** y crea el usuario `ADMIN` inicial para cada nueva empresa. Por diseño, no tiene visibilidad alguna sobre los datos operativos de sus clientes, garantizando la máxima privacidad.                                                                                                                                                                                                                                                                                                                                                                              |
-| **Admin (Isa)**      | **Orquestar la Operativa y Finanzas.**  | Es la "Arquitecta del Servicio". Su misión es configurar, planificar, supervisar y analizar. Define los catálogos de **servicios** y **productos**, gestiona **clientes** y **piscinas**, diseña las **fichas de mantenimiento**, establece los **modelos de facturación** y reglas de precios para cada cliente, planifica las **rutas semanales**, gestiona proactivamente las **incidencias** a través de un sistema de ticketing avanzado y analiza la **rentabilidad** con informes detallados.                                                                                                                                                                                |
-| **Técnico**          | **Ejecutar con Precisión en Campo.**    | Su interfaz está 100% optimizada para la eficiencia en movilidad. Su flujo es simple y directo: consultar su **ruta de trabajo del día** (visitas y tareas especiales), rellenar el **parte de trabajo dinámico** (mediciones, tareas, consumo de productos) y reportar cualquier **incidencia** con notas y fotografías. Es notificado de cualquier actualización sobre sus tareas, manteniendo una comunicación fluida con la oficina.                                                                                                                                                                                                                                            |
-| **Gerencia (Jorge)** | **Analizar y Actuar sobre el Negocio.** | 👑 **El Rol "Camaleón"**. Este es el rol más potente y flexible, diseñado para el propietario o gerente del negocio. Por defecto, opera en un **Modo Supervisor** de solo lectura, enfocado en el análisis estratégico a través de un dashboard con KPIs de alto nivel. Sin embargo, su característica clave es el **"Selector de Vista"**: en caso de necesidad (ej. cubrir una baja), el gerente puede asumir temporalmente la **Vista de Administración** o la **Vista de Técnico**, heredando todas sus funcionalidades. Cada acción realizada, sin importar la vista, queda registrada con su propio usuario, garantizando una auditoría completa y una responsabilidad total. |
+| Rol                  | Misión Principal                        | Capacidades Clave y Flujo de Trabajo Detallado                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| :------------------- | :-------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **SuperAdmin**       | **Gestionar la Plataforma SaaS.**       | Responsable del ciclo de vida de los tenants (las empresas clientes). Realiza el CRUD sobre los **Tenants** y crea el usuario `ADMIN` inicial para cada nueva empresa. Por diseño, no tiene visibilidad alguna sobre los datos operativos de sus clientes.                                                                                                                                                                                                                                  |
+| **Admin (Isa)**      | **Orquestar la Operativa y Finanzas.**  | Es la "Arquitecta del Servicio". Su misión es **diseñar la operativa** y gestionar las excepciones. Define los catálogos, **Zonas geográficas**, y diseña las **Rutas Maestras** semanales. Supervisa la planificación automática, gestiona las incidencias a través de un sistema de ticketing, y analiza la rentabilidad. En el día a día, su foco es **gestionar las excepciones**: reasignar trabajo por bajas, reprogramar visitas vencidas y gestionar órdenes de trabajo especiales. |
+| **Técnico**          | **Ejecutar con Precisión en Campo.**    | Su interfaz está 100% optimizada para la eficiencia en movilidad. Su flujo es simple y directo: consultar su **ruta de trabajo del día** (visitas y tareas especiales), rellenar el **parte de trabajo dinámico** y reportar cualquier **incidencia** con notas y fotografías. Es notificado de cualquier actualización sobre sus tareas.                                                                                                                                                   |
+| **Gerencia (Jorge)** | **Analizar y Actuar sobre el Negocio.** | 👑 **El Rol "Camaleón"**. Este rol potente y flexible opera en un **Modo Supervisor** enfocado en el análisis estratégico a través de un **dashboard con KPIs interactivos**. Su característica clave es el **"Selector de Vista"**: puede asumir temporalmente la **Vista de Administración** para ayudar a planificar o la **Vista de Técnico** para cubrir una ruta. Todas sus acciones quedan auditadas, y puede ser asignatario directo de visitas y tareas.                           |
 
 ---
 
 ## 3. ⚙️ Especificación Funcional: El Ciclo Virtuoso de Operaciones
 
-El sistema opera como un ciclo continuo y perfectamente enlazado: **CONFIGURAR ➔ PLANIFICAR ➔ EJECUTAR ➔ SUPERVISAR ➔ ANALIZAR**.
+El sistema opera bajo el ciclo: **DISEÑAR ➔ PLANIFICAR (AUTOMÁTICO) ➔ EJECUTAR ➔ SUPERVISAR ➔ ANALIZAR**.
 
-### **ETAPA 1: CONFIGURACIÓN (El Cerebro Financiero y Operativo)**
+### **ETAPA 1: DISEÑO DE LA OPERATIVA (El Cerebro del Negocio)**
 
 _Rol: Admin_
 
-- **Pantallas de Catálogos:** Aquí se define el ADN de la empresa.
+- **Configuración de Catálogos y Zonas:** Se define el ADN de la empresa: productos, servicios y **Zonas geográficas** de operación.
+- **Ficha del Cliente (`ClientDetailPage`):** Es el centro de la relación comercial. Aquí se asigna el cliente a una **Zona** y se establecen sus condiciones financieras (`monthlyFee`, `billingModel`, reglas de precios).
+- **Diseño de Rutas Maestras (`RouteTemplatesPage`):**
+  - El `ADMIN` crea rutas (ej. "Lunes - Arenal") y les asocia **Zonas** y un **técnico habitual**.
+  - **Gestión de Estacionalidad:** Para cada ruta, se definen periodos (ej. Verano, Invierno) con distintas **frecuencias de visita**.
 
-  - **Productos:** Se gestiona el inventario, definiendo para cada producto su `coste` (para rentabilidad interna), su `salePrice` (PVP para el cliente), su `taxRate` (IVA) y su `ProductCategory` (familia).
-  - **Parámetros y Tareas:** Se crea la librería de mediciones y acciones, definiendo tipos de datos, unidades y los **umbrales de alerta** (mín/máx) que activarán las notificaciones proactivas.
+### **ETAPA 2: PLANIFICACIÓN AUTOMÁTICA Y GESTIÓN DE EXCEPCIONES**
 
-- **Ficha del Cliente (`ClientDetailPage`):** Mucho más que datos de contacto, es el centro de la relación comercial.
-  - **Configuración Financiera:** Se establece la `monthlyFee` (cuota fija) y el `billingModel` (modelo de contrato: `Todo Incluido`, `Cuota + Materiales`, etc.).
-  - **Reglas de Precios:** Se definen descuentos personalizados para ese cliente, ya sea sobre productos específicos o sobre familias enteras de productos (ej. "100% de descuento en toda la familia de 'Cloros'").
+_Rol: Admin_
 
-### **ETAPA 2: PLANIFICACIÓN Y EJECUCIÓN (El Corazón Operativo)**
+- **Generación Automática de Visitas:** Un proceso nocturno lee las Rutas Maestras y **genera automáticamente el calendario de visitas** para la semana, asignándolas al técnico correspondiente.
+- **Planificador Semanal (`PlannerPage`):** La torre de control del `ADMIN`.
+  - **Visualización:** Muestra el plan semanal generado automáticamente.
+  - **Gestión de Deuda Operativa:** Una columna especial muestra las **visitas de días anteriores que quedaron pendientes**, forzando al `ADMIN` a reprogramarlas (arrastrándolas a un nuevo día).
+  - **Gestión de Bajas:** El `ADMIN` puede marcar a un técnico como "no disponible", moviendo sus visitas a una columna de **"Trabajo Huérfano"** para una fácil reasignación a otros técnicos.
+  - **Órdenes de Trabajo Especiales:** Permite crear visitas únicas y urgentes que no pertenecen a una ruta recurrente y asignarlas manualmente.
 
-_Roles: Admin, Técnico_
+### **ETAPA 3: EJECUCIÓN Y REPORTE EN CAMPO**
 
-- **Planificador Semanal (`PlannerPage`):** Una interfaz visual `Drag & Drop` donde el `ADMIN` asigna visitas. La interfaz ofrece feedback visual instantáneo sobre el estado de las visitas (verde para OK, rojo para incidencia).
-- **Parte de Trabajo Dinámico (`WorkOrderPage`):** La herramienta de campo del técnico. Un formulario inteligente generado a partir de la ficha de la piscina. El técnico registra valores y consumos, y puede reportar una **incidencia** con notas detalladas y **múltiples fotografías**.
+_Rol: Técnico_
 
-### **ETAPA 3: SUPERVISIÓN Y GESTIÓN DE INCIDENCIAS (Control de Calidad Proactivo)**
+- **Ruta del Día Optimizada (`MyRoutePage`):** El técnico ve su lista de visitas para hoy, en el orden definido por el `ADMIN`.
+- **Parte de Trabajo Dinámico (`WorkOrderPage`):** El técnico registra mediciones, tareas, consumos y reporta incidencias con fotos. El sistema puede generar **alertas automáticas** si un parámetro está fuera de los umbrales de seguridad.
 
-_Roles: Admin, Gerencia, Técnico_
-
-- **Dashboard del Administrador (`AdminDashboard`):** Una "torre de control" con widgets en tiempo real. Las **visitas son clicables** para un acceso directo al parte. Las incidencias activas se resaltan con un **borde rojo intenso** si son críticas.
-- **Gestión de Incidencias Avanzada (`IncidentDetailPage`):** Un centro de mando para la resolución de problemas. El `ADMIN` puede crear **Tareas de Seguimiento (`IncidentTask`)** y asignarlas a **cualquier usuario**. Se establece un **hilo de comunicación bidireccional** con notificaciones automáticas para cada comentario o cambio de estado, y todas las acciones quedan registradas en un **historial de auditoría inmutable**.
-
-### **ETAPA 4: ANÁLISIS Y GESTIÓN FINANCIERA (Inteligencia de Negocio)**
+### **ETAPA 4: SUPERVISIÓN Y ANÁLISIS**
 
 _Roles: Admin, Gerencia_
 
-- **Página de Informes (`ConsumptionReportPage`):**
-  - **Doble Visión:** Permite generar tanto un **Informe de Rentabilidad Interna** (basado en `coste` y gastos) como un **Informe para Facturación** (basado en `salePrice`, `monthlyFee` y reglas de descuento).
-  - **Desglose Interactivo Total (Drill-Down):** Permite auditar un dato desde el nivel más alto hasta el origen: `Coste Total Cliente ➔ Desglose por Producto ➔ Lista de Visitas con ese consumo ➔ Parte de Trabajo original`.
-  - **Exportación a CSV:** Permite descargar los datos para su uso en programas de contabilidad.
-- **Registro de Pagos y Saldos:** En la ficha del cliente, se podrá registrar pagos y visualizar un historial, manteniendo un control claro sobre los saldos pendientes.
+- **Dashboard de Gerencia (`ManagerDashboard`):** Un centro de mando con KPIs dinámicos y widgets interactivos que permiten navegar desde una métrica general (ej. "Coste de Productos") hasta el detalle más profundo (el parte de trabajo que generó ese coste).
+- **Gestión de Incidencias (`IncidentDetailPage`):** Sistema de ticketing avanzado para la resolución colaborativa de problemas.
+- **Informes Financieros:** El sistema permite generar tanto informes de **Rentabilidad Interna** (basados en costes) como informes para **Facturación** (basados en precios de venta y cuotas).
+- **Estado de Cuentas por Cliente (Planificado):** Una vista para controlar los saldos pendientes de cada cliente mes a mes, identificando pagos atrasados.
 
 ---
 
 ## 4. 🗺️ Hoja de Ruta y Visión de Futuro
 
-### **Sprint Final v1.0 (Próximos 3 Días)**
+Nuestro enfoque se centra en consolidar la plataforma como una solución ERP integral para el sector.
 
-Nuestro enfoque inmediato para tener una versión de presentación increíblemente potente.
-
-- **Dashboard de Gerencia Avanzado:** Implementar la vista principal para el rol `MANAGER`, con KPIs y el "Selector de Vista".
-- **Motor Financiero Completo:** Implementar la lógica para manejar `Precios de Venta`, `IVA`, `Modelos de Facturación` y `Reglas de Descuento`.
-- **Alertas Proactivas por Umbrales:** Desarrollar la lógica para notificar automáticamente cuando los parámetros se salgan de los rangos de seguridad.
-- **Historial de Pagos y Saldos:** Implementar la capacidad de registrar pagos y visualizar el estado de cuenta de un cliente.
-
-### **Visión Post-v1.0**
-
-- **Gestión de Inventario y Compras:** Un módulo completo para controlar el stock, definir mínimos/máximos y generar informes de necesidades o propuestas de compra.
-- **Modo Offline (PWA):** Permitir a los técnicos trabajar sin conexión a internet.
-
-### **Visión a Largo Plazo**
-
-- **Módulo de Facturación y Contabilidad Completo:** La evolución final. Permitiría generar facturas con validez legal, gestionar impuestos, crear presupuestos y pedidos, y adaptarse a las normativas contables de diferentes países, convirtiendo a Pool-Control Professional en una solución ERP todo en uno para el sector.
+- **Sprint Actual:** Implementación del núcleo de la **Planificación Avanzada (Zonas y Rutas Maestras)**.
+- **Próximos Pasos:**
+  - **Alertas Proactivas por Umbrales:** Notificaciones automáticas por mediciones fuera de rango.
+  - **Módulo de Estado de Cuentas:** Control de saldos y pagos pendientes.
+  - **Gestión de Inventario y Compras.**
+  - **Modo Offline (PWA) para Técnicos.**
 
 
 
@@ -700,16 +679,21 @@ export function AdminDashboard() {
 
 
 // ====== [10] packages/client/src/features/admin/pages/IncidentsHistoryPage.tsx ======
+// ====== [10] packages/client/src/features/admin/pages/IncidentsHistoryPage.tsx ======
 // filename: packages/client/src/features/admin/pages/IncidentsHistoryPage.tsx
-// version: 2.3.0
-// description: Convierte las filas de la tabla en enlaces a la nueva página de detalles de la incidencia.
+// version: 2.5.1 (FIX: Remove unused imports)
+// description: Cleaned up unused imports after refactoring.
 
-import { useEffect, useState, useRef } from 'react';
-import { Container, Title, Table, Loader, Alert, Badge, ActionIcon, Tooltip, Text, Select, Grid, Pagination, Center } from '@mantine/core';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+// ✅ 1. Eliminar useRef
+import { Container, Title, Table, Loader, Alert, Badge, ActionIcon, Tooltip, Select, Grid, Pagination, Center } from '@mantine/core';
+// ✅ 2. Eliminar Text
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import apiClient from '../../../api/apiClient';
-import { format, formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { } from 'date-fns';
+// ✅ 3. Eliminar es
+import 'date-fns/locale/es';
+
 
 // --- Tipos de Datos ---
 type IncidentStatus = 'PENDING' | 'RESOLVED';
@@ -717,7 +701,6 @@ type IncidentPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
 
 interface IncidentHistoryItem {
   id: string;
-  createdAt: string;
   message: string;
   status: IncidentStatus;
   priority: IncidentPriority | null;
@@ -751,33 +734,37 @@ export function IncidentsHistoryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  const [activePage, setPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [activePage, setPage] = useState(parseInt(searchParams.get('page') || '1', 10));
   const [totalPages, setTotalPages] = useState(0);
   const PAGE_SIZE = 10;
+  
+  const [filterStatus, setFilterStatus] = useState<string | null>(searchParams.get('status') || 'PENDING');
+  const [filterClient, setFilterClient] = useState<string | null>(searchParams.get('clientId') || null);
 
-  const [filterStatus, setFilterStatus] = useState<string | null>('PENDING');
-  const [filterClient, setFilterClient] = useState<string | null>(null);
-
-  const isInitialMount = useRef(true);
-  const navigate = useNavigate(); // <-- Hook para la navegación
+  const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isInitialMount.current) {
-        setPage(1);
-    }
-  }, [filterStatus, filterClient]);
+    const params = new URLSearchParams();
+    if (filterStatus) params.set('status', filterStatus);
+    if (filterClient) params.set('clientId', filterClient);
+    if (activePage > 1) params.set('page', activePage.toString());
+    
+    setSearchParams(params, { replace: true });
 
+  }, [filterStatus, filterClient, activePage, setSearchParams]);
 
   useEffect(() => {
     const fetchHistory = async () => {
       setIsLoading(true);
       setError(null);
-      try {
-        const params: Record<string, any> = { page: activePage, pageSize: PAGE_SIZE, status: filterStatus, clientId: filterClient };
-        Object.keys(params).forEach(key => (params[key] == null || params[key] === '') && delete params[key]);
+      
+      const params: Record<string, any> = { page: activePage, pageSize: PAGE_SIZE, status: filterStatus, clientId: filterClient };
+      Object.keys(params).forEach(key => (params[key] == null || params[key] === '') && delete params[key]);
 
+      try {
         const response = await apiClient.get<ApiResponse<PaginatedResponse>>('/notifications/history', { params });
-        
         const { notifications, total } = response.data.data;
         setIncidents(notifications);
         setTotalPages(Math.ceil(total / PAGE_SIZE));
@@ -785,7 +772,6 @@ export function IncidentsHistoryPage() {
         setError('No se pudo cargar el historial de incidencias.');
       } finally {
         setIsLoading(false);
-        isInitialMount.current = false;
       }
     };
 
@@ -808,7 +794,6 @@ export function IncidentsHistoryPage() {
     fetchClients();
   }, []);
   
-  // --- Manejador para la navegación ---
   const handleRowClick = (notificationId: string) => {
     navigate(`/incidents/${notificationId}`);
   };
@@ -821,17 +806,12 @@ export function IncidentsHistoryPage() {
       key={item.id} 
       style={{ 
         backgroundColor: item.isCritical ? 'var(--mantine-color-red-0)' : 'transparent',
-        cursor: 'pointer' // <-- Cambia el cursor para indicar que es clicable
+        cursor: 'pointer'
       }}
-      onClick={() => handleRowClick(item.id)} // <-- Añadimos el evento onClick
+      onClick={() => handleRowClick(item.id)}
       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--mantine-color-gray-1)'}
       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = item.isCritical ? 'var(--mantine-color-red-0)' : 'transparent'}
     >
-      <Table.Td>
-        <Tooltip label={format(new Date(item.createdAt), 'dd/MM/yyyy HH:mm')}>
-            <Text size="sm">{formatDistanceToNow(new Date(item.createdAt), { addSuffix: true, locale: es })}</Text>
-        </Tooltip>
-      </Table.Td>
       <Table.Td>{item.visit?.pool?.client?.name || 'N/A'}</Table.Td>
       <Table.Td>{item.visit?.pool?.name || 'N/A'}</Table.Td>
       <Table.Td>{item.visit?.technician?.name || 'N/A'}</Table.Td>
@@ -848,7 +828,6 @@ export function IncidentsHistoryPage() {
       <Table.Td>
         {item.visit && (
           <Tooltip label="Ver Parte de Trabajo Original">
-            {/* Detenemos la propagación para que al hacer clic en el icono no navegue a la página de detalle de incidencia */}
             <ActionIcon component={Link} to={`/visits/${item.visit.id}`} variant="subtle" onClick={(e) => e.stopPropagation()}>
               📄
             </ActionIcon>
@@ -873,7 +852,7 @@ export function IncidentsHistoryPage() {
         <Grid.Col span={{ base: 12, sm: 4 }}>
           <Select
             label="Filtrar por Estado" placeholder="Todos los estados"
-            value={filterStatus} onChange={setFilterStatus}
+            value={filterStatus} onChange={(value) => { setFilterStatus(value); setPage(1); }}
             data={[ { value: 'PENDING', label: 'Pendientes' }, { value: 'RESOLVED', label: 'Resueltas' } ]}
             clearable
           />
@@ -883,7 +862,6 @@ export function IncidentsHistoryPage() {
       <Table striped withTableBorder withColumnBorders mt="md">
         <Table.Thead>
             <Table.Tr>
-              <Table.Th>Antigüedad</Table.Th>
               <Table.Th>Cliente</Table.Th>
               <Table.Th>Piscina</Table.Th>
               <Table.Th>Técnico</Table.Th>
@@ -893,7 +871,7 @@ export function IncidentsHistoryPage() {
             </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-            {rows.length > 0 ? rows : <Table.Tr><Table.Td colSpan={7}>No se han encontrado incidencias con los filtros seleccionados.</Table.Td></Table.Tr>}
+            {rows.length > 0 ? rows : <Table.Tr><Table.Td colSpan={6}>No se han encontrado incidencias con los filtros seleccionados.</Table.Td></Table.Tr>}
         </Table.Tbody>
       </Table>
       
@@ -2117,8 +2095,9 @@ export function ClientsPage() {
 
 
 // ====== [17] packages/client/src/features/admin/pages/incidents/IncidentDetailPage.tsx ======
+// ====== [17] packages/client/src/features/admin/pages/incidents/IncidentDetailPage.tsx ======
 // filename: packages/client/src/features/admin/pages/incidents/IncidentDetailPage.tsx
-// version: 2.8.0 (Cleaned)
+// version: 2.8.1 (FIX: Use existing visit timestamp instead of createdAt)
 
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
@@ -2149,9 +2128,10 @@ interface IncidentTask {
   priority: IncidentPriority; deadline: string | null; assignedTo: User | null; resolutionNotes: string | null;
 }
 interface NotificationDetails {
-  id:string; message: string; status: IncidentStatus; priority: IncidentPriority | null; createdAt: string;
+  id:string; message: string; status: IncidentStatus; priority: IncidentPriority | null;
+  // createdAt no existe, lo quitamos de la interfaz para ser precisos
   images: IncidentImage[];
-  visit: { id: string; pool: { name: string; }; technician: { name: string } | null; } | null;
+  visit: { id: string; timestamp: string; pool: { name: string; }; technician: { name: string } | null; } | null;
 }
 interface ApiResponse<T> { success: boolean; data: T; }
 const taskStatusColors: Record<IncidentTaskStatus, string> = { PENDING: 'gray', IN_PROGRESS: 'blue', COMPLETED: 'green', CANCELLED: 'red' };
@@ -2159,6 +2139,7 @@ const priorityColors: Record<IncidentPriority, string> = { LOW: 'gray', NORMAL: 
 
 // ===================================================================
 // --- VISTA PARA EL TÉCNICO ---
+// (Componente sin cambios, se omite por brevedad)
 // ===================================================================
 const TechnicianTaskView = ({ tasks, onUpdate }: { tasks: IncidentTask[], onUpdate: () => void }) => {
   const { user } = useAuth();
@@ -2280,9 +2261,9 @@ const TechnicianTaskView = ({ tasks, onUpdate }: { tasks: IncidentTask[], onUpda
   );
 };
 
-
 // ===================================================================
 // --- VISTA PARA EL ADMIN ---
+// (Componente sin cambios, se omite por brevedad)
 // ===================================================================
 const AdminIncidentView = ({ notification, tasks, technicians, onUpdate }: { notification: NotificationDetails, tasks: IncidentTask[], technicians: User[], onUpdate: () => void }) => {
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
@@ -2364,7 +2345,6 @@ const AdminIncidentView = ({ notification, tasks, technicians, onUpdate }: { not
         handleViewLogs(tasks[0]);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tasks]); 
   
   const handleAcceptDeadline = async (taskId: string, logDetails: string) => {
@@ -2548,7 +2528,13 @@ export function IncidentDetailPage() {
 
       <Paper withBorder p="md" mb="xl">
         <Group justify="space-between"><Title order={4}>Reporte Original</Title><Badge color={notification.status === 'PENDING' ? 'orange' : 'green'} size="lg">{notification.status}</Badge></Group>
-        <Text size="sm" c="dimmed" mt="xs">Reportado por {notification.visit?.technician?.name || 'Sistema'} el {format(new Date(notification.createdAt), 'd MMM yyyy, HH:mm', { locale: es })}</Text>
+        
+        {/* ✅ CORRECCIÓN: Usar una fecha que sí existe y proteger contra valores nulos */}
+        <Text size="sm" c="dimmed" mt="xs">
+          Reportado por {notification.visit?.technician?.name || 'Sistema'}
+          {notification.visit?.timestamp && ` el ${format(new Date(notification.visit.timestamp), 'd MMM yyyy, HH:mm', { locale: es })}`}
+        </Text>
+
         <Textarea value={notification.message} readOnly minRows={2} mt="md" label="Mensaje del técnico" />
         {notification.images && notification.images.length > 0 && (
           <><Text fw={500} size="sm" mt="md">Imágenes Adjuntas:</Text><SimpleGrid cols={{ base: 2, sm: 4, lg: 6 }} mt="xs">{notification.images.map(image => (<Paper key={image.id} withBorder radius="md" style={{ cursor: 'pointer' }} onClick={() => handleImageClick(image.url)}><Image src={image.url} height={100} radius="md" fit="cover" /></Paper>))}</SimpleGrid></>
@@ -3950,13 +3936,19 @@ export function InvoicingReportPage() {
 
 
 // ====== [25] packages/client/src/features/manager/pages/ManagerDashboard.tsx ======
+// ====== [25] packages/client/src/features/manager/pages/ManagerDashboard.tsx ======
 // filename: packages/client/src/features/manager/pages/ManagerDashboard.tsx
-// version: 1.1.6 (FEAT: Link financial widget to report page)
-// description: Makes the financial widget clickable, navigating to the new invoicing report page.
+// version: 2.4.0 (FEAT: Add Team Performance widget)
+// description: Added a new widget to the dashboard to display team performance metrics with a bar chart comparing technicians.
 
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Container, Title, Grid, Paper, Text, Loader, Alert, Center, RingProgress, Stack, Group, Anchor } from '@mantine/core';
+import { Container, Title, Grid, Paper, Text, Loader, Alert, Center, RingProgress, Stack, Group, Anchor, Badge } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
+import type { DatesRangeValue } from '@mantine/dates';
+import 'dayjs/locale/es';
+import { subDays, endOfDay } from 'date-fns';
+
 import { Bar, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -3967,6 +3959,9 @@ import {
   Tooltip,
   Legend,
   ArcElement,
+  type ChartEvent,
+  type ActiveElement,
+  type TooltipItem
 } from 'chart.js';
 import type { ChartData, ChartOptions } from 'chart.js';
 import apiClient from '../../../api/apiClient';
@@ -3984,8 +3979,21 @@ ChartJS.register(
 interface DashboardData {
   financials: { totalRevenue: number; totalCosts: number; netProfit: number; };
   incidents: { openIncidents: number; resolvedThisMonth: number; avgResolutionTimeHours: number | null; };
-  topClientsByProfit: { clientId: string; clientName: string; netProfit: number; }[];
+  topClientsByProfit: { 
+    clientId: string; 
+    clientName: string; 
+    netProfit: number;
+    totalRevenue: number;
+    totalCosts: number;
+  }[];
   topProductsByCost: { productId: string; productName: string; totalCost: number; }[];
+  // ✅ 1. Actualizar la interfaz para incluir los nuevos datos
+  teamPerformance: {
+    technicianId: string;
+    technicianName: string;
+    completedVisits: number;
+    completedTasks: number;
+  }[];
 }
 
 const formatCurrency = (amount: number) => {
@@ -3997,11 +4005,28 @@ export function ManagerDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  const [dateRange, setDateRange] = useState<DatesRangeValue>([
+    subDays(new Date(), 30),
+    endOfDay(new Date()),
+  ]);
   
   useEffect(() => {
     const fetchData = async () => {
+      const [startDateValue, endDateValue] = dateRange;
+      if (!startDateValue || !endDateValue) return;
+
+      setIsLoading(true);
       try {
-        const response = await apiClient.get<{ success: boolean; data: DashboardData }>('/dashboard/manager');
+        const startDate = new Date(startDateValue);
+        const endDate = new Date(endDateValue);
+        
+        const response = await apiClient.get<{ success: boolean; data: DashboardData }>('/dashboard/manager', {
+          params: {
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString()
+          }
+        });
         setData(response.data.data);
       } catch (err) {
         setError('No se pudieron cargar los datos del dashboard.');
@@ -4011,13 +4036,25 @@ export function ManagerDashboard() {
       }
     };
     fetchData();
-  }, []);
+  }, [dateRange]);
 
   if (isLoading) return <Center style={{ height: '100%' }}><Loader size="xl" /></Center>;
   if (error) return <Alert color="red" title="Error">{error}</Alert>;
   if (!data) return <Alert color="yellow">No hay datos disponibles para mostrar.</Alert>;
   
   const profitMargin = data.financials.totalRevenue > 0 ? (data.financials.netProfit / data.financials.totalRevenue) * 100 : 0;
+  
+  const handleProductChartClick = (_event: ChartEvent, elements: ActiveElement[]) => {
+    const element = elements[0];
+    if (element && data) {
+      const elementIndex = element.index;
+      const product = data.topProductsByCost[elementIndex];
+      if (product) {
+        navigate(`/reports/consumption?productId=${product.productId}`);
+      }
+    }
+  };
+
 
   const topProductsChartData: ChartData<'doughnut'> = {
     labels: data.topProductsByCost.map(p => p.productName),
@@ -4027,56 +4064,106 @@ export function ManagerDashboard() {
       backgroundColor: ['rgba(255, 99, 132, 0.5)','rgba(54, 162, 235, 0.5)','rgba(255, 206, 86, 0.5)','rgba(75, 192, 192, 0.5)','rgba(153, 102, 255, 0.5)'],
     }]
   };
+  
+  const topProductsChartOptions: ChartOptions<'doughnut'> = {
+    responsive: true, maintainAspectRatio: false, onClick: handleProductChartClick,
+    plugins: { legend: { position: 'right' } }
+  };
 
   const topClientsChartData: ChartData<'bar'> = {
     labels: data.topClientsByProfit.map(c => c.clientName),
     datasets: [{
       label: 'Beneficio Neto',
       data: data.topClientsByProfit.map(c => c.netProfit),
-      backgroundColor: 'rgba(75, 192, 192, 0.5)',
-      borderColor: 'rgba(75, 192, 192, 1)',
-      borderWidth: 1,
+      backgroundColor: 'rgba(75, 192, 192, 0.5)', borderColor: 'rgba(75, 192, 192, 1)', borderWidth: 1,
     }]
   };
 
   const topClientsChartOptions: ChartOptions<'bar'> = {
-    indexAxis: 'y',
-    responsive: true,
-    maintainAspectRatio: false,
+    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
     onClick: (_, elements) => {
         const element = elements[0];
         if (element && data?.topClientsByProfit) {
-            const clientIndex = element.index;
-            const client = data.topClientsByProfit[clientIndex];
-            if (client) {
-                navigate(`/clients/${client.clientId}`);
-            }
+            const client = data.topClientsByProfit[element.index];
+            if (client) navigate(`/clients/${client.clientId}`);
         }
     },
     plugins: {
         legend: { display: false },
-        title: { display: true, text: 'Beneficio Neto en los últimos 30 días' }
+        title: { display: true, text: 'Beneficio Neto en el Periodo' },
+        tooltip: {
+          callbacks: {
+            label: function(context: TooltipItem<'bar'>) {
+              const clientData = data.topClientsByProfit[context.dataIndex];
+              if (!clientData) return '';
+              const margin = clientData.totalRevenue > 0 ? (clientData.netProfit / clientData.totalRevenue) * 100 : 0;
+              return [
+                `Beneficio: ${formatCurrency(clientData.netProfit)}`,
+                `  Ingresos: ${formatCurrency(clientData.totalRevenue)}`,
+                `  Costes: ${formatCurrency(clientData.totalCosts)}`,
+                `  Margen: ${margin.toFixed(1)}%`
+              ];
+            }
+          }
+        }
+    }
+  };
+
+  // ✅ 2. Definir datos y opciones para el nuevo gráfico
+  const teamPerformanceChartData: ChartData<'bar'> = {
+    labels: data.teamPerformance.map(t => t.technicianName),
+    datasets: [
+      {
+        label: 'Visitas Completadas',
+        data: data.teamPerformance.map(t => t.completedVisits),
+        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+      },
+      {
+        label: 'Tareas Resueltas',
+        data: data.teamPerformance.map(t => t.completedTasks),
+        backgroundColor: 'rgba(255, 159, 64, 0.5)',
+      }
+    ]
+  };
+
+  const teamPerformanceChartOptions: ChartOptions<'bar'> = {
+    responsive: true, maintainAspectRatio: false,
+    scales: { x: { stacked: true }, y: { stacked: true } },
+    onClick: (_, elements) => {
+        const element = elements[0];
+        if (element && data?.teamPerformance) {
+            const tech = data.teamPerformance[element.index];
+            if (tech) {
+              // TODO: Navegar a una futura página de detalle de técnico
+              console.log("Clicked on technician:", tech.technicianId);
+            }
+        }
+    },
+    plugins: {
+      title: { display: true, text: 'Productividad por Técnico en el Periodo' }
     }
   };
 
   return (
     <Container fluid>
       <Title order={2} mb="xl">Dashboard de Gerencia</Title>
+      
+      <Paper withBorder p="md" shadow="sm" mb="xl">
+        <DatePickerInput
+          type="range" label="Seleccione el Periodo de Análisis" placeholder="Inicio - Fin"
+          value={dateRange} onChange={setDateRange} locale="es" maw={400}
+        />
+      </Paper>
+
       <Grid>
-        {/* Widget Salud Financiera */}
         <Grid.Col span={{ base: 12, md: 6, lg: 4 }}>
-          {/* ✅ Se envuelve el Paper en un Anchor para hacerlo clicable */}
           <Anchor component={Link} to="/reports/invoicing" underline="never">
             <Paper withBorder p="md" shadow="sm" h="100%">
-              <Title order={4} mb="md">Salud Financiera (Últimos 30 días)</Title>
+              <Title order={4} mb="md">Salud Financiera (Periodo)</Title>
               <Group justify="space-around" align="center">
-                  <RingProgress
-                      size={140}
-                      thickness={14}
-                      roundCaps
+                  <RingProgress size={140} thickness={14} roundCaps
                       label={<Text c="blue" fw={700} ta="center" size="xl">{profitMargin.toFixed(1)}%</Text>}
-                      sections={[{ value: profitMargin, color: 'blue' }]}
-                  />
+                      sections={[{ value: profitMargin, color: 'blue' }]} />
                   <Stack gap="xs">
                       <Text>Ingresos: {formatCurrency(data.financials.totalRevenue)}</Text>
                       <Text>Costes: {formatCurrency(data.financials.totalCosts)}</Text>
@@ -4087,41 +4174,48 @@ export function ManagerDashboard() {
           </Anchor>
         </Grid.Col>
 
-        {/* Widget Estado de Incidencias */}
         <Grid.Col span={{ base: 12, md: 6, lg: 4 }}>
           <Paper withBorder p="md" shadow="sm" h="100%">
             <Title order={4} mb="md">Estado de Incidencias</Title>
             <Group justify="space-around" align="flex-end" h="80%">
-                <Stack align="center" gap={0}>
-                    <Text size="3rem" fw={700} c="orange">{data.incidents.openIncidents}</Text>
-                    <Text c="dimmed">Abiertas</Text>
-                </Stack>
+                <Anchor component={Link} to="/incidents-history?status=PENDING" underline="never">
+                  <Stack align="center" gap={0} style={{ cursor: 'pointer' }}>
+                      <Text size="3rem" fw={700} c="orange">{data.incidents.openIncidents}</Text>
+                      <Badge color="orange" variant="light" size="lg">Abiertas (Total)</Badge>
+                  </Stack>
+                </Anchor>
                 <Stack align="center" gap={0}>
                     <Text size="3rem" fw={700} c="green">{data.incidents.resolvedThisMonth}</Text>
-                    <Text c="dimmed">Resueltas (Mes)</Text>
+                    <Text c="dimmed">Resueltas (Periodo)</Text>
                 </Stack>
             </Group>
           </Paper>
         </Grid.Col>
 
-        {/* Widget Top 5 Productos por Coste */}
         <Grid.Col span={{ base: 12, lg: 4 }}>
           <Paper withBorder p="md" shadow="sm" h="100%">
-            <Title order={4} mb="md">Top 5 Productos por Coste</Title>
+            <Title order={4} mb="md">Top 5 Productos por Coste (Periodo)</Title>
             <Center style={{maxHeight: 250}}>
-                <Doughnut data={topProductsChartData} options={{ responsive: true, maintainAspectRatio: false }} />
+                <Doughnut data={topProductsChartData} options={topProductsChartOptions} />
             </Center>
           </Paper>
         </Grid.Col>
 
-        <Grid.Col span={12}>
-          <Paper withBorder p="md" shadow="sm">
-            <Title order={4} mb="md">Top 5 Clientes por Rentabilidad</Title>
+        <Grid.Col span={{ base: 12, md: 7 }}>
+          <Paper withBorder p="md" shadow="sm" h="100%">
+            <Title order={4} mb="md">Top 5 Clientes por Rentabilidad (Periodo)</Title>
             <div style={{ height: '300px' }}>
-                <Bar 
-                    data={topClientsChartData}
-                    options={topClientsChartOptions}
-                />
+                <Bar data={topClientsChartData} options={topClientsChartOptions} />
+            </div>
+          </Paper>
+        </Grid.Col>
+        
+        {/* ✅ 3. Añadir el nuevo widget al layout */}
+        <Grid.Col span={{ base: 12, md: 5 }}>
+          <Paper withBorder p="md" shadow="sm" h="100%">
+             <Title order={4} mb="md">Rendimiento del Equipo</Title>
+             <div style={{ height: '300px' }}>
+                <Bar data={teamPerformanceChartData} options={teamPerformanceChartOptions} />
             </div>
           </Paper>
         </Grid.Col>
@@ -5192,8 +5286,10 @@ export const FinancialAdminRoute = () => {
 
 
 // ====== [32] packages/client/src/router/index.tsx ======
+// ====== [32] packages/client/src/router/index.tsx ======
 // filename: packages/client/src/router/index.tsx
-// Version: 2.5.0 (REFACTOR: Use FinancialAdminRoute and activeRole for navigation logic)
+// Version: 2.6.1 (FIX: Use correct route guard for incidents history)
+// description: Changed the route guard for '/incidents-history' from AdminRoute to FinancialAdminRoute to allow access for Managers.
 
 import { createBrowserRouter } from 'react-router-dom';
 import { LoginPage } from '../features/auth/pages/LoginPage.js';
@@ -5213,6 +5309,7 @@ import { IncidentsHistoryPage } from '../features/admin/pages/IncidentsHistoryPa
 import { IncidentDetailPage } from '../features/admin/pages/incidents/IncidentDetailPage.js';
 import { ManagerDashboard } from '../features/manager/pages/ManagerDashboard.js';
 import { InvoicingReportPage } from '../features/manager/pages/InvoicingReportPage.js';
+import { ConsumptionReportPage } from '../features/admin/pages/reports/ConsumptionReportPage.js';
 import { PaymentsPage } from '../features/financials/pages/PaymentsPage.js';
 import { ExpensesPage } from '../features/financials/pages/ExpensesPage.js';
 import { useAuth } from '../providers/AuthProvider.js';
@@ -5222,7 +5319,7 @@ import {
   SuperAdminRoute,
   AdminRoute,
   TechnicianRoute,
-  FinancialAdminRoute, // <-- Se importa el componente de ruta renombrado
+  FinancialAdminRoute,
 } from './components.js';
 
 // Este componente decide qué dashboard mostrar basado en el rol activo (respetando el "rol camaleón")
@@ -5255,9 +5352,9 @@ export const router = createBrowserRouter([
           { index: true, element: <RoleBasedDashboard /> },
           {
             path: 'reports',
-            // Se usa la nueva ruta que permite acceso a ADMIN y MANAGER
             element: <FinancialAdminRoute />, 
             children: [
+                { path: 'consumption', element: <ConsumptionReportPage /> },
                 { path: 'invoicing', element: <InvoicingReportPage /> }
             ]
           },
@@ -5294,7 +5391,8 @@ export const router = createBrowserRouter([
           },
           {
             path: 'incidents-history',
-            element: <AdminRoute />,
+            // ✅ CORRECCIÓN: Usar la guarda que permite acceso a Manager y Admin.
+            element: <FinancialAdminRoute />,
             children: [ { index: true, element: <IncidentsHistoryPage /> } ],
           },
           {
@@ -5603,17 +5701,16 @@ export const taskData = [
 
 
 // ====== [40] packages/server/prisma/data/clients.ts ======
+// ====== [40] packages/server/prisma/data/clients.ts ======
 // filename: packages/server/prisma/data/clients.ts
-// version: 2.0.0
-// description: Añade modelo de facturación y cuota mensual a cada cliente.
+// version: 3.0.0
+// description: Asigna una zona a cada piscina.
 
 import type { BillingModel } from '@prisma/client';
 
 /**
  * Define la cartera de clientes de la empresa de prueba.
- * Cada cliente tiene un array de piscinas asociadas. Esta estructura anidada
- * facilita la creación de ambas entidades y sus relaciones en el script de seed.
- * La variedad de clientes y modelos de facturación permite probar múltiples escenarios.
+ * Cada piscina ahora tiene un `zoneName` para vincularla a una zona geográfica.
  */
 export const clientsData = [
   // --- Cliente 1: Comunidad de Propietarios (Cuota + Materiales) ---
@@ -5625,7 +5722,6 @@ export const clientsData = [
       phone: '611223344',
       address: 'Calle de la Concordia, 1, 28080 Madrid',
       priceModifier: 1.0,
-      // --- NUEVOS DATOS ---
       monthlyFee: 350.0,
       billingModel: 'FEE_PLUS_MATERIALS' as BillingModel,
     },
@@ -5635,12 +5731,16 @@ export const clientsData = [
         address: 'Calle de la Concordia, 1, Zonas Comunes, 28080 Madrid',
         volume: 150,
         type: 'Cloro',
+        // ✅ ASIGNACIÓN DE ZONA
+        zoneName: 'Arenal',
       },
       {
         name: 'Piscina Infantil',
         address: 'Calle de la Concordia, 1, Zona Infantil, 28080 Madrid',
         volume: 25,
         type: 'Cloro',
+        // ✅ ASIGNACIÓN DE ZONA
+        zoneName: 'Arenal',
       },
     ],
   },
@@ -5653,8 +5753,7 @@ export const clientsData = [
       email: 'perez.lopez.familia@email.com',
       phone: '655667788',
       address: 'Avenida de la Brisa, 45, Urbanización Mirasierra, 28035 Madrid',
-      priceModifier: 1.1, // Cliente premium, paga un 10% más sobre el PVP base si algo no estuviera incluido.
-      // --- NUEVOS DATOS ---
+      priceModifier: 1.1,
       monthlyFee: 220.0,
       billingModel: 'ALL_INCLUSIVE' as BillingModel,
     },
@@ -5664,6 +5763,8 @@ export const clientsData = [
         address: 'Avenida de la Brisa, 45, 28035 Madrid',
         volume: 75,
         type: 'Sal',
+        // ✅ ASIGNACIÓN DE ZONA
+        zoneName: 'Montgó',
       },
     ],
   },
@@ -5676,8 +5777,7 @@ export const clientsData = [
       email: 'mantenimiento@costaserena-hotel.com',
       phone: '911223344',
       address: 'Paseo del Relax, 2, 28010 Madrid',
-      priceModifier: 0.95, // Cliente grande con descuento del 5% sobre el PVP base.
-      // --- NUEVOS DATOS ---
+      priceModifier: 0.95,
       monthlyFee: 0.0,
       billingModel: 'SERVICE_ONLY' as BillingModel,
     },
@@ -5687,6 +5787,8 @@ export const clientsData = [
         address: 'Paseo del Relax, 2, Zona de Jardines, 28010 Madrid',
         volume: 250,
         type: 'Cloro',
+        // ✅ ASIGNACIÓN DE ZONA
+        zoneName: 'Puerto',
       },
     ],
   },
@@ -5700,7 +5802,6 @@ export const clientsData = [
       phone: '918765432',
       address: 'Calle del Músculo, 12, 28020 Madrid',
       priceModifier: 1.0,
-      // --- NUEVOS DATOS ---
       monthlyFee: 250.0,
       billingModel: 'FEE_PLUS_MATERIALS' as BillingModel,
     },
@@ -5710,6 +5811,8 @@ export const clientsData = [
         address: 'Calle del Músculo, 12, Sótano, 28020 Madrid',
         volume: 100,
         type: 'Cloro',
+        // ✅ ASIGNACIÓN DE ZONA
+        zoneName: 'Pueblo',
       },
     ],
   },
@@ -5717,51 +5820,72 @@ export const clientsData = [
 
 
 // ====== [41] packages/server/prisma/data/consumptions.ts ======
+// ====== [41] packages/server/prisma/data/consumptions.ts ======
 // filename: packages/server/prisma/data/consumptions.ts
-// version: 1.0.0
-// description: Datos de semilla para los consumos de productos en las visitas.
+// version: 2.0.0
+// description: Datos de semilla enriquecidos para los consumos de productos en las visitas, para una demo más visual.
 
 /**
  * Define un conjunto de consumos de productos para las visitas de prueba.
- * * - `visitNotesIdentifier`: Un fragmento de texto único de las notas de la visita
- * a la que queremos asociar estos consumos. Se usará en el script de seed para
- * encontrar el ID de la visita correcta.
- * - `consumptions`: Un array de los productos y cantidades consumidas en esa visita.
+ * Se ha aumentado la variedad para asegurar que el dashboard de gerencia
+ * muestre un gráfico de "Top 5 Productos" más representativo.
  */
 export const consumptionsData = [
   {
-    // Para la visita con la incidencia CRÍTICA en "El Oasis"
+    // --- VISITA 1: Incidencia CRÍTICA en "El Oasis" (fuga) ---
+    // El pH estaba alto (7.9), así que añadimos reductor.
+    // El cloro se añade para un tratamiento de choque rápido.
     visitNotesIdentifier: 'Fuga de agua detectada en la tubería principal del skimmer',
     consumptions: [
       {
-        productName: 'Reductor de pH Líquido', // El pH era de 7.9, es lógico añadir reductor.
+        productName: 'Reductor de pH Líquido',
         quantity: 5, // 5 Litros
       },
       {
-        productName: 'Cloro Granulado (Dicloro 55%)', // Para un tratamiento de choque rápido.
+        productName: 'Cloro Granulado (Dicloro 55%)',
         quantity: 0.5, // 0.5 Kg
       },
     ],
   },
   {
-    // Para la visita con la incidencia CLASIFICADA en el "Gimnasio Fisic-Center"
+    // --- VISITA 2: Incidencia CLASIFICADA en el "Gimnasio Fisic-Center" (ruido bomba) ---
+    // La presión del filtro era alta (1.5 bar), es común añadir clarificante tras un lavado.
     visitNotesIdentifier: 'La bomba de calor hace un ruido metálico',
     consumptions: [
       {
-        productName: 'Floculante Líquido Clarificante', // La presión del filtro era alta (1.5 bar), es común añadir clarificante tras un lavado.
-        quantity: 0.5, // 0.5 Litros
+        productName: 'Floculante Líquido Clarificante',
+        quantity: 1.5, // 1.5 Litros
       },
+      {
+        productName: 'Incrementador de pH Sólido', // Para ajustar pH después del contralavado
+        quantity: 1, // 1 Kg
+      }
     ],
   },
   {
-    // Para añadir más consumo a la visita OK del "Hotel Costa Serena"
-    // Esta visita ya tiene 1 saco de sal añadido directamente en el seed.ts, ahora añadimos más.
+    // --- VISITA 3: Visita OK del "Hotel Costa Serena" ---
+    // Esta visita ya tiene 1 saco de sal añadido en el seed.ts. Le añadimos más cosas.
     visitNotesIdentifier: 'Todo en orden. Valores perfectos.',
     consumptions: [
         {
             productName: 'Pastillas Multiacción 250g', // Consumo de mantenimiento rutinario.
-            quantity: 2, // 2 pastillas
+            quantity: 4, // 4 pastillas para una piscina grande
+        },
+        {
+            productName: 'Alguicida Concentrado', // Dosis de mantenimiento para prevenir
+            quantity: 0.75, // 0.75 Litros
         }
+    ]
+  },
+  {
+    // --- VISITA 4: Incidencia PENDIENTE en "Chalet Villa Sol" (falta de sal) ---
+    // No podemos añadir consumo de sal porque no había, pero sí de otros productos.
+    visitNotesIdentifier: 'El nivel de sal es bajo, pero no hay producto en el almacén.',
+    consumptions: [
+      {
+        productName: 'Reductor de pH Líquido', // Supongamos que el pH también necesitaba ajuste.
+        quantity: 2, // 2 Litros
+      },
     ]
   }
 ];
@@ -5989,7 +6113,95 @@ export const productData = [
 ];
 
 
-// ====== [46] packages/server/prisma/data/transactions.ts ======
+// ====== [46] packages/server/prisma/data/route-templates.ts ======
+// ====== [NUEVO] packages/server/prisma/data/route-templates.ts ======
+// filename: packages/server/prisma/data/route-templates.ts
+// version: 1.0.3 (FIX: Use string literals for enums)
+// description: Datos de semilla para las Rutas Maestras, incluyendo estacionalidad. Usa strings literales para evitar problemas de importación de enums.
+
+// No se necesita ninguna importación de @prisma/client
+
+/**
+ * Define las rutas maestras de la empresa.
+ * Cada ruta especifica un día, un técnico habitual, las zonas que cubre
+ * y las frecuencias de visita según la temporada.
+ */
+export const routeTemplatesData = [
+  {
+    name: 'Lunes - Ruta Arenal',
+    // ✅ Se usa el string literal que coincide con el enum
+    dayOfWeek: 'MONDAY',
+    technicianName: 'Carlos Técnico',
+    zoneNames: ['Arenal', 'Montgó'],
+    seasons: [
+      {
+        frequency: 'WEEKLY', // Frecuencia semanal
+        startDate: new Date('2025-06-01'),
+        endDate: new Date('2025-09-30'),
+      },
+      {
+        frequency: 'BIWEEKLY', // Frecuencia quincenal
+        startDate: new Date('2025-10-01'),
+        endDate: new Date('2026-05-31'),
+      },
+    ],
+  },
+  {
+    name: 'Martes - Ruta Puerto',
+    dayOfWeek: 'TUESDAY',
+    technicianName: 'Ana Técnica',
+    zoneNames: ['Puerto'],
+    seasons: [
+      {
+        frequency: 'WEEKLY',
+        startDate: new Date('2025-01-01'),
+        endDate: new Date('2025-12-31'),
+      },
+    ],
+  },
+  {
+    name: 'Miércoles - Mantenimiento Intensivo',
+    dayOfWeek: 'WEDNESDAY',
+    technicianName: 'Leo Ayudante',
+    zoneNames: ['Arenal'], 
+    seasons: [
+      {
+        frequency: 'WEEKLY',
+        startDate: new Date('2025-06-15'),
+        endDate: new Date('2025-08-31'),
+      },
+    ],
+  },
+  {
+    name: 'Jueves - Ruta Pueblo y Tosal',
+    dayOfWeek: 'THURSDAY',
+    technicianName: 'Carlos Técnico',
+    zoneNames: ['Pueblo', 'Tosal'],
+    seasons: [
+      {
+        frequency: 'WEEKLY',
+        startDate: new Date('2025-01-01'),
+        endDate: new Date('2025-12-31'),
+      },
+    ],
+  },
+  {
+    name: 'Viernes - Ruta Balcón y Repaso',
+    dayOfWeek: 'FRIDAY',
+    technicianName: 'Ana Técnica',
+    zoneNames: ['Balcón al Mar', 'Montgó'],
+    seasons: [
+      {
+        frequency: 'WEEKLY',
+        startDate: new Date('2025-01-01'),
+        endDate: new Date('2025-12-31'),
+      },
+    ],
+  },
+];
+
+
+// ====== [47] packages/server/prisma/data/transactions.ts ======
 // filename: packages/server/prisma/data/transactions.ts
 // version: 1.0.0
 // description: Datos de semilla para pagos de clientes y gastos de la empresa.
@@ -6065,7 +6277,7 @@ export const expensesData = [
 ];
 
 
-// ====== [47] packages/server/prisma/data/users.ts ======
+// ====== [48] packages/server/prisma/data/users.ts ======
 // filename: packages/server/prisma/data/users.ts
 // version: 1.0.1
 // description: Datos de semilla para los usuarios del tenant de prueba "Piscival S.L.".
@@ -6115,16 +6327,38 @@ export const usersData: { name: string; email: string; password: string; role: U
 ];
 
 
+// ====== [49] packages/server/prisma/data/zones.ts ======
+// ====== [NUEVO] packages/server/prisma/data/zones.ts ======
+// filename: packages/server/prisma/data/zones.ts
+// version: 1.0.0
+// description: Datos de semilla para las zonas geográficas de operación.
+
+/**
+ * Define las zonas geográficas en las que opera la empresa de prueba.
+ * Estos nombres se usarán para agrupar piscinas y definir las rutas de los técnicos.
+ */
+export const zonesData = [
+  { name: 'Arenal' },
+  { name: 'Puerto' },
+  { name: 'Tosal' },
+  { name: 'Montgó' },
+  { name: 'Balcón al Mar' },
+  { name: 'Pueblo' },
+];
+
+
+// ====== [50] packages/server/prisma/seed.ts ======
 // ====== [48] packages/server/prisma/seed.ts ======
 // filename: packages/server/prisma/seed.ts
-// version: 6.0.1 (COMPLETE AND LINT-FIXED)
+// version: 9.0.1 (FIX: Correctly map payment data for createMany)
 
 import { PrismaClient } from '@prisma/client';
-import type { Frequency, ParameterTemplate, ScheduledTaskTemplate, User, Pool, Product, Client, ProductCategory } from '@prisma/client';
+// Se importan los tipos necesarios, incluyendo los nuevos
+import type { DayOfWeek, User, Pool, Product, Client, ProductCategory, Zone, ParameterTemplate, ScheduledTaskTemplate, Visit, Notification } from '@prisma/client';
 import { hashPassword } from '../src/utils/password.utils.js';
-import { subDays, addDays } from 'date-fns';
+import { addDays, startOfWeek } from 'date-fns';
 
-// --- Importación de los datos modulares ---
+// --- Importación de todos los datos modulares, incluyendo los nuevos ---
 import { usersData } from './data/users.js';
 import { parameterData, taskData } from './data/catalogs.js';
 import { clientsData } from './data/clients.js';
@@ -6133,38 +6367,26 @@ import { incidentTasksData } from './data/incident-tasks.js';
 import { productCategoriesData } from './data/product-categories.js';
 import { clientPricingRulesData } from './data/financial-rules.js';
 import { paymentsData, expensesData } from './data/transactions.js';
+import { zonesData } from './data/zones.js';
+import { routeTemplatesData } from './data/route-templates.js';
+import { consumptionsData } from './data/consumptions.js';
 
-// --- Funciones de ayuda ---
-const getRandomItems = <T>(arr: T[], count: number): T[] => {
-  if (arr.length < count) {
-    throw new Error(`No se pueden obtener ${count} elementos de un array con solo ${arr.length} elementos.`);
-  }
-  const shuffled = [...arr].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, count);
-};
 
 // --- Script Principal ---
 async function main() {
-  // Instanciamos el cliente aquí, dentro de la función, para garantizar una conexión fresca.
   const prisma = new PrismaClient();
 
   try {
-    console.log('🌱 Empezando el proceso de seeding para la demo v4.0 (con motor financiero)...');
+    console.log('🌱 Empezando el proceso de seeding v9.1 (Estable + Planificación Avanzada)...');
 
     // 1. --- CREACIÓN DE ENTIDADES DEL SISTEMA ---
-    const systemTenant = await prisma.tenant.create({
-      data: { companyName: 'SYSTEM_INTERNAL', subdomain: 'system', subscriptionStatus: 'ACTIVE' },
-    });
+    const systemTenant = await prisma.tenant.create({ data: { companyName: 'SYSTEM_INTERNAL', subdomain: 'system', subscriptionStatus: 'ACTIVE' } });
     const superAdminPassword = await hashPassword('superadmin123');
-    await prisma.user.create({
-      data: { email: 'super@admin.com', name: 'Super Admin', password: superAdminPassword, role: 'SUPER_ADMIN', tenantId: systemTenant.id },
-    });
+    await prisma.user.create({ data: { email: 'super@admin.com', name: 'Super Admin', password: superAdminPassword, role: 'SUPER_ADMIN', tenantId: systemTenant.id } });
     console.log('👑 SuperAdmin y Tenant del sistema creados.');
 
     // 2. --- CREACIÓN DEL TENANT DE PRUEBA Y USUARIOS ---
-    const mainTenant = await prisma.tenant.create({
-      data: { companyName: 'Piscival S.L.', subdomain: 'piscival', subscriptionStatus: 'ACTIVE' },
-    });
+    const mainTenant = await prisma.tenant.create({ data: { companyName: 'Piscival S.L.', subdomain: 'piscival', subscriptionStatus: 'ACTIVE' } });
     console.log(`\n🏢 Tenant de prueba creado: ${mainTenant.companyName}`);
     
     const createdUsers: User[] = [];
@@ -6172,50 +6394,39 @@ async function main() {
       const hashedPassword = await hashPassword(userData.password);
       const user = await prisma.user.create({ data: { ...userData, password: hashedPassword, tenantId: mainTenant.id } });
       createdUsers.push(user);
-      console.log(`   👤 Usuario creado: ${userData.name} (${userData.role})`);
     }
     const adminUser = createdUsers.find(u => u.role === 'ADMIN');
     const technicians = createdUsers.filter(u => u.role === 'TECHNICIAN');
-    if (!adminUser || technicians.length < 3) throw new Error('Seeding fallido: No se encontraron suficientes usuarios admin o técnicos.');
+    if (!adminUser || technicians.length === 0) throw new Error('Seeding fallido: No se encontraron suficientes usuarios admin o técnicos.');
+    console.log(`   👤 Creados ${createdUsers.length} usuarios.`);
 
-    // 3. --- CREACIÓN DE CATÁLOGOS Y ENTIDADES FINANCIERAS BASE ---
+
+    // 3. --- CREACIÓN DE CATÁLOGOS, ZONAS Y ENTIDADES FINANCIERAS BASE ---
     console.log('\n- Fase de creación de catálogos y finanzas -');
 
     const createdParams: ParameterTemplate[] = [];
-    for (const p of parameterData) {
-      const param = await prisma.parameterTemplate.create({ data: { ...p, tenantId: mainTenant.id } });
-      createdParams.push(param);
-    }
+    for (const p of parameterData) { createdParams.push(await prisma.parameterTemplate.create({ data: { ...p, tenantId: mainTenant.id } })); }
     console.log(`📊 Creados ${createdParams.length} parámetros en el catálogo.`);
 
     const createdTasks: ScheduledTaskTemplate[] = [];
-    for (const t of taskData) {
-      const task = await prisma.scheduledTaskTemplate.create({ data: { ...t, tenantId: mainTenant.id } });
-      createdTasks.push(task);
-    }
+    for (const t of taskData) { createdTasks.push(await prisma.scheduledTaskTemplate.create({ data: { ...t, tenantId: mainTenant.id } })); }
     console.log(`📋 Creadas ${createdTasks.length} tareas en el catálogo.`);
 
     const createdCategories: ProductCategory[] = [];
-    for (const catData of productCategoriesData) {
-      const category = await prisma.productCategory.create({ data: { ...catData, tenantId: mainTenant.id } });
-      createdCategories.push(category);
-    }
+    for (const catData of productCategoriesData) { createdCategories.push(await prisma.productCategory.create({ data: { ...catData, tenantId: mainTenant.id } })); }
     console.log(`📁 Creadas ${createdCategories.length} categorías de productos.`);
 
     const createdProducts: Product[] = [];
     for (const prodData of productData) {
       const { categoryName, ...restOfProdData } = prodData;
       const category = createdCategories.find(c => c.name === categoryName);
-      const product = await prisma.product.create({
-        data: {
-          ...restOfProdData,
-          tenantId: mainTenant.id,
-          categoryId: category?.id,
-        },
-      });
-      createdProducts.push(product);
+      createdProducts.push(await prisma.product.create({ data: { ...restOfProdData, tenantId: mainTenant.id, categoryId: category?.id } }));
     }
     console.log(`📦 Creados ${createdProducts.length} productos en el catálogo.`);
+    
+    const createdZones: Zone[] = [];
+    for(const zone of zonesData) { createdZones.push(await prisma.zone.create({ data: { ...zone, tenantId: mainTenant.id }})); }
+    console.log(`🌍 Creadas ${createdZones.length} zonas geográficas.`);
 
     // 4. --- CREACIÓN DE CLIENTES Y PISCINAS ---
     console.log('\n- Fase de creación de clientes y piscinas -');
@@ -6224,117 +6435,125 @@ async function main() {
     for (const data of clientsData) {
       const client = await prisma.client.create({ data: { ...data.client, tenantId: mainTenant.id } });
       createdClients.push(client);
-      console.log(`\n👨‍💼 Cliente creado: ${client.name} (Modelo: ${client.billingModel})`);
+      console.log(`\n👨‍💼 Cliente creado: ${client.name}`);
       for (const poolData of data.pools) {
-        const pool = await prisma.pool.create({ data: { ...poolData, clientId: client.id, tenantId: mainTenant.id } });
+        const zone = createdZones.find(z => z.name === poolData.zoneName);
+        const { zoneName, ...restOfPoolData } = poolData;
+        const pool = await prisma.pool.create({ data: { ...restOfPoolData, clientId: client.id, tenantId: mainTenant.id, zoneId: zone?.id } });
         allPools.push(pool);
-        console.log(`   🏊 Piscina creada: ${pool.name}`);
-        const configsToCreate = createPoolMaintenanceSheet(pool.id, createdParams, createdTasks, poolData.type);
-        await prisma.poolConfiguration.createMany({ data: configsToCreate, skipDuplicates: true });
-        console.log(`      📝 Ficha de mantenimiento creada para ${pool.name} con ${configsToCreate.length} ítems.`);
+        console.log(`   🏊 Piscina creada: ${pool.name} en Zona: ${zone?.name}`);
+        
+        for(let i = 0; i < 5 && i < createdParams.length; i++) {
+          await prisma.poolConfiguration.create({data: {poolId: pool.id, parameterTemplateId: createdParams[i]!.id }});
+        }
+        for(let i = 0; i < 3 && i < createdTasks.length; i++) {
+          await prisma.poolConfiguration.create({data: {poolId: pool.id, taskTemplateId: createdTasks[i]!.id }});
+        }
+        console.log(`      📝 Ficha de mantenimiento creada para ${pool.name}.`);
       }
     }
     if (allPools.length < 5) throw new Error('Seeding fallido: No se crearon suficientes piscinas.');
 
-    // 5. --- CREACIÓN DE REGLAS DE PRECIOS Y TRANSACCIONES ---
-    console.log('\n- Fase de creación de reglas de precios y transacciones -');
-    let rulesCount = 0;
+    // 5. --- CREACIÓN DE RUTAS MAESTRAS, REGLAS DE PRECIOS Y TRANSACCIONES ---
+    console.log('\n- Fase de creación de Rutas Maestras y Finanzas -');
+    
+    for (const rt of routeTemplatesData) {
+      const technician = createdUsers.find(u => u.name === rt.technicianName);
+      const zonesToConnect = createdZones.filter(z => rt.zoneNames.includes(z.name));
+      await prisma.routeTemplate.create({
+        data: {
+          name: rt.name,
+          dayOfWeek: rt.dayOfWeek as DayOfWeek,
+          technicianId: technician?.id,
+          tenantId: mainTenant.id,
+          zones: { connect: zonesToConnect.map(z => ({ id: z.id })) },
+          seasons: { create: rt.seasons }
+        }
+      });
+    }
+    console.log(`🗺️  Creadas ${routeTemplatesData.length} rutas maestras.`);
+    
     for (const rule of clientPricingRulesData) {
       const client = createdClients.find(c => c.name === rule.clientName);
       if (!client) continue;
-
       const product = rule.productName ? createdProducts.find(p => p.name === rule.productName) : null;
       const category = rule.categoryName ? createdCategories.find(c => c.name === rule.categoryName) : null;
-
-      await prisma.clientProductPricing.create({
-        data: {
-          clientId: client.id,
-          productId: product?.id,
-          productCategoryId: category?.id,
-          discountPercentage: rule.discountPercentage,
-        },
-      });
-      rulesCount++;
+      await prisma.clientProductPricing.create({ data: { clientId: client.id, productId: product?.id, productCategoryId: category?.id, discountPercentage: rule.discountPercentage } });
     }
-    console.log(`💰 Creadas ${rulesCount} reglas de precios personalizadas.`);
-
-    for (const payment of paymentsData) {
-      const client = createdClients.find(c => c.name === payment.clientName);
-      if (!client) continue;
-      await prisma.payment.create({
-        data: {
-          amount: payment.amount,
-          paymentDate: payment.paymentDate,
-          method: payment.method,
-          notes: payment.notes,
-          clientId: client.id,
-        },
-      });
-    }
+    console.log(`💰 Creadas ${clientPricingRulesData.length} reglas de precios personalizadas.`);
+    
+    // ✅ CORRECCIÓN: Construir el objeto de datos para createMany explícitamente.
+    const paymentsToCreate = paymentsData.map(p => {
+        const client = createdClients.find(c => c.name === p.clientName);
+        return {
+            amount: p.amount,
+            paymentDate: p.paymentDate,
+            method: p.method,
+            notes: p.notes,
+            clientId: client!.id,
+        }
+    });
+    await prisma.payment.createMany({ data: paymentsToCreate });
     console.log(`💳 Creados ${paymentsData.length} registros de pagos.`);
 
-    await prisma.expense.createMany({
-      data: expensesData.map(e => ({ ...e, tenantId: mainTenant.id })),
-    });
+    await prisma.expense.createMany({ data: expensesData.map(e => ({ ...e, tenantId: mainTenant.id })) });
     console.log(`💸 Creados ${expensesData.length} registros de gastos.`);
 
-    // 6. --- SIMULACIÓN DE ACTIVIDAD RECIENTE (VISITAS, INCIDENCIAS, ETC.) ---
+    // 6. --- SIMULACIÓN DE GENERACIÓN DE VISITAS Y ACTIVIDAD ---
     console.log('\n- Fase de simulación de actividad operativa -');
+    const allRouteTemplates = await prisma.routeTemplate.findMany({ include: { zones: true } });
     const today = new Date();
-    const threeDaysAgo = subDays(today, 3);
-    const tomorrow = addDays(today, 1);
-    
-    await prisma.visit.create({ data: { timestamp: today, poolId: allPools[1]!.id, technicianId: technicians[0]!.id, status: 'PENDING' } });
-    await prisma.visit.create({ data: { timestamp: today, poolId: allPools[3]!.id, technicianId: technicians[1]!.id, status: 'PENDING' } });
-    console.log('   - 2 visitas PENDIENTES para hoy creadas.');
+    const startOfThisWeek = startOfWeek(today, { weekStartsOn: 1 });
+    const createdVisits: Visit[] = [];
+    const dayOfWeekStrings: DayOfWeek[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 
-    const okVisit = await prisma.visit.create({ data: { timestamp: today, poolId: allPools[2]!.id, technicianId: technicians[1]!.id, status: 'COMPLETED', hasIncident: false, notes: 'Todo en orden. Valores perfectos. El cliente ha comentado que está muy contento con el servicio.', completedTasks: ['Limpieza de cestos de skimmers', 'Revisión de clorador salino'] } });
-    await prisma.visitResult.createMany({ data: [ { visitId: okVisit.id, parameterName: 'Nivel de pH', value: '7.4', parameterUnit: 'pH' }, { visitId: okVisit.id, parameterName: 'Nivel de Sal (para piscinas de sal)', value: '4500', parameterUnit: 'ppm' } ] });
-    const salProduct = createdProducts.find(p => p.name.includes('Sal para Piscinas'));
-    if(salProduct) { await prisma.consumption.create({ data: { visitId: okVisit.id, productId: salProduct.id, quantity: 1 }}); }
-    console.log('   - 1 visita COMPLETADA OK (con consumo de sal) creada.');
-    
-    const criticalVisitNotes = 'Fuga de agua detectada en la tubería principal del skimmer. Gotea constantemente, el nivel de la piscina ha bajado notablemente.';
-    const criticalVisit = await prisma.visit.create({ data: { timestamp: threeDaysAgo, poolId: allPools[0]!.id, technicianId: technicians[0]!.id, status: 'COMPLETED', hasIncident: true, notes: criticalVisitNotes, completedTasks: ['Limpieza de cestos de skimmers'] } });
-    await prisma.visitResult.createMany({ data: [ { visitId: criticalVisit.id, parameterName: 'Nivel del Agua en Skimmer', value: 'Bajo' }, { visitId: criticalVisit.id, parameterName: 'Nivel de pH', value: '7.9' }, ] });
-    await prisma.notification.create({ data: { message: criticalVisitNotes, visitId: criticalVisit.id, tenantId: mainTenant.id, userId: adminUser.id, createdAt: threeDaysAgo, } });
-    console.log('   - 1 incidencia CRÍTICA (de hace 3 días) creada.');
+    for (let i = 0; i < 5; i++) { // L-V
+        const dayToSimulate = addDays(startOfThisWeek, i);
+        const dayOfWeekStr = dayOfWeekStrings[i]!;
+        const routesForDay = allRouteTemplates.filter(rt => rt.dayOfWeek === dayOfWeekStr);
+        for (const route of routesForDay) {
+            const poolsInRoute = await prisma.pool.findMany({ where: { zoneId: { in: route.zones.map(z => z.id) } } });
+            const techData = routeTemplatesData.find(rtd => rtd.name === route.name);
+            const tech = techData ? createdUsers.find(u => u.name === techData.technicianName) : null;
+            for (const pool of poolsInRoute) {
+                createdVisits.push(await prisma.visit.create({ data: { poolId: pool.id, timestamp: dayToSimulate, technicianId: tech?.id } }));
+            }
+        }
+    }
+    console.log(`   ✅ Generadas ${createdVisits.length} visitas para la semana actual a partir de Rutas Maestras.`);
 
-    const pendingVisitNotes = 'El nivel de sal es bajo, pero no hay producto en el almacén. Avisar para reponer.';
-    const pendingVisit = await prisma.visit.create({ data: { timestamp: today, poolId: allPools[1]!.id, technicianId: technicians[1]!.id, status: 'COMPLETED', hasIncident: true, notes: pendingVisitNotes, completedTasks: ['Limpieza de cestos de skimmers'] } });
-    await prisma.visitResult.createMany({ data: [{ visitId: pendingVisit.id, parameterName: 'Nivel de Sal (para piscinas de sal)', value: '3800', parameterUnit: 'ppm' }] });
-    await prisma.notification.create({ data: { message: pendingVisitNotes, visitId: pendingVisit.id, tenantId: mainTenant.id, userId: adminUser.id, } });
-    console.log('   - 1 incidencia PENDIENTE (de hoy) creada.');
-    
-    const classifiedVisitNotes = 'La bomba de calor hace un ruido metálico muy fuerte al arrancar. Podría romperse. Recomiendo no encenderla hasta que se revise.';
-    const classifiedVisit = await prisma.visit.create({ data: { timestamp: today, poolId: allPools[4]!.id, technicianId: technicians[2]!.id, status: 'COMPLETED', hasIncident: true, notes: classifiedVisitNotes, completedTasks: ['Limpieza de cestos de skimmers', 'Cepillado de paredes y línea de flotación'] } });
-    await prisma.visitResult.createMany({ data: [ { visitId: classifiedVisit.id, parameterName: 'Temperatura del Agua', value: '24', parameterUnit: '°C' }, { visitId: classifiedVisit.id, parameterName: 'Presión del Filtro', value: '1.5', parameterUnit: 'bar' }, ] });
-    await prisma.notification.create({ data: { message: classifiedVisitNotes, visitId: classifiedVisit.id, tenantId: mainTenant.id, userId: adminUser.id, priority: 'HIGH',  resolutionDeadline: tomorrow, } });
-    console.log('   - 1 incidencia PENDIENTE CLASIFICADA (Prioridad ALTA) creada.');
+    // 7. --- SIMULACIÓN DE ACTIVIDAD (INCIDENCIAS, CONSUMOS, TAREAS) SOBRE LAS VISITAS GENERADAS ---
+    const allNotifications: Notification[] = [];
+    for(let i=0; i < consumptionsData.length && i < createdVisits.length; i++){
+        const visit = createdVisits[i]!;
+        const cSeed = consumptionsData[i]!;
 
-    // 7. --- SIMULACIÓN DE TICKETING AVANZADO ---
-    const allNotifications = await prisma.notification.findMany({ where: { tenantId: mainTenant.id } });
+        await prisma.visit.update({ where: { id: visit.id }, data: { status: 'COMPLETED', notes: cSeed.visitNotesIdentifier, hasIncident: true }});
+        
+        const notification = await prisma.notification.create({ data: { message: cSeed.visitNotesIdentifier, visitId: visit.id, tenantId: mainTenant.id, userId: adminUser.id, priority: 'HIGH' }});
+        allNotifications.push(notification);
+
+        for(const cons of cSeed.consumptions) {
+            const p = createdProducts.find(pr => pr.name === cons.productName);
+            if(p) await prisma.consumption.create({ data: { visitId: visit.id, productId: p.id, quantity: cons.quantity }});
+        }
+    }
+    console.log(`   - Marcadas ${allNotifications.length} visitas como completadas con datos de demo.`);
+
     let taskCount = 0;
-    for (const taskSeed of incidentTasksData) {
-      const parentNotification = allNotifications.find(n => n.message.includes(taskSeed.notificationMessage));
-      if (!parentNotification) { console.warn(`   - ⚠️  No se encontró la notificación padre para la tarea: "${taskSeed.task.title}"`); continue; }
+    for (const tSeed of incidentTasksData) {
+      const pNotification = allNotifications.find(n => n.message.includes(tSeed.notificationMessage));
+      if (!pNotification) continue;
       
-      const assignedUser = taskSeed.task.title.includes('Contactar') ? adminUser : technicians[taskCount % technicians.length];
-      if (!assignedUser) continue;
-
-      const taskData = { ...taskSeed.task, notificationId: parentNotification.id, assignedToId: assignedUser.id, tenantId: mainTenant.id };
-      const createdTask = await prisma.incidentTask.create({ data: taskData });
-      taskCount++;
-
-      await prisma.incidentTaskLog.create({ data: { action: 'CREATION', details: `Tarea creada por ${adminUser.name}. Asignada a ${assignedUser.name}.`, incidentTaskId: createdTask.id, userId: adminUser.id, }});
-      if (createdTask.status !== 'PENDING') {
-        await prisma.incidentTaskLog.create({ data: { action: 'STATUS_CHANGE', details: `Estado cambiado a ${createdTask.status}.`, incidentTaskId: createdTask.id, userId: assignedUser.id, }});
+      const aUser = tSeed.task.title.includes('Contactar') ? adminUser : technicians.find(t => t.isAvailable);
+      if (aUser) {
+        await prisma.incidentTask.create({ data: { ...tSeed.task, notificationId: pNotification.id, assignedToId: aUser.id, tenantId: mainTenant.id } });
+        taskCount++;
       }
     }
-    console.log(`   - ${taskCount} tareas de incidencia creadas con sus logs.`);
+    console.log(`   - Creadas ${taskCount} tareas de incidencia.`);
 
-
-    console.log('\n\n✅ Seeding de demostración completado con éxito!');
+    console.log('\n\n✅ Seeding de demostración v9.1 completado con éxito!');
     console.log('--- Credenciales de prueba ---');
     console.log('SuperAdmin: super@admin.com / superadmin123');
     console.log('Admin:      admin@piscival.com / password123');
@@ -6343,59 +6562,17 @@ async function main() {
 
   } catch (e) {
     console.error('❌ Error fatal durante el proceso de seeding:', e);
-    throw e;
+    await prisma.$disconnect();
+    process.exit(1);
   } finally {
     await prisma.$disconnect();
   }
 }
 
-function createPoolMaintenanceSheet(
-  poolId: string,
-  allParams: ParameterTemplate[],
-  allTasks: ScheduledTaskTemplate[],
-  poolType: string | null
-): any[] {
-  const configs: any[] = [];
-  const commonParams = allParams.filter(p => ['Nivel de pH', 'Alcalinidad Total (TA)', 'Estado del Agua'].includes(p.name));
-  for (const param of commonParams) {
-    configs.push({ poolId, parameterTemplateId: param.id, frequency: 'SEMANAL' as Frequency, minThreshold: param.name.includes('pH') ? 7.2 : null, maxThreshold: param.name.includes('pH') ? 7.6 : null, });
-  }
-  const commonTasks = allTasks.filter(t => ['Limpieza de cestos de skimmers', 'Cepillado de paredes y línea de flotación'].includes(t.name));
-  for (const task of commonTasks) {
-    configs.push({ poolId, taskTemplateId: task.id, frequency: 'SEMANAL' as Frequency });
-  }
-  const backwashTask = allTasks.find(t => t.name.includes('Contralavado'));
-  if (backwashTask) {
-    configs.push({ poolId, taskTemplateId: backwashTask.id, frequency: 'QUINCENAL' as Frequency });
-  }
-  if (poolType === 'Cloro') {
-    const cloroParams = allParams.filter(p => p.name.includes('Cloro Libre') || p.name.includes('Cloro Total'));
-    for (const param of cloroParams) {
-      configs.push({ poolId, parameterTemplateId: param.id, frequency: 'SEMANAL' as Frequency });
-    }
-  } else if (poolType === 'Sal') {
-    const salParam = allParams.find(p => p.name.includes('Nivel de Sal'));
-    const salTask = allTasks.find(t => t.name.includes('Revisión de clorador salino'));
-    if (salParam) { configs.push({ poolId, parameterTemplateId: salParam.id, frequency: 'MENSUAL' as Frequency }); }
-    if (salTask) { configs.push({ poolId, taskTemplateId: salTask.id, frequency: 'QUINCENAL' as Frequency }); }
-  }
-  const availableExtraParams = allParams.filter(p => !configs.some(c => c.parameterTemplateId === p.id));
-  if (availableExtraParams.length >= 2) {
-    const extraParams = getRandomItems(availableExtraParams, 2);
-    for (const param of extraParams) {
-      configs.push({ poolId, parameterTemplateId: param.id, frequency: 'MENSUAL' as Frequency });
-    }
-  }
-  return configs;
-}
-
-// ✅ Corrección final: Eliminamos el argumento 'e' para que no dé el aviso del linter.
-main().catch(() => {
-    process.exit(1);
-});
+main();
 
 
-// ====== [49] packages/server/src/api/auth/auth.controller.ts ======
+// ====== [51] packages/server/src/api/auth/auth.controller.ts ======
 import type { Response, NextFunction } from 'express';
 import { register, login } from './auth.service.js';
 import { signToken } from '../../utils/jwt.utils.js';
@@ -6463,7 +6640,7 @@ export const getMeHandler = (req: AuthRequest, res: Response) => {
 };
 
 
-// ====== [50] packages/server/src/api/auth/auth.routes.ts ======
+// ====== [52] packages/server/src/api/auth/auth.routes.ts ======
 import { Router } from 'express';
 import type { Response } from 'express';
 import {
@@ -6514,7 +6691,7 @@ authRouter.post('/logout', (_req, res: Response) => {
 export default authRouter;
 
 
-// ====== [51] packages/server/src/api/auth/auth.service.ts ======
+// ====== [53] packages/server/src/api/auth/auth.service.ts ======
 import { PrismaClient } from '@prisma/client';
 import type { User } from '@prisma/client';
 import { hashPassword, comparePassword } from '../../utils/password.utils.js';
@@ -6595,7 +6772,7 @@ export const login = async (input: LoginUserInput): Promise<Omit<User, 'password
 };
 
 
-// ====== [52] packages/server/src/api/client-product-pricing/client-product-pricing.controller.ts ======
+// ====== [54] packages/server/src/api/client-product-pricing/client-product-pricing.controller.ts ======
 // filename: packages/server/src/api/client-product-pricing/client-product-pricing.controller.ts
 // version: 1.0.0
 // description: Controlador para manejar las peticiones HTTP del CRUD de reglas de precios.
@@ -6691,7 +6868,7 @@ export const deletePricingRuleHandler = async (
 };
 
 
-// ====== [53] packages/server/src/api/client-product-pricing/client-product-pricing.routes.ts ======
+// ====== [55] packages/server/src/api/client-product-pricing/client-product-pricing.routes.ts ======
 // filename: packages/server/src/api/client-product-pricing/client-product-pricing.routes.ts
 // version: 2.0.0 (FEAT: Protect routes with ADMIN authorization)
 
@@ -6726,7 +6903,7 @@ clientProductPricingRouter.route('/:id')
 export default clientProductPricingRouter;
 
 
-// ====== [54] packages/server/src/api/client-product-pricing/client-product-pricing.service.ts ======
+// ====== [56] packages/server/src/api/client-product-pricing/client-product-pricing.service.ts ======
 // filename: packages/server/src/api/client-product-pricing/client-product-pricing.service.ts
 // version: 1.0.0
 // description: Servicio para la lógica de negocio de las reglas de precios.
@@ -6803,7 +6980,7 @@ export const deletePricingRule = async (id: string): Promise<void> => {
 };
 
 
-// ====== [55] packages/server/src/api/clients/clients.controller.ts ======
+// ====== [57] packages/server/src/api/clients/clients.controller.ts ======
 // filename: packages/server/src/api/clients/clients.controller.ts
 // Version: 2.0.0 (FEAT: Pass tenantId to service for validation)
 
@@ -6935,7 +7112,7 @@ export const deleteClientHandler = async (
 };
 
 
-// ====== [56] packages/server/src/api/clients/clients.routes.ts ======
+// ====== [58] packages/server/src/api/clients/clients.routes.ts ======
 // filename: packages/server/src/api/clients/clients.routes.ts
 // Version: 2.0.0 (FEAT: Protect routes with ADMIN/MANAGER authorization)
 
@@ -6971,7 +7148,7 @@ clientsRouter.route('/:id')
 export default clientsRouter;
 
 
-// ====== [57] packages/server/src/api/clients/clients.service.ts ======
+// ====== [59] packages/server/src/api/clients/clients.service.ts ======
 // filename: packages/server/src/api/clients/clients.service.ts
 // Version: 2.0.0 (FEAT: Add tenantId validation for CUD operations)
 
@@ -7070,14 +7247,17 @@ export const deleteClient = async (id: string, tenantId: string): Promise<void> 
 };
 
 
+// ====== [60] packages/server/src/api/dashboard/dashboard.controller.ts ======
 // ====== [58] packages/server/src/api/dashboard/dashboard.controller.ts ======
 // filename: packages/server/src/api/dashboard/dashboard.controller.ts
-// version: 1.0.1 (FIXED)
-// description: Añade la guarda de validación para req.user.
+// version: 2.0.0 (FEAT: Handle date range parameters from query)
+// description: The controller now reads startDate and endDate from the query string, providing a default if they are absent.
 
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
 import { getManagerDashboardData } from './dashboard.service.js';
+// ✅ 1. Importar utilidades de fecha para el rango por defecto
+import { subDays, endOfDay } from 'date-fns';
 
 /**
  * Maneja la obtención de todos los datos agregados para el dashboard del manager.
@@ -7088,22 +7268,40 @@ export const getManagerDashboardHandler = async (
   next: NextFunction
 ) => {
   try {
-    // --- ✅ GUARDA DE VALIDACIÓN AÑADIDA ---
-    // Aseguramos que el usuario y el tenantId existen.
-    // Aunque 'protect' ya lo hace, esto satisface a TypeScript.
     if (!req.user || !req.user.tenantId) {
       return res.status(403).json({ success: false, message: 'Acción no permitida. Usuario o Tenant no identificado.' });
     }
     
     const tenantId = req.user.tenantId;
 
-    // Solo los roles MANAGER pueden acceder a este dashboard.
-    // El 'activeRole' del frontend no importa aquí, miramos el rol real.
     if (req.user.role !== 'MANAGER' && req.user.role !== 'SUPER_ADMIN') {
         return res.status(403).json({ success: false, message: 'Acceso denegado. Se requiere rol de Manager.'})
     }
+
+    // ✅ 2. Leer los parámetros de fecha de la query string
+    const { startDate: startDateStr, endDate: endDateStr } = req.query;
+
+    let startDate: Date;
+    let endDate: Date;
+
+    // ✅ 3. Establecer rango por defecto si no se proporcionan fechas
+    if (startDateStr && endDateStr && typeof startDateStr === 'string' && typeof endDateStr === 'string') {
+        startDate = new Date(startDateStr);
+        endDate = new Date(endDateStr);
+        
+        // ✅ 4. Validar las fechas recibidas
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            return res.status(400).json({ success: false, message: 'Formato de fecha inválido.' });
+        }
+    } else {
+        // Rango por defecto: últimos 30 días
+        const today = new Date();
+        startDate = subDays(today, 30);
+        endDate = endOfDay(today); // Aseguramos que incluya todo el día de hoy
+    }
     
-    const dashboardData = await getManagerDashboardData(tenantId);
+    // ✅ 5. Pasar el rango de fechas al servicio
+    const dashboardData = await getManagerDashboardData(tenantId, startDate, endDate);
     res.status(200).json({ success: true, data: dashboardData });
   } catch (error) {
     next(error);
@@ -7111,7 +7309,7 @@ export const getManagerDashboardHandler = async (
 };
 
 
-// ====== [59] packages/server/src/api/dashboard/dashboard.routes.ts ======
+// ====== [61] packages/server/src/api/dashboard/dashboard.routes.ts ======
 // filename: packages/server/src/api/dashboard/dashboard.routes.ts
 // version: 1.0.0
 // description: Define el endpoint de la API para los datos del Dashboard de Gerencia.
@@ -7135,13 +7333,13 @@ dashboardRouter.get('/manager', getManagerDashboardHandler);
 export default dashboardRouter;
 
 
+// ====== [62] packages/server/src/api/dashboard/dashboard.service.ts ======
 // ====== [60] packages/server/src/api/dashboard/dashboard.service.ts ======
 // filename: packages/server/src/api/dashboard/dashboard.service.ts
-// version: 1.3.0 (FIXED: Correct relation name 'clientPricingRules')
-// description: Corrige el nombre de la relación en la consulta de clientes para que coincida con el schema.prisma.
+// version: 2.2.1 (FIX: Correct field names and group by accessors)
+// description: Fixed errors related to non-existent fields in where clauses and incorrect access to groupBy count.
 
 import { PrismaClient } from '@prisma/client';
-import { startOfMonth, subDays } from 'date-fns';
 
 const prisma = new PrismaClient();
 
@@ -7160,30 +7358,38 @@ interface DashboardData {
     clientId: string;
     clientName: string;
     netProfit: number;
+    totalRevenue: number;
+    totalCosts: number;
   }[];
   topProductsByCost: {
     productId: string;
     productName: string;
     totalCost: number;
   }[];
+  teamPerformance: {
+    technicianId: string;
+    technicianName: string;
+    completedVisits: number;
+    completedTasks: number;
+  }[];
 }
 
-export const getManagerDashboardData = async (tenantId: string): Promise<DashboardData> => {
-  const today = new Date();
-  const thirtyDaysAgo = subDays(today, 30);
-  const startOfCurrentMonth = startOfMonth(today);
-
-  // --- 1. Datos Financieros (Últimos 30 días) ---
+export const getManagerDashboardData = async (
+  tenantId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<DashboardData> => {
+  // --- 1. Datos Financieros (Periodo Seleccionado) ---
   const expenses = await prisma.expense.aggregate({
     _sum: { amount: true },
-    where: { tenantId, expenseDate: { gte: thirtyDaysAgo, lte: today } },
+    where: { tenantId, expenseDate: { gte: startDate, lte: endDate } },
   });
 
   const consumptions = await prisma.consumption.findMany({
     where: {
       visit: {
         pool: { tenantId },
-        timestamp: { gte: thirtyDaysAgo, lte: today },
+        timestamp: { gte: startDate, lte: endDate },
       },
     },
     include: {
@@ -7200,7 +7406,7 @@ export const getManagerDashboardData = async (tenantId: string): Promise<Dashboa
   const totalCosts = (expenses._sum.amount || 0) + totalConsumptionCost;
 
   const clientsForRevenue = await prisma.client.findMany({ where: { tenantId } });
-  const totalFees = clientsForRevenue.reduce((sum, c) => sum + c.monthlyFee, 0);
+  const totalFees = clientsForRevenue.reduce((sum, c) => sum + c.monthlyFee, 0); 
   const totalMaterialsRevenue = consumptions.reduce((sum, c) => sum + (c.quantity * c.product.salePrice), 0);
   const totalRevenue = totalFees + totalMaterialsRevenue;
 
@@ -7213,12 +7419,13 @@ export const getManagerDashboardData = async (tenantId: string): Promise<Dashboa
     where: {
       tenantId,
       status: 'RESOLVED',
-      createdAt: { gte: startOfCurrentMonth },
+      // ✅ CORRECCIÓN: 'createdAt' no existe en el modelo Notification, se elimina el filtro de fecha aquí, 
+      // la lógica se mantiene en el espíritu de "resueltas en el periodo".
+      // Para una lógica más precisa, necesitaríamos un campo 'resolvedAt'.
     },
   });
 
-  // --- 3. Top 5 Clientes por Rentabilidad ---
-  // ✅ CORRECCIÓN 1: Usar el nombre de relación correcto 'clientPricingRules' del schema.prisma
+  // --- 3. Top 5 Clientes por Rentabilidad (en el periodo) ---
   const clientsWithPricing = await prisma.client.findMany({
     where: { tenantId },
     include: { clientPricingRules: true }, 
@@ -7233,7 +7440,6 @@ export const getManagerDashboardData = async (tenantId: string): Promise<Dashboa
         const product = consumption.product;
         let finalSalePrice = product.salePrice;
         
-        // ✅ CORRECCIÓN 2: Usar el nombre de propiedad correcto 'clientPricingRules' en el resto del código
         const productRule = client.clientPricingRules.find(r => r.productId === product.id);
         const categoryRule = client.clientPricingRules.find(r => r.productCategoryId === product.categoryId);
 
@@ -7253,6 +7459,8 @@ export const getManagerDashboardData = async (tenantId: string): Promise<Dashboa
     return {
       clientId: client.id,
       clientName: client.name,
+      totalRevenue: clientRevenue,
+      totalCosts: clientCosts,
       netProfit: clientRevenue - clientCosts,
     };
   });
@@ -7262,14 +7470,14 @@ export const getManagerDashboardData = async (tenantId: string): Promise<Dashboa
     .slice(0, 5);
 
 
-  // --- 4. Top 5 Productos por Coste ---
+  // --- 4. Top 5 Productos por Coste (en el periodo) ---
   const productCosts = await prisma.consumption.groupBy({
     by: ['productId'],
     _sum: { quantity: true },
     where: {
         visit: {
             pool: { tenantId },
-            timestamp: { gte: thirtyDaysAgo, lte: today },
+            timestamp: { gte: startDate, lte: endDate },
         }
     },
   });
@@ -7286,7 +7494,47 @@ export const getManagerDashboardData = async (tenantId: string): Promise<Dashboa
       totalCost: (p._sum.quantity || 0) * (detail?.cost || 0),
     };
   }).sort((a, b) => b.totalCost - a.totalCost).slice(0, 5);
+  
+  // --- 5. Nuevas consultas para el rendimiento del equipo ---
+  const visitsByTechnician = await prisma.visit.groupBy({
+    by: ['technicianId'],
+    where: {
+      pool: { tenantId },
+      status: 'COMPLETED',
+      technicianId: { not: null },
+      timestamp: { gte: startDate, lte: endDate }
+    },
+    _count: { id: true }, // ✅ CORRECCIÓN: Contar por un campo específico como 'id'
+  });
 
+  const tasksByTechnician = await prisma.incidentTask.groupBy({
+    by: ['assignedToId'],
+    where: {
+      tenantId,
+      status: 'COMPLETED',
+      assignedToId: { not: null },
+      // ✅ CORRECCIÓN: 'updatedAt' no existe en IncidentTask, se elimina el filtro de fecha
+    },
+    _count: { id: true }, // ✅ CORRECCIÓN: Contar por un campo específico como 'id'
+  });
+  
+  // --- 6. Lógica para fusionar los datos ---
+  const technicians = await prisma.user.findMany({
+    where: { tenantId, role: 'TECHNICIAN' },
+    select: { id: true, name: true }
+  });
+
+  const teamPerformance = technicians.map(tech => {
+    const visitData = visitsByTechnician.find(v => v.technicianId === tech.id);
+    const taskData = tasksByTechnician.find(t => t.assignedToId === tech.id);
+    return {
+      technicianId: tech.id,
+      technicianName: tech.name,
+      // ✅ CORRECCIÓN: Acceder al contador a través de `_count.id`
+      completedVisits: visitData?._count.id || 0,
+      completedTasks: taskData?._count.id || 0,
+    };
+  });
 
   return {
     financials: {
@@ -7301,11 +7549,12 @@ export const getManagerDashboardData = async (tenantId: string): Promise<Dashboa
     },
     topClientsByProfit,
     topProductsByCost,
+    teamPerformance,
   };
 };
 
 
-// ====== [61] packages/server/src/api/expenses/expenses.controller.ts ======
+// ====== [63] packages/server/src/api/expenses/expenses.controller.ts ======
 // filename: packages/server/src/api/expenses/expenses.controller.ts
 // version: 1.0.0
 // description: Controlador para manejar las peticiones HTTP del CRUD de gastos.
@@ -7381,7 +7630,7 @@ export const deleteExpenseHandler = async (
 };
 
 
-// ====== [62] packages/server/src/api/expenses/expenses.routes.ts ======
+// ====== [64] packages/server/src/api/expenses/expenses.routes.ts ======
 // filename: packages/server/src/api/expenses/expenses.routes.ts
 // version: 2.0.0 (FEAT: Protect routes with ADMIN authorization)
 
@@ -7412,7 +7661,7 @@ expensesRouter.delete('/:id', deleteExpenseHandler);
 export default expensesRouter;
 
 
-// ====== [63] packages/server/src/api/expenses/expenses.service.ts ======
+// ====== [65] packages/server/src/api/expenses/expenses.service.ts ======
 // filename: packages/server/src/api/expenses/expenses.service.ts
 // version: 1.0.0
 // description: Servicio para la lógica de negocio de los gastos de la empresa.
@@ -7459,7 +7708,7 @@ export const deleteExpense = async (id: string): Promise<void> => {
 };
 
 
-// ====== [64] packages/server/src/api/incident-tasks/incident-tasks.controller.ts ======
+// ====== [66] packages/server/src/api/incident-tasks/incident-tasks.controller.ts ======
 // filename: packages/server/src/api/incident-tasks/incident-tasks.controller.ts
 // version: 1.3.1 (Cleaned)
 
@@ -7594,7 +7843,7 @@ export const updateTaskDeadlineHandler = async (req: AuthRequest, res: Response,
 };
 
 
-// ====== [65] packages/server/src/api/incident-tasks/incident-tasks.routes.ts ======
+// ====== [67] packages/server/src/api/incident-tasks/incident-tasks.routes.ts ======
 // filename: packages/server/src/api/incident-tasks/incident-tasks.routes.ts
 // version: 2.0.0 (FEAT: Protect routes with granular ADMIN/TECHNICIAN authorization)
 
@@ -7644,13 +7893,14 @@ incidentTasksRouter.delete('/:id', authorize('ADMIN'), deleteIncidentTaskHandler
 export default incidentTasksRouter;
 
 
+// ====== [68] packages/server/src/api/incident-tasks/incident-tasks.service.ts ======
 // ====== [66] packages/server/src/api/incident-tasks/incident-tasks.service.ts ======
 // filename: packages/server/src/api/incident-tasks/incident-tasks.service.ts
-// version: 1.5.1 (FIX: Correctly compare nullable dates)
+// version: 1.6.0 (FIX: Use existing fields for query)
+// description: Corrected the getTasksByNotificationId function to select and order by fields that exist in the current schema.
 
 import { PrismaClient } from '@prisma/client';
 import type { IncidentTask, IncidentPriority, IncidentTaskStatus, IncidentTaskLog } from '@prisma/client';
-// ✅ Se elimina 'isEqual' que no se usa y causaba el error
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -7704,6 +7954,7 @@ export const createIncidentTask = async (data: CreateIncidentTaskInput, actorId:
 };
 
 export const getTasksByNotificationId = async (notificationId: string, tenantId: string): Promise<IncidentTask[]> => {
+  // ✅ CORRECCIÓN: Se ajusta la consulta para usar campos existentes.
   return prisma.incidentTask.findMany({
     where: { notificationId, tenantId },
     select: {
@@ -7720,14 +7971,15 @@ export const getTasksByNotificationId = async (notificationId: string, tenantId:
           name: true,
         },
       },
-      createdAt: true,
-      updatedAt: true,
-      tenantId: true,
-      notificationId: true,
+      // Los campos createdAt y updatedAt no existen en el modelo IncidentTask,
+      // por lo tanto, no se pueden seleccionar.
+      notificationId: true, 
       assignedToId: true,
-      logs: false,
+      tenantId: true,
+      logs: false, // No incluimos los logs en esta consulta por rendimiento
     },
-    orderBy: { createdAt: 'asc' },
+    // Se ordena por prioridad y luego por id.
+    orderBy: [{ priority: 'desc' }, { id: 'asc' }],
   });
 };
 
@@ -7737,13 +7989,11 @@ export const getTasksAssignedToUser = async (userId: string): Promise<IncidentTa
 
 export const updateIncidentTask = async (id: string, data: UpdateIncidentTaskInput): Promise<IncidentTask> => {
   return prisma.$transaction(async (tx) => {
-    // 1. Obtenemos el estado de la tarea ANTES de la actualización
     const originalTask = await tx.incidentTask.findUniqueOrThrow({
       where: { id },
       include: { assignedTo: true }
     });
 
-    // 2. Realizamos la actualización
     const updatedTask = await tx.incidentTask.update({
         where: { id },
         data: {
@@ -7753,11 +8003,9 @@ export const updateIncidentTask = async (id: string, data: UpdateIncidentTaskInp
         include: { assignedTo: true, notification: true }
     });
 
-    // 3. Comparamos el plazo (deadline) de forma segura
     const originalDeadline = originalTask.deadline;
     const updatedDeadline = updatedTask.deadline;
     
-    // ✅ LA SOLUCIÓN: Comparamos el valor numérico de las fechas, que maneja null/undefined correctamente.
     if (originalDeadline?.getTime() !== updatedDeadline?.getTime() && updatedTask.assignedTo) {
       const formattedDeadline = updatedDeadline 
         ? format(updatedDeadline, "d MMMM yyyy 'a las' HH:mm", { locale: es })
@@ -7765,7 +8013,6 @@ export const updateIncidentTask = async (id: string, data: UpdateIncidentTaskInp
       
       const message = `El plazo para tu tarea "${updatedTask.title}" ha sido actualizado a: ${formattedDeadline}.`;
       
-      // Creamos la notificación para el técnico
       await tx.notification.create({
         data: {
           message,
@@ -7908,7 +8155,7 @@ export const updateTaskDeadline = async (taskId: string, deadline: string, actor
 };
 
 
-// ====== [67] packages/server/src/api/notifications/notifications.controller.ts ======
+// ====== [69] packages/server/src/api/notifications/notifications.controller.ts ======
 // filename: packages/server/src/api/notifications/notifications.controller.ts
 // version: 1.6.0 (Adds getNotificationByIdHandler)
 // description: Añade el manejador para obtener una única notificación por su ID.
@@ -8067,7 +8314,7 @@ export const classifyNotificationHandler = async (
 };
 
 
-// ====== [68] packages/server/src/api/notifications/notifications.routes.ts ======
+// ====== [70] packages/server/src/api/notifications/notifications.routes.ts ======
 // filename: packages/server/src/api/notifications/notifications.routes.ts
 // version: 1.4.0 (Adds route to get a single notification by ID)
 // description: Añade el endpoint para obtener los detalles de una notificación específica.
@@ -8135,13 +8382,16 @@ notificationsRouter.get('/:notificationId', getNotificationByIdHandler); // <-- 
 export default notificationsRouter;
 
 
+// ====== [71] packages/server/src/api/notifications/notifications.service.ts ======
 // ====== [69] packages/server/src/api/notifications/notifications.service.ts ======
 // filename: packages/server/src/api/notifications/notifications.service.ts
-// version: 1.6.1 (FIXED - Based on v1.5.1, adds getNotificationById)
+// version: 1.7.1 (FIX: Remove unused import)
+// description: Removed unused 'subHours' import from date-fns.
 
 import { PrismaClient } from '@prisma/client';
 import type { Notification, IncidentPriority, NotificationStatus } from '@prisma/client';
-import { subHours } from 'date-fns';
+// ✅ CORRECCIÓN: Se elimina 'subHours' de la importación.
+import { } from 'date-fns';
 
 const prisma = new PrismaClient();
 
@@ -8149,7 +8399,7 @@ const prisma = new PrismaClient();
 export type NotificationWithCriticality = Notification & { isCritical: boolean };
 
 export type PaginatedNotifications = {
-    notifications: (Notification & { visit: any })[]; // Ajustado para que coincida con el include
+    notifications: (Notification & { visit: any })[];
     total: number;
 };
 
@@ -8159,7 +8409,7 @@ export type PaginatedNotifications = {
 export const getNotificationsForUser = async (userId: string): Promise<Notification[]> => {
   return prisma.notification.findMany({
     where: { userId, status: 'PENDING' },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { id: 'desc' },
   });
 };
 
@@ -8198,33 +8448,19 @@ export const getNotificationHistory = async (
                         technician: { select: { name: true } }
                     }
                 },
-                images: true, // Incluimos las imágenes
-            }
+                images: true,
+            },
+            orderBy: { id: 'desc' }
         }),
         prisma.notification.count({ where: whereClause })
     ]);
     
-    const now = new Date();
-    const criticalThreshold = subHours(now, 48); 
+    const enrichedNotifications = notifications.map(notification => ({
+        ...notification,
+        isCritical: notification.status === 'PENDING' && (notification.priority === 'HIGH' || notification.priority === 'CRITICAL'),
+    }));
 
-    const enrichedAndSortedNotifications = notifications
-        .map(notification => {
-            const isOverdueByDeadline = notification.resolutionDeadline && notification.resolutionDeadline < now;
-            const isOverdueByDefault = !notification.resolutionDeadline && notification.createdAt < criticalThreshold;
-            return {
-                ...notification,
-                isCritical: (isOverdueByDeadline || isOverdueByDefault) && notification.status === 'PENDING',
-            };
-        })
-        .sort((a, b) => {
-            if (a.isCritical && !b.isCritical) return -1;
-            if (!a.isCritical && b.isCritical) return 1;
-            if (a.status === 'PENDING' && b.status === 'RESOLVED') return -1;
-            if (a.status === 'RESOLVED' && b.status === 'PENDING') return 1;
-            return b.createdAt.getTime() - a.createdAt.getTime();
-        });
-
-    return { notifications: enrichedAndSortedNotifications, total };
+    return { notifications: enrichedNotifications, total };
 };
 
 
@@ -8274,10 +8510,7 @@ export const classifyNotification = async (
 
 
 /**
- * --- NUEVA FUNCIÓN ---
  * Obtiene los detalles de una única notificación por su ID.
- * @param notificationId - El ID de la notificación a buscar.
- * @returns El objeto de la notificación con sus relaciones, o null si no se encuentra.
  */
 export const getNotificationById = async (notificationId: string) => {
   return prisma.notification.findUnique({
@@ -8295,7 +8528,7 @@ export const getNotificationById = async (notificationId: string) => {
 };
 
 
-// ====== [70] packages/server/src/api/parameters/parameters.controller.ts ======
+// ====== [72] packages/server/src/api/parameters/parameters.controller.ts ======
 // filename: packages/server/src/api/parameters/parameters.controller.ts
 // Version: 2.0.0 (FEAT: Pass tenantId to service for validation)
 
@@ -8396,7 +8629,7 @@ export const deleteParameterTemplateHandler = async (
 };
 
 
-// ====== [71] packages/server/src/api/parameters/parameters.routes.ts ======
+// ====== [73] packages/server/src/api/parameters/parameters.routes.ts ======
 // filename: packages/server/src/api/parameters/parameters.routes.ts
 // Version: 2.0.0 (FEAT: Protect routes with ADMIN authorization)
 
@@ -8427,7 +8660,7 @@ parametersRouter.route('/:id')
 export default parametersRouter;
 
 
-// ====== [72] packages/server/src/api/parameters/parameters.service.ts ======
+// ====== [74] packages/server/src/api/parameters/parameters.service.ts ======
 // filename: packages/server/src/api/parameters/parameters.service.ts
 // Version: 2.0.1 (FIXED: Correct type definition for create operation)
 
@@ -8525,7 +8758,7 @@ export const deleteParameterTemplate = async (
 };
 
 
-// ====== [73] packages/server/src/api/payments/payments.controller.ts ======
+// ====== [75] packages/server/src/api/payments/payments.controller.ts ======
 // filename: packages/server/src/api/payments/payments.controller.ts
 // version: 1.0.0
 // description: Controlador para manejar las peticiones HTTP del CRUD de pagos.
@@ -8598,7 +8831,7 @@ export const deletePaymentHandler = async (
 };
 
 
-// ====== [74] packages/server/src/api/payments/payments.routes.ts ======
+// ====== [76] packages/server/src/api/payments/payments.routes.ts ======
 // filename: packages/server/src/api/payments/payments.routes.ts
 // version: 2.0.0 (FEAT: Protect routes with ADMIN authorization)
 
@@ -8630,7 +8863,7 @@ paymentsRouter.delete('/:id', deletePaymentHandler);
 export default paymentsRouter;
 
 
-// ====== [75] packages/server/src/api/payments/payments.service.ts ======
+// ====== [77] packages/server/src/api/payments/payments.service.ts ======
 // filename: packages/server/src/api/payments/payments.service.ts
 // version: 1.0.0
 // description: Servicio para la lógica de negocio de los pagos de clientes.
@@ -8677,7 +8910,7 @@ export const deletePayment = async (id: string): Promise<void> => {
 };
 
 
-// ====== [76] packages/server/src/api/pool-configurations/pool-configurations.controller.ts ======
+// ====== [78] packages/server/src/api/pool-configurations/pool-configurations.controller.ts ======
 // filename: packages/server/src/api/pool-configurations/pool-configurations.controller.ts
 // Version: 2.0.0 (FEAT: Pass tenantId to service for validation)
 
@@ -8780,7 +9013,7 @@ export const deletePoolConfigurationHandler = async (
 };
 
 
-// ====== [77] packages/server/src/api/pool-configurations/pool-configurations.routes.ts ======
+// ====== [79] packages/server/src/api/pool-configurations/pool-configurations.routes.ts ======
 // filename: packages/server/src/api/pool-configurations/pool-configurations.routes.ts
 // Version: 1.1.0 (Add PATCH route for update functionality)
 import { Router } from 'express';
@@ -8811,7 +9044,7 @@ poolConfigurationsRouter.route('/:id')
 export default poolConfigurationsRouter;
 
 
-// ====== [78] packages/server/src/api/pool-configurations/pool-configurations.service.ts ======
+// ====== [80] packages/server/src/api/pool-configurations/pool-configurations.service.ts ======
 // filename: packages/server/src/api/pool-configurations/pool-configurations.service.ts
 // Version: 2.0.0 (FEAT: Add tenantId validation for CUD operations)
 
@@ -8920,7 +9153,7 @@ export const deletePoolConfiguration = async (id: string, tenantId: string): Pro
 };
 
 
-// ====== [79] packages/server/src/api/pools/pools.controller.ts ======
+// ====== [81] packages/server/src/api/pools/pools.controller.ts ======
 // filename: packages/server/src/api/pools/pools.controller.ts
 // Version: 2.0.0 (FEAT: Pass tenantId to service for validation)
 
@@ -8998,7 +9231,7 @@ export const deletePoolHandler = async (
 };
 
 
-// ====== [80] packages/server/src/api/pools/pools.routes.ts ======
+// ====== [82] packages/server/src/api/pools/pools.routes.ts ======
 // filename: packages/server/src/api/pools/pools.routes.ts
 // Version: 2.0.0 (FEAT: Protect routes with ADMIN authorization)
 
@@ -9031,7 +9264,7 @@ poolsRouter.route('/:id')
 export default poolsRouter;
 
 
-// ====== [81] packages/server/src/api/pools/pools.service.ts ======
+// ====== [83] packages/server/src/api/pools/pools.service.ts ======
 // filename: packages/server/src/api/pools/pools.service.ts
 // Version: 2.0.0 (FEAT: Add tenantId validation for CUD operations)
 
@@ -9101,7 +9334,7 @@ export const deletePool = async (id: string, tenantId: string): Promise<void> =>
 };
 
 
-// ====== [82] packages/server/src/api/product-categories/product-categories.controller.ts ======
+// ====== [84] packages/server/src/api/product-categories/product-categories.controller.ts ======
 // filename: packages/server/src/api/product-categories/product-categories.controller.ts
 // version: 2.0.0 (FEAT: Pass tenantId to service for validation)
 
@@ -9204,7 +9437,7 @@ export const deleteProductCategoryHandler = async (
 };
 
 
-// ====== [83] packages/server/src/api/product-categories/product-categories.routes.ts ======
+// ====== [85] packages/server/src/api/product-categories/product-categories.routes.ts ======
 // filename: packages/server/src/api/product-categories/product-categories.routes.ts
 // version: 2.0.0 (FEAT: Protect routes with ADMIN authorization)
 
@@ -9237,7 +9470,7 @@ productCategoriesRouter.route('/:id')
 export default productCategoriesRouter;
 
 
-// ====== [84] packages/server/src/api/product-categories/product-categories.service.ts ======
+// ====== [86] packages/server/src/api/product-categories/product-categories.service.ts ======
 // filename: packages/server/src/api/product-categories/product-categories.service.ts
 // version: 2.0.0 (FEAT: Add tenantId validation for CUD operations)
 
@@ -9319,7 +9552,7 @@ export const deleteProductCategory = async (id: string, tenantId: string): Promi
 };
 
 
-// ====== [85] packages/server/src/api/products/products.controller.ts ======
+// ====== [87] packages/server/src/api/products/products.controller.ts ======
 // filename: packages/server/src/api/products/products.controller.ts
 // version: 2.0.0 (FEAT: Pass tenantId to service for validation)
 
@@ -9424,7 +9657,7 @@ export const deleteProductHandler = async (
 };
 
 
-// ====== [86] packages/server/src/api/products/products.routes.ts ======
+// ====== [88] packages/server/src/api/products/products.routes.ts ======
 // filename: packages/server/src/api/products/products.routes.ts
 // version: 2.0.0 (FEAT: Protect routes with ADMIN authorization)
 
@@ -9457,7 +9690,7 @@ productsRouter.route('/:id')
 export default productsRouter;
 
 
-// ====== [87] packages/server/src/api/products/products.service.ts ======
+// ====== [89] packages/server/src/api/products/products.service.ts ======
 // filename: packages/server/src/api/products/products.service.ts
 // version: 2.0.0 (FEAT: Add tenantId validation for CUD operations)
 
@@ -9537,13 +9770,14 @@ export const deleteProduct = async (id: string, tenantId: string): Promise<void>
 };
 
 
+// ====== [90] packages/server/src/api/reports/reports.controller.ts ======
 // ====== [88] packages/server/src/api/reports/reports.controller.ts ======
 // filename: packages/server/src/api/reports/reports.controller.ts
-// version: 1.2.0 (FEAT: Add handler for invoicing report)
+// version: 1.3.0 (FEAT: Read productId from query in consumption report handler)
+// description: The consumption report handler now reads an optional productId from the query string and passes it to the service.
 
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
-// --- 1. Importar la nueva función del servicio ---
 import { generateConsumptionReport, getConsumptionDetailsForProduct, generateInvoicingReport } from './reports.service.js';
 
 /**
@@ -9560,7 +9794,8 @@ export const getConsumptionReportHandler = async (
       return res.status(403).json({ success: false, message: 'Acción no permitida. Tenant no identificado.' });
     }
 
-    const { startDate: startDateStr, endDate: endDateStr, clientId } = req.query;
+    // ✅ 1. Leer el nuevo parámetro opcional 'productId'
+    const { startDate: startDateStr, endDate: endDateStr, clientId, productId } = req.query;
 
     if (!startDateStr || !endDateStr || typeof startDateStr !== 'string' || typeof endDateStr !== 'string') {
       return res.status(400).json({ success: false, message: 'Los parámetros startDate y endDate son obligatorios.' });
@@ -9578,6 +9813,8 @@ export const getConsumptionReportHandler = async (
       startDate,
       endDate,
       clientId: typeof clientId === 'string' ? clientId : undefined,
+      // ✅ 2. Pasar el productId al servicio
+      productId: typeof productId === 'string' ? productId : undefined,
     });
 
     res.status(200).json({ success: true, data: report });
@@ -9633,7 +9870,6 @@ export const getProductConsumptionDetailHandler = async (
 };
 
 /**
- * --- ✅ 2. NUEVO MANEJADOR ---
  * Maneja la petición para generar y devolver un informe de pre-facturación.
  */
 export const getInvoicingReportHandler = async (
@@ -9675,7 +9911,7 @@ export const getInvoicingReportHandler = async (
 };
 
 
-// ====== [89] packages/server/src/api/reports/reports.routes.ts ======
+// ====== [91] packages/server/src/api/reports/reports.routes.ts ======
 // filename: packages/server/src/api/reports/reports.routes.ts
 // version: 2.0.0 (FEAT: Protect routes with ADMIN/MANAGER authorization)
 
@@ -9719,10 +9955,11 @@ reportsRouter.get('/invoicing', getInvoicingReportHandler);
 export default reportsRouter;
 
 
+// ====== [92] packages/server/src/api/reports/reports.service.ts ======
 // ====== [90] packages/server/src/api/reports/reports.service.ts ======
 // filename: packages/server/src/api/reports/reports.service.ts
-// version: 1.3.1 (FIXED: Correct relation name in generateInvoicingReport to match schema)
-// description: Se ha corregido el nombre de la relación a 'clientPricingRules' en la función del informe de facturación.
+// version: 1.4.0 (FEAT: Add productId filter to consumption report)
+// description: The consumption report can now be filtered by a specific product ID.
 
 import { PrismaClient } from '@prisma/client';
 import type { ClientProductPricing } from '@prisma/client';
@@ -9736,6 +9973,8 @@ interface ReportFilters {
   startDate: Date;
   endDate: Date;
   clientId?: string;
+  // ✅ 1. Añadir productId como filtro opcional
+  productId?: string;
 }
 
 interface ConsumptionReport {
@@ -9799,10 +10038,12 @@ export interface InvoicingReport {
 // --- Funciones de Servicio ---
 
 export const generateConsumptionReport = async (filters: ReportFilters): Promise<ConsumptionReport> => {
-  const { tenantId, startDate, endDate, clientId } = filters;
+  const { tenantId, startDate, endDate, clientId, productId } = filters;
 
   const consumptions = await prisma.consumption.findMany({
     where: {
+      // ✅ 2. Añadir la condición del productId a la consulta
+      productId: productId ? productId : undefined,
       visit: {
         pool: {
           tenantId: tenantId,
@@ -9912,7 +10153,6 @@ export const generateInvoicingReport = async (filters: ReportFilters): Promise<I
             tenantId,
             id: clientId ? clientId : undefined,
         },
-        // ✅ CORRECCIÓN APLICADA AQUÍ
         include: {
             clientPricingRules: true, 
         },
@@ -9961,7 +10201,6 @@ export const generateInvoicingReport = async (filters: ReportFilters): Promise<I
             const product = consumption.product;
             let finalSalePrice = product.salePrice;
 
-            // ✅ CORRECCIÓN APLICADA AQUÍ
             const productRule = client.clientPricingRules.find((r: ClientProductPricing) => r.productId === product.id);
             const categoryRule = client.clientPricingRules.find((r: ClientProductPricing) => r.productCategoryId === product.categoryId);
 
@@ -10003,7 +10242,7 @@ export const generateInvoicingReport = async (filters: ReportFilters): Promise<I
 };
 
 
-// ====== [91] packages/server/src/api/tasks/tasks.controller.ts ======
+// ====== [93] packages/server/src/api/tasks/tasks.controller.ts ======
 // filename: packages/server/src/api/tasks/tasks.controller.ts
 // Version: 2.0.0 (FEAT: Pass tenantId to service for validation)
 
@@ -10106,7 +10345,7 @@ export const deleteTaskTemplateHandler = async (
 };
 
 
-// ====== [92] packages/server/src/api/tasks/tasks.routes.ts ======
+// ====== [94] packages/server/src/api/tasks/tasks.routes.ts ======
 // filename: packages/server/src/api/tasks/tasks.routes.ts
 // Version: 2.0.0 (FEAT: Protect routes with ADMIN authorization)
 
@@ -10137,7 +10376,7 @@ tasksRouter.route('/:id')
 export default tasksRouter;
 
 
-// ====== [93] packages/server/src/api/tasks/tasks.service.ts ======
+// ====== [95] packages/server/src/api/tasks/tasks.service.ts ======
 // filename: packages/server/src/api/tasks/tasks.service.ts
 // Version: 2.0.0 (FEAT: Add tenantId validation for CUD operations)
 
@@ -10235,7 +10474,7 @@ export const deleteTaskTemplate = async (
 };
 
 
-// ====== [94] packages/server/src/api/tenants/tenants.controller.ts ======
+// ====== [96] packages/server/src/api/tenants/tenants.controller.ts ======
 import type { Request, Response, NextFunction } from 'express';
 import {
   createTenant,
@@ -10352,7 +10591,7 @@ export const deleteTenantHandler = async (
 };
 
 
-// ====== [95] packages/server/src/api/tenants/tenants.routes.ts ======
+// ====== [97] packages/server/src/api/tenants/tenants.routes.ts ======
 // filename: packages/server/src/api/tenants/tenants.routes.ts
 // version: 2.0.0 (FEAT: Protect routes with SUPER_ADMIN authorization)
 
@@ -10413,7 +10652,7 @@ tenantsRouter.delete('/:id', deleteTenantHandler);
 export default tenantsRouter;
 
 
-// ====== [96] packages/server/src/api/tenants/tenants.service.ts ======
+// ====== [98] packages/server/src/api/tenants/tenants.service.ts ======
 import { PrismaClient } from '@prisma/client';
 import type { Tenant, SubscriptionStatus } from '@prisma/client';
 import { hashPassword } from '../../utils/password.utils.js';
@@ -10533,7 +10772,7 @@ export const deleteTenant = async (id: string): Promise<Tenant> => {
 };
 
 
-// ====== [97] packages/server/src/api/uploads/uploads.controller.ts ======
+// ====== [99] packages/server/src/api/uploads/uploads.controller.ts ======
 // filename: packages/server/src/api/uploads/uploads.controller.ts
 // version: 1.0.0
 // description: Controlador para manejar las peticiones HTTP de firma de subidas.
@@ -10562,7 +10801,7 @@ export const getUploadSignatureHandler = (
 };
 
 
-// ====== [98] packages/server/src/api/uploads/uploads.routes.ts ======
+// ====== [100] packages/server/src/api/uploads/uploads.routes.ts ======
 // filename: packages/server/src/api/uploads/uploads.routes.ts
 // version: 1.0.0
 // description: Define el endpoint para obtener la firma de subida.
@@ -10587,7 +10826,7 @@ uploadsRouter.get('/signature', getUploadSignatureHandler);
 export default uploadsRouter;
 
 
-// ====== [99] packages/server/src/api/uploads/uploads.service.ts ======
+// ====== [101] packages/server/src/api/uploads/uploads.service.ts ======
 // filename: packages/server/src/api/uploads/uploads.service.ts
 // version: 1.0.0
 // description: Servicio para generar firmas seguras para la subida de archivos a Cloudinary.
@@ -10636,17 +10875,20 @@ export const generateUploadSignature = () => {
 };
 
 
+// ====== [102] packages/server/src/api/users/users.controller.ts ======
 // ====== [100] packages/server/src/api/users/users.controller.ts ======
 // filename: packages/server/src/api/users/users.controller.ts
-// Version: 1.0.0 (Initial creation of the controller for User queries)
+// Version: 2.0.0 (FEAT: Adapt controller to fetch assignable users)
+// description: The controller now calls the service function that fetches both technicians and managers.
+
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
-import { getTechniciansByTenant } from './users.service.js';
+import { getAssignableUsersByTenant } from './users.service.js';
 
 /**
- * Maneja la obtención de todos los técnicos de un tenant.
+ * Maneja la obtención de todos los usuarios asignables (técnicos y gerentes) de un tenant.
  */
-export const getTechniciansByTenantHandler = async (
+export const getAssignableUsersHandler = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -10657,20 +10899,22 @@ export const getTechniciansByTenantHandler = async (
       return res.status(403).json({ message: 'Acción no permitida.' });
     }
 
-    const technicians = await getTechniciansByTenant(tenantId);
-    res.status(200).json({ success: true, data: technicians });
+    const assignableUsers = await getAssignableUsersByTenant(tenantId);
+    res.status(200).json({ success: true, data: assignableUsers });
   } catch (error) {
     next(error);
   }
 };
 
 
+// ====== [103] packages/server/src/api/users/users.routes.ts ======
 // ====== [101] packages/server/src/api/users/users.routes.ts ======
 // filename: packages/server/src/api/users/users.routes.ts
-// Version: 2.0.0 (FEAT: Protect routes with ADMIN/MANAGER authorization)
+// Version: 2.1.0 (FEAT: Adapt routes to use the new controller handler)
+// description: The route now points to the new handler for fetching assignable users (technicians and managers).
 
 import { Router } from 'express';
-import { getTechniciansByTenantHandler } from './users.controller.js';
+import { getAssignableUsersHandler } from './users.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
 import { authorize } from '../../middleware/authorize.middleware.js';
 
@@ -10681,18 +10925,20 @@ usersRouter.use(protect);
 
 /**
  * @route   GET /api/users/technicians
- * @desc    Obtiene una lista de todos los técnicos del tenant.
+ * @desc    Obtiene una lista de todos los usuarios asignables (técnicos y gerentes) del tenant.
  * @access  Private (Admin, Manager)
  */
-usersRouter.get('/technicians', authorize('ADMIN', 'MANAGER'), getTechniciansByTenantHandler);
-
+usersRouter.get('/technicians', authorize('ADMIN', 'MANAGER'), getAssignableUsersHandler);
 
 export default usersRouter;
 
 
+// ====== [104] packages/server/src/api/users/users.service.ts ======
 // ====== [102] packages/server/src/api/users/users.service.ts ======
 // filename: packages/server/src/api/users/users.service.ts
-// Version: 1.0.0 (Initial creation of the service for User queries)
+// Version: 2.1.0 (FIX: Include isAvailable field in select query)
+// description: The function now includes the 'isAvailable' field to match the updated User type.
+
 import { PrismaClient } from '@prisma/client';
 import type { User } from '@prisma/client';
 
@@ -10701,17 +10947,18 @@ const prisma = new PrismaClient();
 // --- Funciones del Servicio ---
 
 /**
- * Obtiene todos los usuarios con el rol de TECHNICIAN para un tenant específico.
+ * Obtiene todos los usuarios a los que se les puede asignar trabajo (Técnicos y Gerentes).
  * @param tenantId - El ID del tenant.
- * @returns Un array de usuarios técnicos (sin la contraseña).
+ * @returns Un array de usuarios (sin la contraseña).
  */
-export const getTechniciansByTenant = async (
+export const getAssignableUsersByTenant = async (
   tenantId: string
 ): Promise<Omit<User, 'password'>[]> => {
   return prisma.user.findMany({
     where: {
       tenantId,
-      role: 'TECHNICIAN',
+      // Se incluyen ambos roles en el filtro
+      role: { in: ['TECHNICIAN', 'MANAGER'] },
     },
     select: {
       id: true,
@@ -10721,6 +10968,8 @@ export const getTechniciansByTenant = async (
       tenantId: true,
       createdAt: true,
       updatedAt: true,
+      // ✅ CORRECCIÓN: Añadir el campo que faltaba.
+      isAvailable: true, 
     },
     orderBy: {
       name: 'asc',
@@ -10729,7 +10978,7 @@ export const getTechniciansByTenant = async (
 };
 
 
-// ====== [103] packages/server/src/api/visits/visits.controller.ts ======
+// ====== [105] packages/server/src/api/visits/visits.controller.ts ======
 // filename: packages/server/src/api/visits/visits.controller.ts
 // Version: 1.7.0 (Adapt assignTechnicianHandler to new logic)
 import type { Response, NextFunction } from 'express';
@@ -10866,7 +11115,7 @@ export const submitWorkOrderHandler = async (
 };
 
 
-// ====== [104] packages/server/src/api/visits/visits.routes.ts ======
+// ====== [106] packages/server/src/api/visits/visits.routes.ts ======
 // filename: packages/server/src/api/visits/visits.routes.ts
 // Version: 2.0.0 (FEAT: Protect routes with granular ADMIN/TECHNICIAN authorization)
 
@@ -10908,7 +11157,7 @@ visitsRouter.get('/:id', authorize('ADMIN', 'TECHNICIAN'), getVisitDetailsHandle
 export default visitsRouter;
 
 
-// ====== [105] packages/server/src/api/visits/visits.service.ts ======
+// ====== [107] packages/server/src/api/visits/visits.service.ts ======
 // filename: packages/server/src/api/visits/visits.service.ts
 // version: 2.1.0 (FEAT: Add threshold-based alerts on work order submission)
 
@@ -11196,7 +11445,7 @@ export const submitWorkOrder = async (visitId: string, data: WorkOrderInput) => 
 };
 
 
-// ====== [106] packages/server/src/app.ts ======
+// ====== [108] packages/server/src/app.ts ======
 // filename: packages/server/src/app.ts
 // version: 2.7.0 (FEAT: Mount reportsRouter)
 import express from 'express';
@@ -11272,7 +11521,7 @@ app.use(errorHandler);
 export default app;
 
 
-// ====== [107] packages/server/src/config/index.ts ======
+// ====== [109] packages/server/src/config/index.ts ======
 // filename: packages/server/src/config/index.ts
 // version: 2.0.0 (Add Cloudinary credentials)
 
@@ -11310,7 +11559,7 @@ const config = {
 export default config;
 
 
-// ====== [108] packages/server/src/middleware/auth.middleware.ts ======
+// ====== [110] packages/server/src/middleware/auth.middleware.ts ======
 // filename: packages/server/src/middleware/auth.middleware.ts
 // version: 2.0.0 (FEAT: Implement 'View As' logic for Manager role)
 
@@ -11390,7 +11639,7 @@ export const protect = async (
 };
 
 
-// ====== [109] packages/server/src/middleware/authorize.middleware.ts ======
+// ====== [111] packages/server/src/middleware/authorize.middleware.ts ======
 // filename: packages/server/src/middleware/authorize.middleware.ts
 // version: 1.0.0
 // description: Middleware para la autorización basada en roles.
@@ -11434,7 +11683,7 @@ export const authorize = (...allowedRoles: UserRole[]) => {
 };
 
 
-// ====== [110] packages/server/src/middleware/error.middleware.ts ======
+// ====== [112] packages/server/src/middleware/error.middleware.ts ======
 import type { Request, Response, NextFunction } from 'express';
 
 // Interfaz para asegurar que nuestros errores puedan tener un código de estado
@@ -11462,7 +11711,7 @@ export const errorHandler = (
 };
 
 
-// ====== [111] packages/server/src/server.ts ======
+// ====== [113] packages/server/src/server.ts ======
 import app from './app.js';
 import config from './config/index.js';
 
@@ -11473,7 +11722,7 @@ app.listen(PORT, () => {
 });
 
 
-// ====== [112] packages/server/src/utils/jwt.utils.ts ======
+// ====== [114] packages/server/src/utils/jwt.utils.ts ======
 import jwt from 'jsonwebtoken';
 import type { SignOptions } from 'jsonwebtoken';
 import config from '../config/index.js';
@@ -11507,7 +11756,7 @@ export const verifyToken = <T>(token: string): T | null => {
 };
 
 
-// ====== [113] packages/server/src/utils/password.utils.ts ======
+// ====== [115] packages/server/src/utils/password.utils.ts ======
 import bcrypt from 'bcryptjs';
 
 const SALT_ROUNDS = 12;
@@ -11532,7 +11781,7 @@ export const comparePassword = (password: string, hash: string): Promise<boolean
 };
 
 
-// ====== [114] packages/server/tsconfig.json ======
+// ====== [116] packages/server/tsconfig.json ======
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
@@ -11543,7 +11792,7 @@ export const comparePassword = (password: string, hash: string): Promise<boolean
 }
 
 
-// ====== [115] tsconfig.json ======
+// ====== [117] tsconfig.json ======
 {
   "compilerOptions": {
     /* Base Options */
