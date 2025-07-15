@@ -1,14 +1,14 @@
 // filename: packages/server/src/api/pools/pools.service.ts
-// Version: 1.0.0 (Initial creation of the service for Pool management)
+// Version: 2.0.0 (FEAT: Add tenantId validation for CUD operations)
+
 import { PrismaClient } from '@prisma/client';
 import type { Pool } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 // --- Tipos de Entrada (DTOs) ---
-// Omitimos los campos autogenerados por la base de datos (id, qrCode, timestamps)
 export type CreatePoolInput = Omit<Pool, 'id' | 'qrCode' | 'createdAt' | 'updatedAt'>;
-export type UpdatePoolInput = Partial<CreatePoolInput>;
+export type UpdatePoolInput = Partial<Omit<CreatePoolInput, 'tenantId'>>;
 
 // --- Funciones del Servicio ---
 
@@ -24,12 +24,23 @@ export const createPool = async (data: CreatePoolInput): Promise<Pool> => {
 };
 
 /**
- * Actualiza una piscina existente.
+ * Actualiza una piscina existente, verificando la pertenencia al tenant.
  * @param id - El ID de la piscina a actualizar.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  * @param data - Los datos a actualizar.
  * @returns La piscina actualizada.
  */
-export const updatePool = async (id: string, data: UpdatePoolInput): Promise<Pool> => {
+export const updatePool = async (id: string, tenantId: string, data: UpdatePoolInput): Promise<Pool> => {
+  // Primero, verificamos que la piscina pertenece al tenant.
+  // Esto es un paso extra de seguridad antes de la actualización.
+  const poolExists = await prisma.pool.findFirst({
+    where: { id, tenantId },
+  });
+
+  if (!poolExists) {
+    throw new Error('Piscina no encontrada o sin permisos para modificar.');
+  }
+
   return prisma.pool.update({
     where: { id },
     data,
@@ -37,13 +48,20 @@ export const updatePool = async (id: string, data: UpdatePoolInput): Promise<Poo
 };
 
 /**
- * Elimina una piscina.
+ * Elimina una piscina, verificando la pertenencia al tenant.
  * @param id - El ID de la piscina a eliminar.
- * @returns La piscina que fue eliminada.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  */
-export const deletePool = async (id: string): Promise<Pool> => {
-  // Al borrar la piscina, se borrarán en cascada sus visitas, etc.
-  return prisma.pool.delete({
-    where: { id },
+export const deletePool = async (id: string, tenantId: string): Promise<void> => {
+  // Utilizamos deleteMany con una cláusula where para asegurar la pertenencia al tenant.
+  const { count } = await prisma.pool.deleteMany({
+    where: {
+      id,
+      tenantId, // <-- Condición de seguridad
+    },
   });
+
+  if (count === 0) {
+    throw new Error('Piscina no encontrada o sin permisos para eliminar.');
+  }
 };

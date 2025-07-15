@@ -1,6 +1,5 @@
 // filename: packages/server/src/api/expenses/expenses.routes.ts
-// version: 1.0.0
-// description: Define los endpoints de la API para el CRUD de gastos.
+// version: 2.0.0 (FEAT: Protect routes with ADMIN authorization)
 
 import { Router } from 'express';
 import {
@@ -9,12 +8,14 @@ import {
   deleteExpenseHandler,
 } from './expenses.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
-// TODO: Importar y usar un middleware de autorización para 'ADMIN' o 'MANAGER'
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const expensesRouter = Router();
 
 // Protegemos todas las rutas de este módulo.
-expensesRouter.use(protect);
+// Solo los usuarios autenticados con rol de ADMIN pueden gestionar los gastos.
+expensesRouter.use(protect, authorize('ADMIN'));
+
 
 // Rutas para /api/expenses
 expensesRouter.route('/')

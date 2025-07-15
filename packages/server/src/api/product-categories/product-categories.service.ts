@@ -1,6 +1,5 @@
 // filename: packages/server/src/api/product-categories/product-categories.service.ts
-// version: 1.0.0
-// description: Servicio para la lógica de negocio de las categorías de productos.
+// version: 2.0.0 (FEAT: Add tenantId validation for CUD operations)
 
 import { PrismaClient } from '@prisma/client';
 import type { ProductCategory } from '@prisma/client';
@@ -39,29 +38,42 @@ export const getProductCategoriesByTenant = async (tenantId: string): Promise<Pr
 };
 
 /**
- * Actualiza una categoría de producto existente.
+ * Actualiza una categoría de producto existente, verificando la pertenencia al tenant.
  * @param id - El ID de la categoría a actualizar.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  * @param data - Los datos a modificar.
  * @returns La categoría actualizada.
  */
-export const updateProductCategory = async (id: string, data: UpdateProductCategoryInput): Promise<ProductCategory> => {
-  // TODO: Añadir verificación para asegurar que la categoría pertenece al tenant del usuario.
-  return prisma.productCategory.update({
-    where: { id },
+export const updateProductCategory = async (id: string, tenantId: string, data: UpdateProductCategoryInput): Promise<ProductCategory> => {
+  const { count } = await prisma.productCategory.updateMany({
+    where: {
+      id,
+      tenantId, // <-- Condición de seguridad
+    },
     data,
   });
+
+  if (count === 0) {
+    throw new Error('Categoría no encontrada o sin permisos para modificar.');
+  }
+
+  return prisma.productCategory.findUniqueOrThrow({ where: { id } });
 };
 
 /**
- * Elimina una categoría de producto.
- * Gracias a `onDelete: SetNull` en la relación con Producto, los productos
- * de esta categoría no se eliminarán, sino que su `categoryId` pasará a ser `null`.
+ * Elimina una categoría de producto, verificando la pertenencia al tenant.
  * @param id - El ID de la categoría a eliminar.
- * @returns La categoría que fue eliminada.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  */
-export const deleteProductCategory = async (id: string): Promise<ProductCategory> => {
-  // TODO: Añadir verificación para asegurar que la categoría pertenece al tenant del usuario.
-  return prisma.productCategory.delete({
-    where: { id },
+export const deleteProductCategory = async (id: string, tenantId: string): Promise<void> => {
+  const { count } = await prisma.productCategory.deleteMany({
+    where: {
+      id,
+      tenantId, // <-- Condición de seguridad
+    },
   });
+
+  if (count === 0) {
+    throw new Error('Categoría no encontrada o sin permisos para eliminar.');
+  }
 };

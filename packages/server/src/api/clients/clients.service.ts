@@ -1,8 +1,7 @@
 // filename: packages/server/src/api/clients/clients.service.ts
-// Version: 1.1.1 (FIXED)
-// description: Elimina la importación no utilizada de BillingModel.
+// Version: 2.0.0 (FEAT: Add tenantId validation for CUD operations)
+
 import { PrismaClient } from '@prisma/client';
-// --- La importación de BillingModel ha sido eliminada de aquí ---
 import type { Client } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -33,7 +32,6 @@ export const getClientsByTenant = async (tenantId: string): Promise<Client[]> =>
   return prisma.client.findMany({
     where: { tenantId },
     orderBy: { name: 'asc' },
-    // Incluimos las piscinas asociadas a cada cliente
     include: {
       pools: true,
     },
@@ -57,26 +55,42 @@ export const getClientById = async (id: string, tenantId: string): Promise<Clien
 
 
 /**
- * Actualiza un cliente existente.
+ * Actualiza un cliente existente, verificando la pertenencia al tenant.
  * @param id - El ID del cliente a actualizar.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  * @param data - Los datos a actualizar.
  * @returns El cliente actualizado.
  */
-export const updateClient = async (id: string, data: UpdateClientInput): Promise<Client> => {
-  return prisma.client.update({
-    where: { id },
+export const updateClient = async (id: string, tenantId: string, data: UpdateClientInput): Promise<Client> => {
+  const { count } = await prisma.client.updateMany({
+    where: {
+      id,
+      tenantId, // <-- Condición de seguridad
+    },
     data,
   });
+
+  if (count === 0) {
+    throw new Error('Cliente no encontrado o sin permisos para modificar.');
+  }
+
+  return prisma.client.findUniqueOrThrow({ where: { id } });
 };
 
 /**
- * Elimina un cliente.
+ * Elimina un cliente, verificando la pertenencia al tenant.
  * @param id - El ID del cliente a eliminar.
- * @returns El cliente que fue eliminado.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  */
-export const deleteClient = async (id: string): Promise<Client> => {
-  // Al borrar el cliente, se borrarán en cascada sus piscinas asociadas.
-  return prisma.client.delete({
-    where: { id },
+export const deleteClient = async (id: string, tenantId: string): Promise<void> => {
+  const { count } = await prisma.client.deleteMany({
+    where: {
+      id,
+      tenantId, // <-- Condición de seguridad
+    },
   });
+
+  if (count === 0) {
+    throw new Error('Cliente no encontrado o sin permisos para eliminar.');
+  }
 };

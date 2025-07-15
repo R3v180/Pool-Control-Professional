@@ -1,6 +1,5 @@
 // filename: packages/server/src/api/client-product-pricing/client-product-pricing.routes.ts
-// version: 1.0.0
-// description: Define los endpoints de la API para el CRUD de reglas de precios.
+// version: 2.0.0 (FEAT: Protect routes with ADMIN authorization)
 
 import { Router } from 'express';
 import {
@@ -10,12 +9,14 @@ import {
   deletePricingRuleHandler,
 } from './client-product-pricing.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
-// TODO: Importar y usar un middleware de autorización para 'ADMIN'
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const clientProductPricingRouter = Router();
 
 // Protegemos todas las rutas de este módulo.
-clientProductPricingRouter.use(protect);
+// Solo los usuarios autenticados con rol de ADMIN pueden gestionar las reglas de precios.
+clientProductPricingRouter.use(protect, authorize('ADMIN'));
+
 
 // Ruta para crear una nueva regla
 clientProductPricingRouter.post('/', createPricingRuleHandler);

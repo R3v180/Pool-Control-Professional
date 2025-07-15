@@ -1,3 +1,6 @@
+// filename: packages/server/src/api/tenants/tenants.routes.ts
+// version: 2.0.0 (FEAT: Protect routes with SUPER_ADMIN authorization)
+
 import { Router } from 'express';
 import {
   createTenantHandler,
@@ -6,10 +9,16 @@ import {
   updateTenantStatusHandler,
   deleteTenantHandler,
 } from './tenants.controller.js';
+import { protect } from '../../middleware/auth.middleware.js';
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const tenantsRouter = Router();
 
-// TODO: Proteger todas estas rutas para que solo sean accesibles por un SUPER_ADMIN.
+// Aplicamos la protección en dos niveles a TODAS las rutas de este enrutador:
+// 1. `protect`: Asegura que el usuario esté autenticado.
+// 2. `authorize('SUPER_ADMIN')`: Asegura que el usuario autenticado tenga el rol de SUPER_ADMIN.
+tenantsRouter.use(protect, authorize('SUPER_ADMIN'));
+
 
 /**
  * @route   GET /api/tenants

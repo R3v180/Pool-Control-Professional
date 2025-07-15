@@ -1,5 +1,5 @@
 // filename: packages/server/src/api/incident-tasks/incident-tasks.routes.ts
-// version: 1.3.0 (Adds route to update a task's deadline)
+// version: 2.0.0 (FEAT: Protect routes with granular ADMIN/TECHNICIAN authorization)
 
 import { Router } from 'express';
 import {
@@ -11,25 +11,37 @@ import {
   updateTaskStatusHandler,
   addTaskLogHandler,
   getTaskLogsHandler,
-  updateTaskDeadlineHandler, // <-- 1. Importar el nuevo manejador (aún no creado)
+  updateTaskDeadlineHandler,
 } from './incident-tasks.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const incidentTasksRouter = Router();
 
+// Todas las rutas de tareas de incidencia requieren autenticación.
 incidentTasksRouter.use(protect);
 
 // --- Rutas Generales y de Listado ---
-incidentTasksRouter.get('/my-tasks', getMyAssignedTasksHandler);
-incidentTasksRouter.get('/by-notification/:notificationId', getTasksByNotificationHandler);
-incidentTasksRouter.post('/', createIncidentTaskHandler);
+// El técnico ve sus tareas pendientes.
+incidentTasksRouter.get('/my-tasks', authorize('TECHNICIAN'), getMyAssignedTasksHandler);
+// El admin ve las tareas asociadas a una notificación.
+incidentTasksRouter.get('/by-notification/:notificationId', authorize('ADMIN'), getTasksByNotificationHandler);
+// Solo el admin puede crear tareas.
+incidentTasksRouter.post('/', authorize('ADMIN'), createIncidentTaskHandler);
+
 
 // --- Rutas para una Tarea Específica por ID ---
-incidentTasksRouter.get('/:id/logs', getTaskLogsHandler);
-incidentTasksRouter.post('/:id/log', addTaskLogHandler);
-incidentTasksRouter.patch('/:id/status', updateTaskStatusHandler);
-incidentTasksRouter.patch('/:id/deadline', updateTaskDeadlineHandler); // <-- 2. Añadir la nueva ruta
-incidentTasksRouter.patch('/:id', updateIncidentTaskHandler);
-incidentTasksRouter.delete('/:id', deleteIncidentTaskHandler);
+// Tanto admin como técnico pueden ver el historial de una tarea.
+incidentTasksRouter.get('/:id/logs', authorize('ADMIN', 'TECHNICIAN'), getTaskLogsHandler);
+// Tanto admin como técnico pueden añadir comentarios/logs.
+incidentTasksRouter.post('/:id/log', authorize('ADMIN', 'TECHNICIAN'), addTaskLogHandler);
+// El técnico actualiza el estado (ej: a IN_PROGRESS o COMPLETED).
+incidentTasksRouter.patch('/:id/status', authorize('TECHNICIAN'), updateTaskStatusHandler);
+// El admin actualiza el plazo (deadline).
+incidentTasksRouter.patch('/:id/deadline', authorize('ADMIN'), updateTaskDeadlineHandler);
+// El admin edita los detalles principales de la tarea.
+incidentTasksRouter.patch('/:id', authorize('ADMIN'), updateIncidentTaskHandler);
+// El admin elimina la tarea.
+incidentTasksRouter.delete('/:id', authorize('ADMIN'), deleteIncidentTaskHandler);
 
 export default incidentTasksRouter;

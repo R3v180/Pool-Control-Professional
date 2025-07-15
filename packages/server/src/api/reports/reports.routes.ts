@@ -1,20 +1,21 @@
 // filename: packages/server/src/api/reports/reports.routes.ts
-// version: 1.2.0 (FEAT: Add route for invoicing report)
+// version: 2.0.0 (FEAT: Protect routes with ADMIN/MANAGER authorization)
 
 import { Router } from 'express';
-// --- 1. Importar el nuevo manejador ---
 import { 
     getConsumptionReportHandler, 
     getProductConsumptionDetailHandler,
     getInvoicingReportHandler 
 } from './reports.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
-// TODO: Implementar y añadir un middleware de autorización para 'ADMIN' y 'MANAGER'.
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const reportsRouter = Router();
 
-// Aplicamos el middleware 'protect' para asegurar que solo usuarios autenticados puedan acceder.
-reportsRouter.use(protect);
+// Aplicamos la protección en dos niveles a todas las rutas de informes:
+// 1. `protect`: Asegura que el usuario esté autenticado.
+// 2. `authorize('ADMIN', 'MANAGER')`: Asegura que el usuario sea Admin o Manager.
+reportsRouter.use(protect, authorize('ADMIN', 'MANAGER'));
 
 /**
  * @route   GET /api/reports/consumption
@@ -31,7 +32,6 @@ reportsRouter.get('/consumption', getConsumptionReportHandler);
 reportsRouter.get('/consumption/details', getProductConsumptionDetailHandler);
 
 /**
- * --- ✅ 2. AÑADIR LA NUEVA RUTA ---
  * @route   GET /api/reports/invoicing
  * @desc    Genera un informe de pre-facturación con precios de venta y cuotas.
  * @access  Private (Admin, Manager)

@@ -1,5 +1,6 @@
 // filename: packages/server/src/api/clients/clients.controller.ts
-// Version: 1.0.0 (Initial creation of the controller for Client management)
+// Version: 2.0.0 (FEAT: Pass tenantId to service for validation)
+
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
 import {
@@ -21,7 +22,7 @@ export const createClientHandler = async (
   try {
     const tenantId = req.user?.tenantId;
     if (!tenantId) {
-      return res.status(403).json({ message: 'Acción no permitida.' });
+      return res.status(403).json({ success: false, message: 'Acción no permitida.' });
     }
 
     const input = { ...req.body, tenantId };
@@ -43,7 +44,7 @@ export const getClientsByTenantHandler = async (
   try {
     const tenantId = req.user?.tenantId;
     if (!tenantId) {
-      return res.status(403).json({ message: 'Acción no permitida.' });
+      return res.status(403).json({ success: false, message: 'Acción no permitida.' });
     }
 
     const clients = await getClientsByTenant(tenantId);
@@ -65,16 +66,13 @@ export const getClientByIdHandler = async (
     const tenantId = req.user?.tenantId;
     const { id: clientId } = req.params;
 
-    if (!tenantId) {
-      return res.status(403).json({ message: 'Acción no permitida.' });
-    }
-    if (!clientId) {
-      return res.status(400).json({ message: 'El ID del cliente es requerido.' });
+    if (!tenantId || !clientId) {
+      return res.status(400).json({ success: false, message: 'ID de cliente o de tenant faltante.' });
     }
 
     const client = await getClientById(clientId, tenantId);
     if (!client) {
-      return res.status(404).json({ message: 'Cliente no encontrado.' });
+      return res.status(404).json({ success: false, message: 'Cliente no encontrado.' });
     }
 
     res.status(200).json({ success: true, data: client });
@@ -94,12 +92,13 @@ export const updateClientHandler = async (
 ) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ message: 'El ID del cliente es requerido.' });
-    }
-    // TODO: Verificar que el cliente que se quiere editar pertenece al tenant del usuario logueado.
+    const tenantId = req.user?.tenantId;
     
-    const updatedClient = await updateClient(id, req.body);
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de cliente o de tenant faltante.' });
+    }
+    
+    const updatedClient = await updateClient(id, tenantId, req.body);
     res.status(200).json({ success: true, data: updatedClient });
   } catch (error) {
     next(error);
@@ -116,12 +115,13 @@ export const deleteClientHandler = async (
 ) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ message: 'El ID del cliente es requerido.' });
-    }
-    // TODO: Verificar que el cliente que se quiere eliminar pertenece al tenant del usuario logueado.
+    const tenantId = req.user?.tenantId;
 
-    await deleteClient(id);
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de cliente o de tenant faltante.' });
+    }
+
+    await deleteClient(id, tenantId);
     res.status(204).send();
   } catch (error) {
     next(error);

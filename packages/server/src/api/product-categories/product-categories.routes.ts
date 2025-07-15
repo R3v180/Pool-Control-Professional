@@ -1,6 +1,5 @@
 // filename: packages/server/src/api/product-categories/product-categories.routes.ts
-// version: 1.0.0
-// description: Define los endpoints de la API para el CRUD de categorías de productos.
+// version: 2.0.0 (FEAT: Protect routes with ADMIN authorization)
 
 import { Router } from 'express';
 import {
@@ -10,12 +9,13 @@ import {
   deleteProductCategoryHandler,
 } from './product-categories.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
-// TODO: Importar y usar un middleware de autorización para 'ADMIN'
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const productCategoriesRouter = Router();
 
-// Protegemos todas las rutas de este módulo. Solo usuarios autenticados podrán acceder.
-productCategoriesRouter.use(protect);
+// Protegemos todas las rutas de este módulo.
+// Solo usuarios autenticados con rol de ADMIN podrán acceder.
+productCategoriesRouter.use(protect, authorize('ADMIN'));
 
 // Rutas para /api/product-categories
 productCategoriesRouter.route('/')

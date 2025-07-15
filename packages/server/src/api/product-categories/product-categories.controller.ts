@@ -1,6 +1,5 @@
 // filename: packages/server/src/api/product-categories/product-categories.controller.ts
-// version: 1.0.0
-// description: Controlador para manejar las peticiones HTTP del CRUD de categorías de productos.
+// version: 2.0.0 (FEAT: Pass tenantId to service for validation)
 
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
@@ -64,11 +63,13 @@ export const updateProductCategoryHandler = async (
 ) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ success: false, message: 'El ID de la categoría es requerido.' });
+    const tenantId = req.user?.tenantId;
+
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de categoría o de tenant faltante.' });
     }
     
-    const updatedCategory = await updateProductCategory(id, req.body);
+    const updatedCategory = await updateProductCategory(id, tenantId, req.body);
     res.status(200).json({ success: true, data: updatedCategory });
   } catch (error) {
     next(error);
@@ -85,11 +86,13 @@ export const deleteProductCategoryHandler = async (
 ) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ success: false, message: 'El ID de la categoría es requerido.' });
+    const tenantId = req.user?.tenantId;
+
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de categoría o de tenant faltante.' });
     }
 
-    await deleteProductCategory(id);
+    await deleteProductCategory(id, tenantId);
     res.status(204).send();
   } catch (error) {
     next(error);

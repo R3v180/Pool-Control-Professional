@@ -1,6 +1,5 @@
 // filename: packages/server/src/api/products/products.service.ts
-// version: 1.0.0
-// description: Servicio para la lógica de negocio del catálogo de productos.
+// version: 2.0.0 (FEAT: Add tenantId validation for CUD operations)
 
 import { PrismaClient } from '@prisma/client';
 import type { Product } from '@prisma/client';
@@ -9,7 +8,7 @@ const prisma = new PrismaClient();
 
 // --- Tipos de Entrada (DTOs) para la creación y actualización ---
 export type CreateProductInput = Omit<Product, 'id' | 'createdAt' | 'updatedAt' | 'consumptions'>;
-export type UpdateProductInput = Partial<CreateProductInput>;
+export type UpdateProductInput = Partial<Omit<CreateProductInput, 'tenantId'>>;
 
 /**
  * Crea un nuevo producto para un tenant específico.
@@ -35,29 +34,44 @@ export const getProductsByTenant = async (tenantId: string): Promise<Product[]> 
 };
 
 /**
- * Actualiza un producto existente.
+ * Actualiza un producto existente, verificando la pertenencia al tenant.
  * @param id - El ID del producto a actualizar.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  * @param data - Los datos a modificar.
  * @returns El producto actualizado.
  */
-export const updateProduct = async (id: string, data: UpdateProductInput): Promise<Product> => {
-  // TODO: Añadir una verificación para asegurar que el producto pertenece al tenant del usuario que realiza la acción.
-  return prisma.product.update({
-    where: { id },
+export const updateProduct = async (id: string, tenantId: string, data: UpdateProductInput): Promise<Product> => {
+  const { count } = await prisma.product.updateMany({
+    where: {
+      id,
+      tenantId, // <-- La condición de seguridad clave
+    },
     data,
   });
+
+  if (count === 0) {
+    throw new Error('Producto no encontrado o sin permisos para modificar.');
+  }
+
+  // Devolvemos el producto actualizado para mantener la consistencia de la API
+  return prisma.product.findUniqueOrThrow({ where: { id } });
 };
 
 /**
- * Elimina un producto.
- * La operación fallará si el producto ya ha sido usado en algún registro de consumo,
- * gracias a la restricción 'onDelete: Restrict' en el schema.
+ * Elimina un producto, verificando la pertenencia al tenant.
+ * La operación fallará si el producto ya ha sido usado en algún registro de consumo.
  * @param id - El ID del producto a eliminar.
- * @returns El producto que fue eliminado.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  */
-export const deleteProduct = async (id: string): Promise<Product> => {
-  // TODO: Añadir una verificación para asegurar que el producto pertenece al tenant del usuario que realiza la acción.
-  return prisma.product.delete({
-    where: { id },
+export const deleteProduct = async (id: string, tenantId: string): Promise<void> => {
+  const { count } = await prisma.product.deleteMany({
+    where: {
+      id,
+      tenantId, // <-- La condición de seguridad clave
+    },
   });
+
+  if (count === 0) {
+    throw new Error('Producto no encontrado o sin permisos para eliminar.');
+  }
 };

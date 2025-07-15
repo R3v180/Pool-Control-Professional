@@ -1,6 +1,5 @@
 // filename: packages/server/src/api/products/products.routes.ts
-// version: 1.0.0
-// description: Define los endpoints de la API para el catálogo de productos.
+// version: 2.0.0 (FEAT: Protect routes with ADMIN authorization)
 
 import { Router } from 'express';
 import {
@@ -10,13 +9,13 @@ import {
   deleteProductHandler,
 } from './products.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
-// TODO: Importar y usar un middleware de autorización para 'ADMIN'
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const productsRouter = Router();
 
-// Aplicamos el middleware 'protect' a todas las rutas de este enrutador.
-// Solo los usuarios autenticados podrán interactuar con el catálogo de productos.
-productsRouter.use(protect);
+// Aplicamos el middleware `protect` y `authorize` a todas las rutas de este enrutador.
+// Solo los usuarios autenticados con rol de ADMIN podrán interactuar con el catálogo de productos.
+productsRouter.use(protect, authorize('ADMIN'));
 
 // Definimos las rutas para el recurso /api/products
 productsRouter.route('/')

@@ -1,5 +1,6 @@
 // filename: packages/server/src/api/pools/pools.routes.ts
-// Version: 1.0.0 (Initial creation of routes for Pool management)
+// Version: 2.0.0 (FEAT: Protect routes with ADMIN authorization)
+
 import { Router } from 'express';
 import {
   createPoolHandler,
@@ -7,13 +8,15 @@ import {
   updatePoolHandler,
 } from './pools.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const poolsRouter = Router();
 
-// Aplicamos el middleware 'protect' a TODAS las rutas de este enrutador.
-poolsRouter.use(protect);
+// Aplicamos la protección en dos niveles a TODAS las rutas de este enrutador:
+// 1. `protect`: Asegura que el usuario esté autenticado.
+// 2. `authorize('ADMIN')`: Asegura que el usuario autenticado tenga el rol de ADMIN.
+poolsRouter.use(protect, authorize('ADMIN'));
 
-// TODO: Añadir un middleware de autorización para asegurar que el rol sea 'ADMIN'.
 
 // No hay una ruta GET / aquí porque las piscinas se obtienen
 // a través de la ruta del cliente (/api/clients/:id) para mantener el contexto.

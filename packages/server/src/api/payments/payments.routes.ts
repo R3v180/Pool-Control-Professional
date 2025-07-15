@@ -1,6 +1,5 @@
 // filename: packages/server/src/api/payments/payments.routes.ts
-// version: 1.0.1 (FIXED)
-// description: Define los endpoints de la API para el CRUD de pagos.
+// version: 2.0.0 (FEAT: Protect routes with ADMIN authorization)
 
 import { Router } from 'express';
 import {
@@ -9,12 +8,14 @@ import {
   deletePaymentHandler,
 } from './payments.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
-// TODO: Importar y usar un middleware de autorización para 'ADMIN' o 'MANAGER'
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const paymentsRouter = Router();
 
 // Protegemos todas las rutas de este módulo.
-paymentsRouter.use(protect);
+// Solo los usuarios autenticados con rol de ADMIN pueden gestionar los pagos.
+paymentsRouter.use(protect, authorize('ADMIN'));
+
 
 // Ruta para crear un nuevo pago
 paymentsRouter.post('/', createPaymentHandler);

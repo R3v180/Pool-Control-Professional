@@ -1,6 +1,5 @@
 // filename: packages/server/src/api/products/products.controller.ts
-// version: 1.0.0
-// description: Controlador para manejar las peticiones HTTP del catálogo de productos.
+// version: 2.0.0 (FEAT: Pass tenantId to service for validation)
 
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
@@ -25,7 +24,6 @@ export const createProductHandler = async (
       return res.status(403).json({ success: false, message: 'Acción no permitida.' });
     }
 
-    // El tenantId se añade al cuerpo de la petición para asegurar la pertenencia.
     const input = { ...req.body, tenantId };
     const newProduct = await createProduct(input);
     res.status(201).json({ success: true, data: newProduct });
@@ -65,11 +63,14 @@ export const updateProductHandler = async (
 ) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ success: false, message: 'El ID del producto es requerido.' });
+    const tenantId = req.user?.tenantId;
+
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de producto o de tenant faltante.' });
     }
     
-    const updatedProduct = await updateProduct(id, req.body);
+    // Pasamos el tenantId al servicio para la validación de pertenencia.
+    const updatedProduct = await updateProduct(id, tenantId, req.body);
     res.status(200).json({ success: true, data: updatedProduct });
   } catch (error) {
     next(error);
@@ -86,15 +87,16 @@ export const deleteProductHandler = async (
 ) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ success: false, message: 'El ID del producto es requerido.' });
+    const tenantId = req.user?.tenantId;
+    
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de producto o de tenant faltante.' });
     }
 
-    await deleteProduct(id);
-    res.status(204).send(); // 204 No Content es la respuesta estándar para un DELETE exitoso.
+    // Pasamos el tenantId al servicio para la validación de pertenencia.
+    await deleteProduct(id, tenantId);
+    res.status(204).send();
   } catch (error) {
-    // Si Prisma lanza un error de restricción de clave foránea (P2003),
-    // el errorHandler global lo capturará. Podríamos añadir un manejo más específico aquí si quisiéramos.
     next(error);
   }
 };

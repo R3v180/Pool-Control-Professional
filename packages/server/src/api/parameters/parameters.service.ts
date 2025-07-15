@@ -1,5 +1,6 @@
 // filename: packages/server/src/api/parameters/parameters.service.ts
-// Version: 1.0.0 (Initial creation of the service with CRUD functions)
+// Version: 2.0.1 (FIXED: Correct type definition for create operation)
+
 import { PrismaClient } from '@prisma/client';
 import type { ParameterTemplate, InputType } from '@prisma/client';
 
@@ -10,7 +11,7 @@ export type CreateParameterTemplateInput = {
   name: string;
   tenantId: string; // Cada plantilla pertenece a un tenant
   unit?: string;
-  type?: InputType;
+  type: InputType; // <-- CORREGIDO: Se ha eliminado el '?' para hacerlo obligatorio.
   selectOptions?: string[];
 };
 
@@ -46,32 +47,49 @@ export const getParameterTemplatesByTenant = async (
 };
 
 /**
- * Actualiza una plantilla de parámetro existente.
+ * Actualiza una plantilla de parámetro existente, verificando la pertenencia al tenant.
  * @param id - El ID de la plantilla a actualizar.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  * @param data - Los datos a actualizar.
  * @returns La plantilla de parámetro actualizada.
  */
 export const updateParameterTemplate = async (
   id: string,
+  tenantId: string,
   data: UpdateParameterTemplateInput
 ): Promise<ParameterTemplate> => {
-  return prisma.parameterTemplate.update({
-    where: { id },
+  const { count } = await prisma.parameterTemplate.updateMany({
+    where: {
+      id,
+      tenantId, // <-- Condición de seguridad
+    },
     data,
   });
+
+  if (count === 0) {
+    throw new Error('Plantilla de parámetro no encontrada o sin permisos para modificar.');
+  }
+
+  return prisma.parameterTemplate.findUniqueOrThrow({ where: { id } });
 };
 
 /**
- * Elimina una plantilla de parámetro.
+ * Elimina una plantilla de parámetro, verificando la pertenencia al tenant.
  * @param id - El ID de la plantilla a eliminar.
- * @returns La plantilla de parámetro que fue eliminada.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  */
 export const deleteParameterTemplate = async (
-  id: string
-): Promise<ParameterTemplate> => {
-  // TODO: Añadir lógica para verificar que esta plantilla no está siendo
-  // usada en ninguna PoolConfiguration antes de permitir el borrado.
-  return prisma.parameterTemplate.delete({
-    where: { id },
+  id: string,
+  tenantId: string
+): Promise<void> => {
+  const { count } = await prisma.parameterTemplate.deleteMany({
+    where: {
+      id,
+      tenantId, // <-- Condición de seguridad
+    },
   });
+
+  if (count === 0) {
+    throw new Error('Plantilla de parámetro no encontrada o sin permisos para eliminar.');
+  }
 };

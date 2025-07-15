@@ -1,5 +1,6 @@
 // filename: packages/server/src/api/clients/clients.routes.ts
-// Version: 1.0.0 (Initial creation of routes for Client management)
+// Version: 2.0.0 (FEAT: Protect routes with ADMIN/MANAGER authorization)
+
 import { Router } from 'express';
 import {
   createClientHandler,
@@ -9,21 +10,24 @@ import {
   updateClientHandler,
 } from './clients.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const clientsRouter = Router();
 
 // Aplicamos el middleware 'protect' a TODAS las rutas de este enrutador.
 clientsRouter.use(protect);
 
-// TODO: Añadir un middleware de autorización para asegurar que el rol sea 'ADMIN'.
-
+// Las rutas para listar y crear clientes solo son accesibles para ADMINS.
 clientsRouter.route('/')
-  .get(getClientsByTenantHandler)
-  .post(createClientHandler);
+  .get(authorize('ADMIN', 'MANAGER'), getClientsByTenantHandler)
+  .post(authorize('ADMIN'), createClientHandler);
 
+// Las rutas para un cliente específico son accesibles para ADMIN y MANAGER para ver,
+// pero solo para ADMIN para modificar o eliminar.
+// Esto permite al MANAGER ver los detalles del cliente desde su dashboard.
 clientsRouter.route('/:id')
-  .get(getClientByIdHandler)
-  .patch(updateClientHandler)
-  .delete(deleteClientHandler);
+  .get(authorize('ADMIN', 'MANAGER'), getClientByIdHandler)
+  .patch(authorize('ADMIN'), updateClientHandler)
+  .delete(authorize('ADMIN'), deleteClientHandler);
 
 export default clientsRouter;

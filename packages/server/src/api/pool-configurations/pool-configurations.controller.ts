@@ -1,5 +1,6 @@
 // filename: packages/server/src/api/pool-configurations/pool-configurations.controller.ts
-// Version: 1.1.0 (Add handler for update functionality)
+// Version: 2.0.0 (FEAT: Pass tenantId to service for validation)
+
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
 import {
@@ -20,8 +21,9 @@ export const createPoolConfigurationHandler = async (
   try {
     const tenantId = req.user?.tenantId;
     if (!tenantId) {
-      return res.status(403).json({ message: 'Acción no permitida.' });
+      return res.status(403).json({ success: false, message: 'Acción no permitida.' });
     }
+    // TODO: El servicio de creación aún necesita validación de tenantId.
     const newConfig = await createPoolConfiguration(req.body);
     res.status(201).json({ success: true, data: newConfig });
   } catch (error) {
@@ -40,8 +42,9 @@ export const getConfigurationsByPoolHandler = async (
   try {
     const { poolId } = req.params;
     if (!poolId) {
-      return res.status(400).json({ message: 'El ID de la piscina es requerido.' });
+      return res.status(400).json({ success: false, message: 'El ID de la piscina es requerido.' });
     }
+    // TODO: Validar que poolId pertenece al tenant del usuario.
     const configs = await getConfigurationsByPool(poolId);
     res.status(200).json({ success: true, data: configs });
   } catch (error) {
@@ -59,11 +62,13 @@ export const updatePoolConfigurationHandler = async (
 ) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ message: 'El ID de la configuración es requerido.' });
+    const tenantId = req.user?.tenantId;
+
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de configuración o de tenant faltante.' });
     }
-    // TODO: Verificar que la configuración que se quiere editar pertenece al tenant del usuario.
-    const updatedConfig = await updatePoolConfiguration(id, req.body);
+    
+    const updatedConfig = await updatePoolConfiguration(id, tenantId, req.body);
     res.status(200).json({ success: true, data: updatedConfig });
   } catch (error) {
     next(error);
@@ -81,10 +86,13 @@ export const deletePoolConfigurationHandler = async (
 ) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ message: 'El ID de la configuración es requerido.' });
+    const tenantId = req.user?.tenantId;
+    
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de configuración o de tenant faltante.' });
     }
-    await deletePoolConfiguration(id);
+
+    await deletePoolConfiguration(id, tenantId);
     res.status(204).send();
   } catch (error) {
     next(error);

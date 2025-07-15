@@ -1,5 +1,6 @@
 // filename: packages/server/src/api/tasks/tasks.service.ts
-// Version: 1.0.0 (Initial creation of the service for Scheduled Tasks)
+// Version: 2.0.0 (FEAT: Add tenantId validation for CUD operations)
+
 import { PrismaClient } from '@prisma/client';
 import type { ScheduledTaskTemplate } from '@prisma/client';
 
@@ -44,32 +45,51 @@ export const getTaskTemplatesByTenant = async (
 };
 
 /**
- * Actualiza una plantilla de tarea existente.
+ * Actualiza una plantilla de tarea existente, verificando la pertenencia al tenant.
  * @param id - El ID de la plantilla a actualizar.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  * @param data - Los datos a actualizar.
  * @returns La plantilla de tarea actualizada.
  */
 export const updateTaskTemplate = async (
   id: string,
+  tenantId: string,
   data: UpdateTaskTemplateInput
 ): Promise<ScheduledTaskTemplate> => {
-  return prisma.scheduledTaskTemplate.update({
-    where: { id },
+  const { count } = await prisma.scheduledTaskTemplate.updateMany({
+    where: {
+      id,
+      tenantId, // <-- Condición de seguridad
+    },
     data,
   });
+
+  if (count === 0) {
+    throw new Error('Plantilla de tarea no encontrada o sin permisos para modificar.');
+  }
+
+  return prisma.scheduledTaskTemplate.findUniqueOrThrow({ where: { id } });
 };
 
 /**
- * Elimina una plantilla de tarea.
+ * Elimina una plantilla de tarea, verificando la pertenencia al tenant.
  * @param id - El ID de la plantilla a eliminar.
- * @returns La plantilla de tarea que fue eliminada.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  */
 export const deleteTaskTemplate = async (
-  id: string
-): Promise<ScheduledTaskTemplate> => {
+  id: string,
+  tenantId: string,
+): Promise<void> => {
   // TODO: Añadir lógica para verificar que esta plantilla no está siendo
   // usada en ninguna PoolConfiguration antes de permitir el borrado.
-  return prisma.scheduledTaskTemplate.delete({
-    where: { id },
+  const { count } = await prisma.scheduledTaskTemplate.deleteMany({
+    where: {
+      id,
+      tenantId, // <-- Condición de seguridad
+    },
   });
+
+  if (count === 0) {
+    throw new Error('Plantilla de tarea no encontrada o sin permisos para eliminar.');
+  }
 };

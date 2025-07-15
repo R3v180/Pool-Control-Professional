@@ -1,5 +1,6 @@
 // filename: packages/server/src/api/tasks/tasks.routes.ts
-// Version: 1.0.0 (Initial creation of routes for Scheduled Tasks)
+// Version: 2.0.0 (FEAT: Protect routes with ADMIN authorization)
+
 import { Router } from 'express';
 import {
   createTaskTemplateHandler,
@@ -8,13 +9,13 @@ import {
   updateTaskTemplateHandler,
 } from './tasks.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const tasksRouter = Router();
 
-// Aplicamos el middleware 'protect' a TODAS las rutas de este enrutador.
-tasksRouter.use(protect);
-
-// TODO: Añadir un middleware de autorización para asegurar que el rol sea 'ADMIN'.
+// Aplicamos la protección y autorización a todas las rutas de este fichero.
+// Solo los usuarios autenticados con rol de ADMIN pueden gestionar el catálogo.
+tasksRouter.use(protect, authorize('ADMIN'));
 
 tasksRouter.route('/')
   .get(getTaskTemplatesByTenantHandler)

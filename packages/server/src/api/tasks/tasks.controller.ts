@@ -1,5 +1,6 @@
 // filename: packages/server/src/api/tasks/tasks.controller.ts
-// Version: 1.0.0 (Initial creation of the controller for Scheduled Tasks)
+// Version: 2.0.0 (FEAT: Pass tenantId to service for validation)
+
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
 import {
@@ -20,7 +21,7 @@ export const createTaskTemplateHandler = async (
   try {
     const tenantId = req.user?.tenantId;
     if (!tenantId) {
-      return res.status(403).json({ message: 'Acción no permitida.' });
+      return res.status(403).json({ success: false, message: 'Acción no permitida.' });
     }
 
     const input = { ...req.body, tenantId };
@@ -42,7 +43,7 @@ export const getTaskTemplatesByTenantHandler = async (
   try {
     const tenantId = req.user?.tenantId;
     if (!tenantId) {
-      return res.status(403).json({ message: 'Acción no permitida.' });
+      return res.status(403).json({ success: false, message: 'Acción no permitida.' });
     }
 
     const templates = await getTaskTemplatesByTenant(tenantId);
@@ -62,12 +63,13 @@ export const updateTaskTemplateHandler = async (
 ) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ message: 'El ID de la plantilla es requerido.' });
-    }
-    // TODO: Verificar que la plantilla que se quiere editar pertenece al tenant del usuario logueado.
+    const tenantId = req.user?.tenantId;
 
-    const updatedTemplate = await updateTaskTemplate(id, req.body);
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de plantilla o de tenant faltante.' });
+    }
+    
+    const updatedTemplate = await updateTaskTemplate(id, tenantId, req.body);
     res.status(200).json({ success: true, data: updatedTemplate });
   } catch (error) {
     next(error);
@@ -84,12 +86,13 @@ export const deleteTaskTemplateHandler = async (
 ) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ message: 'El ID de la plantilla es requerido.' });
-    }
-    // TODO: Verificar que la plantilla que se quiere eliminar pertenece al tenant del usuario logueado.
+    const tenantId = req.user?.tenantId;
 
-    await deleteTaskTemplate(id);
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de plantilla o de tenant faltante.' });
+    }
+
+    await deleteTaskTemplate(id, tenantId);
     res.status(204).send();
   } catch (error) {
     next(error);
