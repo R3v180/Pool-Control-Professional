@@ -1,15 +1,15 @@
 // filename: packages/client/src/router/components.tsx
-// version: 2.0.0 (FEAT: Implement Manager 'View As' functionality)
+// version: 2.3.2 (COMPLETE)
+// description: Añade el enlace a Gastos Generales en el menú de Finanzas.
 
 import { AppShell, Burger, Group, NavLink, Title, Button, Indicator, ActionIcon, Popover, Text, Stack, SegmentedControl } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Navigate, Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../providers/AuthProvider.js';
-import type { ViewAsRole } from '../providers/AuthProvider.js'; // Importamos el tipo
+import type { ViewAsRole } from '../providers/AuthProvider.js';
 import { useEffect, useState } from 'react';
 import apiClient from '../api/apiClient.js';
 
-// --- Tipos para la notificación (sin cambios) ---
 interface Notification {
   id: string;
   message: string;
@@ -18,7 +18,6 @@ interface Notification {
   isRead: boolean;
 }
 
-// --- Componente de Notificaciones (sin cambios) ---
 const NotificationBell = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [popoverOpened, setPopoverOpened] = useState(false);
@@ -103,13 +102,8 @@ const NotificationBell = () => {
   );
 };
 
-
-/**
- * Componente de layout principal para las páginas autenticadas.
- */
 export const AppLayout = () => {
   const [opened, { toggle }] = useDisclosure();
-  // --- ✅ USAMOS LOS NUEVOS ELEMENTOS DEL AUTHPROVIDER ---
   const { user, logout, activeView, setViewAs, activeRole } = useAuth();
   const navigate = useNavigate();
 
@@ -121,10 +115,8 @@ export const AppLayout = () => {
   const handleViewChange = (value: string) => {
     const role = value as ViewAsRole;
     setViewAs(role);
-    // Redirigir al dashboard correspondiente
-    if (role === 'ADMIN') navigate('/');
+    if (role === 'ADMIN' || role === 'MANAGER') navigate('/');
     if (role === 'TECHNICIAN') navigate('/my-route');
-    if (role === 'MANAGER') navigate('/');
   };
 
   return (
@@ -140,7 +132,6 @@ export const AppLayout = () => {
             <Title order={3}>Pool Control Pro</Title>
           </Group>
           <Group>
-            {/* ✅ El selector de vista solo es visible para el MANAGER */}
             {user?.role === 'MANAGER' && (
               <SegmentedControl
                 value={activeView}
@@ -152,7 +143,6 @@ export const AppLayout = () => {
                 ]}
               />
             )}
-            {/* ✅ La campana se muestra si eres ADMIN o si eres MANAGER en vista de ADMIN */}
             {activeRole === 'ADMIN' && <NotificationBell />}
             <Button variant="light" onClick={handleLogout}>Cerrar Sesión</Button>
           </Group>
@@ -160,9 +150,6 @@ export const AppLayout = () => {
       </AppShell.Header>
 
       <AppShell.Navbar p="md">
-        {/* ✅ Usamos activeRole en lugar de user.role */}
-        
-        {/* Enlaces para la vista de MANAGER */}
         {activeRole === 'MANAGER' && (
           <NavLink
             component={Link}
@@ -172,7 +159,6 @@ export const AppLayout = () => {
           />
         )}
         
-        {/* Enlaces para la vista de ADMIN */}
         {activeRole === 'ADMIN' && (
           <>
             <NavLink component={Link} to="/" label="Dashboard de Admin" onClick={toggle} />
@@ -183,16 +169,19 @@ export const AppLayout = () => {
               <NavLink component={Link} to="/catalog/parameters" label="Parámetros" onClick={toggle} />
               <NavLink component={Link} to="/catalog/tasks" label="Tareas" onClick={toggle} />
               <NavLink component={Link} to="/catalog/products" label="Productos" onClick={toggle} />
+              <NavLink component={Link} to="/catalog/product-categories" label="Categorías de Productos" onClick={toggle} />
+            </NavLink>
+            <NavLink label="Finanzas" defaultOpened>
+                <NavLink component={Link} to="/financials/payments" label="Pagos Recibidos" onClick={toggle} />
+                <NavLink component={Link} to="/financials/expenses" label="Gastos Generales" onClick={toggle} />
             </NavLink>
           </>
         )}
 
-        {/* Enlaces para la vista de TECHNICIAN */}
         {activeRole === 'TECHNICIAN' && (
           <NavLink component={Link} to="/my-route" label="Mi Ruta de Hoy" onClick={toggle} />
         )}
 
-        {/* Enlaces solo para el rol SUPER_ADMIN (no cambia) */}
         {user?.role === 'SUPER_ADMIN' && (
            <NavLink component={Link} to="/superadmin/tenants" label="Gestión de Tenants" onClick={toggle} />
         )}
@@ -204,13 +193,6 @@ export const AppLayout = () => {
     </AppShell>
   );
 };
-
-
-/**
- * El resto de componentes de protección de rutas no necesitan cambios,
- * ya que se basan en el rol REAL del usuario (`user.role`) para la seguridad,
- * lo cual es correcto. La vista es solo una capa de presentación.
- */
 
 export const ProtectedRoute = () => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -229,7 +211,6 @@ export const SuperAdminRoute = () => {
 export const AdminRoute = () => {
   const { user, isLoading } = useAuth();
   if (isLoading) return <div>Cargando...</div>;
-  // ✅ MODIFICACIÓN IMPORTANTE: Se permite el acceso si es ADMIN o si es MANAGER
   if (user?.role !== 'ADMIN' && user?.role !== 'MANAGER') {
     return <Navigate to="/" replace />;
   }
@@ -239,9 +220,17 @@ export const AdminRoute = () => {
 export const TechnicianRoute = () => {
   const { user, isLoading } = useAuth();
   if (isLoading) return <div>Cargando...</div>;
-  // ✅ MODIFICACIÓN IMPORTANTE: Se permite el acceso si es TECHNICIAN o si es MANAGER
   if (user?.role !== 'TECHNICIAN' && user?.role !== 'MANAGER') {
     return <Navigate to="/" replace />;
   }
   return <Outlet />;
+};
+
+export const ManagerRoute = () => {
+    const { user, isLoading } = useAuth();
+    if (isLoading) return <div>Cargando...</div>;
+    if (user?.role !== 'MANAGER' && user?.role !== 'SUPER_ADMIN') {
+      return <Navigate to="/" replace />;
+    }
+    return <Outlet />;
 };

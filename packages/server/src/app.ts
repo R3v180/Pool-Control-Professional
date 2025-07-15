@@ -1,5 +1,5 @@
 // filename: packages/server/src/app.ts
-// version: 2.6.0 (Mount dashboardRouter)
+// version: 2.7.0 (FEAT: Mount reportsRouter)
 import express from 'express';
 import type { Request, Response } from 'express';
 import cors from 'cors';
@@ -23,8 +23,9 @@ import productCategoriesRouter from './api/product-categories/product-categories
 import clientProductPricingRouter from './api/client-product-pricing/client-product-pricing.routes.js';
 import paymentsRouter from './api/payments/payments.routes.js';
 import expensesRouter from './api/expenses/expenses.routes.js';
-// --- 1. Importar el nuevo enrutador ---
 import dashboardRouter from './api/dashboard/dashboard.routes.js';
+// --- ✅ 1. Importar el enrutador de informes ---
+import reportsRouter from './api/reports/reports.routes.js';
 
 // --- Instancia de la App ---
 const app = express();
@@ -61,8 +62,9 @@ app.use('/api/product-categories', productCategoriesRouter);
 app.use('/api/client-product-pricing', clientProductPricingRouter);
 app.use('/api/payments', paymentsRouter);
 app.use('/api/expenses', expensesRouter);
-// --- 2. Montar el nuevo enrutador ---
 app.use('/api/dashboard', dashboardRouter);
+// --- ✅ 2. Montar el enrutador de informes ---
+app.use('/api/reports', reportsRouter);
 
 
 // --- Gestor de Errores ---
