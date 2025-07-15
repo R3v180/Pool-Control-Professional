@@ -1,6 +1,5 @@
 // filename: packages/client/src/router/components.tsx
-// version: 2.3.2 (COMPLETE)
-// description: Añade el enlace a Gastos Generales en el menú de Finanzas.
+// version: 2.4.0 (REFACTOR: Rename ManagerRoute to FinancialAdminRoute and adjust logic)
 
 import { AppShell, Burger, Group, NavLink, Title, Button, Indicator, ActionIcon, Popover, Text, Stack, SegmentedControl } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
@@ -164,7 +163,10 @@ export const AppLayout = () => {
             <NavLink component={Link} to="/" label="Dashboard de Admin" onClick={toggle} />
             <NavLink component={Link} to="/planner" label="Planificador" onClick={toggle} />
             <NavLink component={Link} to="/clients" label="Clientes" onClick={toggle} />
-            <NavLink component={Link} to="/incidents-history" label="Historial de Incidencias" onClick={toggle} />
+            <NavLink component={Link} to="/incidents-history" label="Gestión de Incidencias" onClick={toggle} />
+            <NavLink label="Informes" defaultOpened>
+                <NavLink component={Link} to="/reports/invoicing" label="Informe para Facturación" onClick={toggle}/>
+            </NavLink>
             <NavLink label="Catálogos" defaultOpened>
               <NavLink component={Link} to="/catalog/parameters" label="Parámetros" onClick={toggle} />
               <NavLink component={Link} to="/catalog/tasks" label="Tareas" onClick={toggle} />
@@ -209,27 +211,29 @@ export const SuperAdminRoute = () => {
 };
 
 export const AdminRoute = () => {
-  const { user, isLoading } = useAuth();
+  const { activeRole, isLoading } = useAuth();
   if (isLoading) return <div>Cargando...</div>;
-  if (user?.role !== 'ADMIN' && user?.role !== 'MANAGER') {
+  if (activeRole !== 'ADMIN') {
     return <Navigate to="/" replace />;
   }
   return <Outlet />;
 };
 
 export const TechnicianRoute = () => {
-  const { user, isLoading } = useAuth();
+  const { activeRole, isLoading } = useAuth();
   if (isLoading) return <div>Cargando...</div>;
-  if (user?.role !== 'TECHNICIAN' && user?.role !== 'MANAGER') {
+  if (activeRole !== 'TECHNICIAN') {
     return <Navigate to="/" replace />;
   }
   return <Outlet />;
 };
 
-export const ManagerRoute = () => {
-    const { user, isLoading } = useAuth();
+// Renombrado de ManagerRoute -> FinancialAdminRoute
+export const FinancialAdminRoute = () => {
+    const { activeRole, isLoading } = useAuth();
     if (isLoading) return <div>Cargando...</div>;
-    if (user?.role !== 'MANAGER' && user?.role !== 'SUPER_ADMIN') {
+    // Ahora permite el acceso a MANAGER o ADMIN
+    if (activeRole !== 'MANAGER' && activeRole !== 'ADMIN') {
       return <Navigate to="/" replace />;
     }
     return <Outlet />;

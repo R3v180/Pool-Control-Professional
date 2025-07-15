@@ -1,6 +1,5 @@
 // filename: packages/client/src/router/index.tsx
-// Version: 2.4.2 (COMPLETE)
-// description: Añade la ruta para la página de gestión de gastos.
+// Version: 2.5.0 (REFACTOR: Use FinancialAdminRoute and activeRole for navigation logic)
 
 import { createBrowserRouter } from 'react-router-dom';
 import { LoginPage } from '../features/auth/pages/LoginPage.js';
@@ -29,12 +28,15 @@ import {
   SuperAdminRoute,
   AdminRoute,
   TechnicianRoute,
-  ManagerRoute,
+  FinancialAdminRoute, // <-- Se importa el componente de ruta renombrado
 } from './components.js';
 
+// Este componente decide qué dashboard mostrar basado en el rol activo (respetando el "rol camaleón")
 const RoleBasedDashboard = () => {
   const { activeRole, user } = useAuth();
   if (user?.role === 'SUPER_ADMIN') return <TenantsPage />;
+  
+  // Se usa activeRole para que el cambio de vista del Manager funcione
   switch (activeRole) {
     case 'ADMIN': return <AdminDashboard />;
     case 'TECHNICIAN': return <MyRoutePage />;
@@ -59,7 +61,8 @@ export const router = createBrowserRouter([
           { index: true, element: <RoleBasedDashboard /> },
           {
             path: 'reports',
-            element: <ManagerRoute />,
+            // Se usa la nueva ruta que permite acceso a ADMIN y MANAGER
+            element: <FinancialAdminRoute />, 
             children: [
                 { path: 'invoicing', element: <InvoicingReportPage /> }
             ]
@@ -102,7 +105,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'incidents/:notificationId',
-            element: <ProtectedRoute />,
+            element: <ProtectedRoute />, // Accesible por Admin y Técnico
             children: [ { index: true, element: <IncidentDetailPage /> } ]
           },
           {
@@ -122,7 +125,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'visits/:visitId',
-            element: <ProtectedRoute />,
+            element: <ProtectedRoute />, // Accesible por Admin y Técnico
             children: [ { index: true, element: <WorkOrderPage /> } ],
           },
         ],
