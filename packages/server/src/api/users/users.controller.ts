@@ -1,13 +1,16 @@
+// ====== [100] packages/server/src/api/users/users.controller.ts ======
 // filename: packages/server/src/api/users/users.controller.ts
-// Version: 1.0.0 (Initial creation of the controller for User queries)
+// Version: 2.0.0 (FEAT: Adapt controller to fetch assignable users)
+// description: The controller now calls the service function that fetches both technicians and managers.
+
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
-import { getTechniciansByTenant } from './users.service.js';
+import { getAssignableUsersByTenant } from './users.service.js';
 
 /**
- * Maneja la obtención de todos los técnicos de un tenant.
+ * Maneja la obtención de todos los usuarios asignables (técnicos y gerentes) de un tenant.
  */
-export const getTechniciansByTenantHandler = async (
+export const getAssignableUsersHandler = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -18,8 +21,8 @@ export const getTechniciansByTenantHandler = async (
       return res.status(403).json({ message: 'Acción no permitida.' });
     }
 
-    const technicians = await getTechniciansByTenant(tenantId);
-    res.status(200).json({ success: true, data: technicians });
+    const assignableUsers = await getAssignableUsersByTenant(tenantId);
+    res.status(200).json({ success: true, data: assignableUsers });
   } catch (error) {
     next(error);
   }

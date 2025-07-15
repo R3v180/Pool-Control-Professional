@@ -1,77 +1,74 @@
+// ====== [1] DEVELOPMENT_PLAN.md ======
+
 # Plan de Desarrollo y Arquitectura: Pool-Control Professional
 
-**Filosofía del Documento:** Este no es solo un plan, es la narrativa arquitectónica y de negocio del proyecto. Sirve como la hoja de ruta para el trabajo futuro y, a la vez, como una crónica de las decisiones tomadas, garantizando un entendimiento profundo del sistema en cualquier punto de su ciclo de vida.
+**Filosofía del Documento:** Este no es solo un plan, es la narrativa arquitectónica y de negocio del proyecto. Sirve como la hoja de ruta para el trabajo futuro y, a la vez, como una crónica de las decisiones tomadas.
 
 ---
 
-## ✅ FASE 0 a 7: Fundación y Operativa Inteligente
+## ✅ FASE 0 a 8: Fundación, Operativa Inteligente y Business Intelligence
 
 - **Estado:** `COMPLETADA`
-- **Resumen:** Durante estas fases, se ha construido una plataforma operativa robusta y completa. Se ha digitalizado todo el flujo de trabajo, desde la configuración de catálogos y fichas de mantenimiento, hasta la planificación de rutas y la ejecución de partes de trabajo. La Fase 7 culminó con la implementación de un **sistema de ticketing avanzado**, que asegura una comunicación y resolución de incidencias eficiente y completamente trazable, sentando las bases para un control de calidad proactivo.
+- **Resumen:** Durante estas fases, se ha construido una plataforma operativa robusta y completa. Se ha digitalizado el flujo de trabajo, desde la gestión de catálogos y clientes hasta la ejecución de partes de trabajo y un sistema de ticketing avanzado. La Fase 8 culminó con la implementación de un **Dashboard de Gerencia Interactivo**, que proporciona KPIs dinámicos y navegables para un análisis de negocio en tiempo real.
 
 ---
 
-## 🚧 FASE 8 y Sprint Final v1.0: El Motor Financiero y la Inteligencia de Negocio
+## 🚧 FASE 9: El Motor de Planificación Avanzada (v2.0)
 
 - **Estado:** `EN PROGRESO`
-- **Intención Estratégica:** Esta es la fase crucial que eleva la plataforma de una herramienta operativa a un **socio estratégico para el negocio**. El objetivo es implementar un conjunto de funcionalidades de alto valor para la presentación de la v1.0, centrándonos en la gestión financiera, el análisis de datos y la supervisión proactiva.
+- **Intención Estratégica:** Transformar la planificación de una tarea manual y diaria a un **proceso de diseño estratégico y semi-automatizado**. El objetivo es reducir drásticamente el tiempo de gestión del `ADMIN`, optimizar las rutas de los técnicos y hacer el sistema escalable para manejar un gran volumen de clientes.
 
-- **Plan de Acción Detallado y Priorizado para la v1.0:**
+- **Plan de Acción Detallado para la v2.0:**
 
-  1.  **Módulo de Informes de Consumo y Rentabilidad v1:**
+  1.  **Diseño de la Arquitectura de Datos:**
 
       - **Estado:** `COMPLETADO`
-      - **Valor Aportado:** Se ha construido la base de la inteligencia de negocio. Esta primera versión del módulo permite a los administradores y gerentes responder a una pregunta fundamental: **"¿cuánto nos cuesta realmente cada cliente?"**. La implementación incluye una API de agregación, una interfaz interactiva con filtros y una potente funcionalidad de **desglose (drill-down)** que permite auditar un coste hasta el parte de trabajo original.
+      - **Valor Aportado:** Se ha rediseñado el `schema.prisma` para introducir los conceptos de **Zonas Geográficas** y **Rutas Maestras**. Esta nueva estructura permite una organización del trabajo mucho más lógica e intuitiva.
 
-  2.  **Mejoras de Usabilidad del Dashboard:**
+  2.  **Módulo de Gestión de Zonas y Rutas:**
 
       - **Estado:** `PENDIENTE`
-      - **Intención Estratégica:** Incrementar la eficiencia del `ADMIN` en su día a día mediante mejoras de alto impacto en la interfaz principal.
+      - **Intención Estratégica:** Dotar al `ADMIN` de las herramientas para diseñar la operativa de la empresa.
       - **Capacidades a Implementar:**
-        - **Navegación Directa:** Hacer que las tarjetas de "Visitas de Hoy" sean clicables para un acceso directo al detalle del parte de trabajo.
-        - **Visibilidad de Alertas:** Estandarizar y potenciar los indicadores visuales (bordes de color intenso) para las incidencias críticas, permitiendo una identificación inmediata.
+        - **Gestión de Zonas:** Una interfaz para crear, editar y eliminar las áreas de trabajo geográficas.
+        - **Diseño de Rutas Maestras:** Una interfaz para crear rutas (ej. "Lunes-Arenal"), asignarlas a un técnico habitual y a una o más zonas.
+        - **Gestión de Estacionalidad:** Permitir definir diferentes frecuencias de visita para una misma ruta según el periodo del año (ej. más visitas en verano).
 
-  3.  **Evolución a "Motor Financiero" (Facturación y Precios Avanzados):**
+  3.  **Automatización y Planificador Inteligente:**
 
-      - **Estado:** `PENDIENTE (Prioridad Máxima)`
-      - **Intención Estratégica:** Dotar al sistema de la flexibilidad necesaria para manejar los modelos de negocio y las estructuras de precios del mundo real, permitiendo generar informes listos para la facturación.
+      - **Estado:** `PENDIENTE`
+      - **Intención Estratégica:** Automatizar la generación del plan de trabajo semanal y dar al `ADMIN` las herramientas para gestionar las excepciones de forma eficiente.
       - **Capacidades a Implementar:**
-        - **Precios y Fiscalidad:** Diferenciación entre `cost` y `salePrice` (PVP) en los productos, y un campo `taxRate` (IVA) para futuros cálculos.
-        - **Modelos de Contrato:** Configuración por cliente de su `billingModel` (`Todo Incluido`, `Cuota + Materiales`, etc.) y su `monthlyFee` (cuota fija).
-        - **Reglas de Precios Flexibles:** Sistema para definir descuentos por cliente, aplicables a productos individuales o a familias de productos completas.
-        - **Historial de Pagos:** Implementación de la capacidad de registrar pagos para llevar un control de saldos pendientes por cliente.
-        - **Registro de Gastos:** Sistema para añadir gastos operativos manuales (combustible, salarios) para un cálculo de rentabilidad global preciso.
+        - **Generador Automático de Visitas:** Un proceso en el backend que leerá las Rutas Maestras y creará el calendario de visitas de forma automática.
+        - **Gestión de "Deuda Operativa":** El `PlannerPage` mostrará de forma destacada las visitas de días anteriores no completadas, obligando a su reprogramación.
+        - **Gestión de Bajas:** El `ADMIN` podrá marcar a un técnico como no disponible, moviendo sus visitas a una "bolsa de trabajo" para ser reasignadas fácilmente.
 
-  4.  **Dashboard de Gerencia y Rol "Camaleón":**
-
-      - **Estado:** `PENDIENTE (Prioridad Máxima)`
-      - **Intención Estratégica:** Crear el centro de mando definitivo para la dirección del negocio, combinando supervisión estratégica con capacidad de intervención operativa.
-      - **Capacidades a Implementar:**
-        - **Dashboard de KPIs:** Un panel con gráficos visuales sobre la rentabilidad, eficiencia del equipo y estado de las incidencias (ej. tiempo medio de resolución).
-        - **Selector de Vista:** Implementación de la funcionalidad del "rol camaleón", que permitirá al gerente cambiar su vista para actuar con todos los permisos de un `ADMIN` o un `TECHNICIAN`, garantizando la cobertura operativa con una auditoría completa de sus acciones.
-
-  5.  **Alertas Proactivas por Umbrales:**
-      - **Estado:** `PENDIENTE (Prioridad Máxima)`
-      - **Intención Estratégica:** Implementar un sistema de vigilancia automática para pasar de la corrección a la prevención de problemas, aportando un valor diferencial al servicio ofrecido.
-      - **Capacidades a Implementar:** Se implementará la lógica en el backend para que el sistema genere notificaciones automáticas cuando un valor de parámetro medido por un técnico esté fuera de los rangos de seguridad configurados.
+  4.  **Gestión de Tareas no Planificadas:**
+      - **Estado:** `PENDIENTE`
+      - **Intención Estratégica:** Integrar las urgencias y tareas únicas en el flujo de planificación.
+      - **Capacidades a Implementar:** Un sistema de **"Órdenes de Trabajo Especiales"** que pueden ser creadas y asignadas sobre la marcha en el `PlannerPage`.
 
 ---
 
-## ▶️ Visión Post-v1.0: Hacia el ERP Completo
+## ▶️ Visión Post-v2.0: Hacia el ERP Completo
 
-Una vez presentada y validada la v1.0, el desarrollo continuará con los siguientes grandes módulos para convertir la plataforma en una solución integral.
+Una vez consolidado el motor de planificación, el desarrollo continuará con los siguientes grandes módulos.
 
-- **Módulo de Gestión de Inventario:**
+- **Módulo de Estado de Cuentas y Cobros:**
 
   - **Estado:** `PLANIFICADO`
-  - **Propósito:** Optimizar la gestión de stock y las compras. Incluirá control de niveles de stock, definición de mínimos/máximos y generación de informes de necesidades o propuestas de compra.
+  - **Propósito:** Ofrecer una visión clara mes a mes del estado de facturación de cada cliente (Pagado, Pendiente, Atrasado) y facilitar la gestión de cobros.
+
+- **Alertas Proactivas por Umbrales:**
+
+  - **Estado:** `PLANIFICADO`
+  - **Propósito:** Implementar un sistema de vigilancia automática para pasar de la corrección a la prevención de problemas.
+
+- **Gestión de Inventario y Compras:**
+
+  - **Estado:** `PLANIFICADO`
+  - **Propósito:** Optimizar la gestión de stock, definir mínimos/máximos y generar propuestas de compra.
 
 - **Modo Offline (PWA) para Técnicos:**
-
   - **Estado:** `PLANIFICADO`
-  - **Propósito:** Garantizar la continuidad del negocio en campo, permitiendo a los técnicos trabajar sin conexión a internet.
-
-- **Módulo de Facturación y Contabilidad Completo:**
-  - **Estado:** `PLANIFICADO (Largo Plazo)`
-  - **Propósito:** Convertir la plataforma en una solución todo en uno, eliminando la necesidad de software de terceros para la facturación y contabilidad.
-  - **Capacidades Futuras:** Generación de facturas con validez legal, gestión de impuestos, presupuestos, pedidos a proveedores y, eventualmente, adaptación a las normativas contables de diferentes países.
+  - **Propósito:** Garantizar la continuidad del negocio en campo.

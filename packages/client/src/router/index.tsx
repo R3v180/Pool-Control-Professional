@@ -1,5 +1,7 @@
+// ====== [32] packages/client/src/router/index.tsx ======
 // filename: packages/client/src/router/index.tsx
-// Version: 2.5.0 (REFACTOR: Use FinancialAdminRoute and activeRole for navigation logic)
+// Version: 2.6.1 (FIX: Use correct route guard for incidents history)
+// description: Changed the route guard for '/incidents-history' from AdminRoute to FinancialAdminRoute to allow access for Managers.
 
 import { createBrowserRouter } from 'react-router-dom';
 import { LoginPage } from '../features/auth/pages/LoginPage.js';
@@ -19,6 +21,7 @@ import { IncidentsHistoryPage } from '../features/admin/pages/IncidentsHistoryPa
 import { IncidentDetailPage } from '../features/admin/pages/incidents/IncidentDetailPage.js';
 import { ManagerDashboard } from '../features/manager/pages/ManagerDashboard.js';
 import { InvoicingReportPage } from '../features/manager/pages/InvoicingReportPage.js';
+import { ConsumptionReportPage } from '../features/admin/pages/reports/ConsumptionReportPage.js';
 import { PaymentsPage } from '../features/financials/pages/PaymentsPage.js';
 import { ExpensesPage } from '../features/financials/pages/ExpensesPage.js';
 import { useAuth } from '../providers/AuthProvider.js';
@@ -28,7 +31,7 @@ import {
   SuperAdminRoute,
   AdminRoute,
   TechnicianRoute,
-  FinancialAdminRoute, // <-- Se importa el componente de ruta renombrado
+  FinancialAdminRoute,
 } from './components.js';
 
 // Este componente decide qué dashboard mostrar basado en el rol activo (respetando el "rol camaleón")
@@ -61,9 +64,9 @@ export const router = createBrowserRouter([
           { index: true, element: <RoleBasedDashboard /> },
           {
             path: 'reports',
-            // Se usa la nueva ruta que permite acceso a ADMIN y MANAGER
             element: <FinancialAdminRoute />, 
             children: [
+                { path: 'consumption', element: <ConsumptionReportPage /> },
                 { path: 'invoicing', element: <InvoicingReportPage /> }
             ]
           },
@@ -100,7 +103,8 @@ export const router = createBrowserRouter([
           },
           {
             path: 'incidents-history',
-            element: <AdminRoute />,
+            // ✅ CORRECCIÓN: Usar la guarda que permite acceso a Manager y Admin.
+            element: <FinancialAdminRoute />,
             children: [ { index: true, element: <IncidentsHistoryPage /> } ],
           },
           {

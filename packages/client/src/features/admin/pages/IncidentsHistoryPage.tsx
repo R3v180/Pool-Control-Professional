@@ -1,13 +1,18 @@
+// ====== [10] packages/client/src/features/admin/pages/IncidentsHistoryPage.tsx ======
 // filename: packages/client/src/features/admin/pages/IncidentsHistoryPage.tsx
-// version: 2.3.0
-// description: Convierte las filas de la tabla en enlaces a la nueva página de detalles de la incidencia.
+// version: 2.5.1 (FIX: Remove unused imports)
+// description: Cleaned up unused imports after refactoring.
 
-import { useEffect, useState, useRef } from 'react';
-import { Container, Title, Table, Loader, Alert, Badge, ActionIcon, Tooltip, Text, Select, Grid, Pagination, Center } from '@mantine/core';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+// ✅ 1. Eliminar useRef
+import { Container, Title, Table, Loader, Alert, Badge, ActionIcon, Tooltip, Select, Grid, Pagination, Center } from '@mantine/core';
+// ✅ 2. Eliminar Text
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import apiClient from '../../../api/apiClient';
-import { format, formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { } from 'date-fns';
+// ✅ 3. Eliminar es
+import 'date-fns/locale/es';
+
 
 // --- Tipos de Datos ---
 type IncidentStatus = 'PENDING' | 'RESOLVED';
@@ -15,7 +20,6 @@ type IncidentPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
 
 interface IncidentHistoryItem {
   id: string;
-  createdAt: string;
   message: string;
   status: IncidentStatus;
   priority: IncidentPriority | null;
@@ -49,33 +53,37 @@ export function IncidentsHistoryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  const [activePage, setPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [activePage, setPage] = useState(parseInt(searchParams.get('page') || '1', 10));
   const [totalPages, setTotalPages] = useState(0);
   const PAGE_SIZE = 10;
+  
+  const [filterStatus, setFilterStatus] = useState<string | null>(searchParams.get('status') || 'PENDING');
+  const [filterClient, setFilterClient] = useState<string | null>(searchParams.get('clientId') || null);
 
-  const [filterStatus, setFilterStatus] = useState<string | null>('PENDING');
-  const [filterClient, setFilterClient] = useState<string | null>(null);
-
-  const isInitialMount = useRef(true);
-  const navigate = useNavigate(); // <-- Hook para la navegación
+  const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isInitialMount.current) {
-        setPage(1);
-    }
-  }, [filterStatus, filterClient]);
+    const params = new URLSearchParams();
+    if (filterStatus) params.set('status', filterStatus);
+    if (filterClient) params.set('clientId', filterClient);
+    if (activePage > 1) params.set('page', activePage.toString());
+    
+    setSearchParams(params, { replace: true });
 
+  }, [filterStatus, filterClient, activePage, setSearchParams]);
 
   useEffect(() => {
     const fetchHistory = async () => {
       setIsLoading(true);
       setError(null);
-      try {
-        const params: Record<string, any> = { page: activePage, pageSize: PAGE_SIZE, status: filterStatus, clientId: filterClient };
-        Object.keys(params).forEach(key => (params[key] == null || params[key] === '') && delete params[key]);
+      
+      const params: Record<string, any> = { page: activePage, pageSize: PAGE_SIZE, status: filterStatus, clientId: filterClient };
+      Object.keys(params).forEach(key => (params[key] == null || params[key] === '') && delete params[key]);
 
+      try {
         const response = await apiClient.get<ApiResponse<PaginatedResponse>>('/notifications/history', { params });
-        
         const { notifications, total } = response.data.data;
         setIncidents(notifications);
         setTotalPages(Math.ceil(total / PAGE_SIZE));
@@ -83,7 +91,6 @@ export function IncidentsHistoryPage() {
         setError('No se pudo cargar el historial de incidencias.');
       } finally {
         setIsLoading(false);
-        isInitialMount.current = false;
       }
     };
 
@@ -106,7 +113,6 @@ export function IncidentsHistoryPage() {
     fetchClients();
   }, []);
   
-  // --- Manejador para la navegación ---
   const handleRowClick = (notificationId: string) => {
     navigate(`/incidents/${notificationId}`);
   };
@@ -119,17 +125,12 @@ export function IncidentsHistoryPage() {
       key={item.id} 
       style={{ 
         backgroundColor: item.isCritical ? 'var(--mantine-color-red-0)' : 'transparent',
-        cursor: 'pointer' // <-- Cambia el cursor para indicar que es clicable
+        cursor: 'pointer'
       }}
-      onClick={() => handleRowClick(item.id)} // <-- Añadimos el evento onClick
+      onClick={() => handleRowClick(item.id)}
       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--mantine-color-gray-1)'}
       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = item.isCritical ? 'var(--mantine-color-red-0)' : 'transparent'}
     >
-      <Table.Td>
-        <Tooltip label={format(new Date(item.createdAt), 'dd/MM/yyyy HH:mm')}>
-            <Text size="sm">{formatDistanceToNow(new Date(item.createdAt), { addSuffix: true, locale: es })}</Text>
-        </Tooltip>
-      </Table.Td>
       <Table.Td>{item.visit?.pool?.client?.name || 'N/A'}</Table.Td>
       <Table.Td>{item.visit?.pool?.name || 'N/A'}</Table.Td>
       <Table.Td>{item.visit?.technician?.name || 'N/A'}</Table.Td>
@@ -146,7 +147,6 @@ export function IncidentsHistoryPage() {
       <Table.Td>
         {item.visit && (
           <Tooltip label="Ver Parte de Trabajo Original">
-            {/* Detenemos la propagación para que al hacer clic en el icono no navegue a la página de detalle de incidencia */}
             <ActionIcon component={Link} to={`/visits/${item.visit.id}`} variant="subtle" onClick={(e) => e.stopPropagation()}>
               📄
             </ActionIcon>
@@ -171,7 +171,7 @@ export function IncidentsHistoryPage() {
         <Grid.Col span={{ base: 12, sm: 4 }}>
           <Select
             label="Filtrar por Estado" placeholder="Todos los estados"
-            value={filterStatus} onChange={setFilterStatus}
+            value={filterStatus} onChange={(value) => { setFilterStatus(value); setPage(1); }}
             data={[ { value: 'PENDING', label: 'Pendientes' }, { value: 'RESOLVED', label: 'Resueltas' } ]}
             clearable
           />
@@ -181,7 +181,6 @@ export function IncidentsHistoryPage() {
       <Table striped withTableBorder withColumnBorders mt="md">
         <Table.Thead>
             <Table.Tr>
-              <Table.Th>Antigüedad</Table.Th>
               <Table.Th>Cliente</Table.Th>
               <Table.Th>Piscina</Table.Th>
               <Table.Th>Técnico</Table.Th>
@@ -191,7 +190,7 @@ export function IncidentsHistoryPage() {
             </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-            {rows.length > 0 ? rows : <Table.Tr><Table.Td colSpan={7}>No se han encontrado incidencias con los filtros seleccionados.</Table.Td></Table.Tr>}
+            {rows.length > 0 ? rows : <Table.Tr><Table.Td colSpan={6}>No se han encontrado incidencias con los filtros seleccionados.</Table.Td></Table.Tr>}
         </Table.Tbody>
       </Table>
       

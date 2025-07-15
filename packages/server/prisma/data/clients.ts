@@ -1,14 +1,13 @@
+// ====== [40] packages/server/prisma/data/clients.ts ======
 // filename: packages/server/prisma/data/clients.ts
-// version: 2.0.0
-// description: Añade modelo de facturación y cuota mensual a cada cliente.
+// version: 3.0.0
+// description: Asigna una zona a cada piscina.
 
 import type { BillingModel } from '@prisma/client';
 
 /**
  * Define la cartera de clientes de la empresa de prueba.
- * Cada cliente tiene un array de piscinas asociadas. Esta estructura anidada
- * facilita la creación de ambas entidades y sus relaciones en el script de seed.
- * La variedad de clientes y modelos de facturación permite probar múltiples escenarios.
+ * Cada piscina ahora tiene un `zoneName` para vincularla a una zona geográfica.
  */
 export const clientsData = [
   // --- Cliente 1: Comunidad de Propietarios (Cuota + Materiales) ---
@@ -20,7 +19,6 @@ export const clientsData = [
       phone: '611223344',
       address: 'Calle de la Concordia, 1, 28080 Madrid',
       priceModifier: 1.0,
-      // --- NUEVOS DATOS ---
       monthlyFee: 350.0,
       billingModel: 'FEE_PLUS_MATERIALS' as BillingModel,
     },
@@ -30,12 +28,16 @@ export const clientsData = [
         address: 'Calle de la Concordia, 1, Zonas Comunes, 28080 Madrid',
         volume: 150,
         type: 'Cloro',
+        // ✅ ASIGNACIÓN DE ZONA
+        zoneName: 'Arenal',
       },
       {
         name: 'Piscina Infantil',
         address: 'Calle de la Concordia, 1, Zona Infantil, 28080 Madrid',
         volume: 25,
         type: 'Cloro',
+        // ✅ ASIGNACIÓN DE ZONA
+        zoneName: 'Arenal',
       },
     ],
   },
@@ -48,8 +50,7 @@ export const clientsData = [
       email: 'perez.lopez.familia@email.com',
       phone: '655667788',
       address: 'Avenida de la Brisa, 45, Urbanización Mirasierra, 28035 Madrid',
-      priceModifier: 1.1, // Cliente premium, paga un 10% más sobre el PVP base si algo no estuviera incluido.
-      // --- NUEVOS DATOS ---
+      priceModifier: 1.1,
       monthlyFee: 220.0,
       billingModel: 'ALL_INCLUSIVE' as BillingModel,
     },
@@ -59,6 +60,8 @@ export const clientsData = [
         address: 'Avenida de la Brisa, 45, 28035 Madrid',
         volume: 75,
         type: 'Sal',
+        // ✅ ASIGNACIÓN DE ZONA
+        zoneName: 'Montgó',
       },
     ],
   },
@@ -71,8 +74,7 @@ export const clientsData = [
       email: 'mantenimiento@costaserena-hotel.com',
       phone: '911223344',
       address: 'Paseo del Relax, 2, 28010 Madrid',
-      priceModifier: 0.95, // Cliente grande con descuento del 5% sobre el PVP base.
-      // --- NUEVOS DATOS ---
+      priceModifier: 0.95,
       monthlyFee: 0.0,
       billingModel: 'SERVICE_ONLY' as BillingModel,
     },
@@ -82,6 +84,8 @@ export const clientsData = [
         address: 'Paseo del Relax, 2, Zona de Jardines, 28010 Madrid',
         volume: 250,
         type: 'Cloro',
+        // ✅ ASIGNACIÓN DE ZONA
+        zoneName: 'Puerto',
       },
     ],
   },
@@ -95,7 +99,6 @@ export const clientsData = [
       phone: '918765432',
       address: 'Calle del Músculo, 12, 28020 Madrid',
       priceModifier: 1.0,
-      // --- NUEVOS DATOS ---
       monthlyFee: 250.0,
       billingModel: 'FEE_PLUS_MATERIALS' as BillingModel,
     },
@@ -105,6 +108,8 @@ export const clientsData = [
         address: 'Calle del Músculo, 12, Sótano, 28020 Madrid',
         volume: 100,
         type: 'Cloro',
+        // ✅ ASIGNACIÓN DE ZONA
+        zoneName: 'Pueblo',
       },
     ],
   },

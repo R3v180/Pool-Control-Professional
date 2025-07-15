@@ -1,86 +1,73 @@
+// ====== [2] PROJECT_STATUS.md ======
+
 # Estado del Proyecto y Crónica de Desarrollo: Pool-Control Professional
 
-**Filosofía de este documento:** Este no es solo un registro de tareas, es el pulso del proyecto. Refleja nuestro compromiso con la excelencia, documentando no solo _qué_ hemos hecho, sino _por qué_ lo hemos hecho y el _valor_ que cada fase aporta al producto final. Está diseñado para ser la fuente de verdad para cualquier miembro del equipo, presente o futuro.
+**Filosofía de este documento:** Este no es solo un registro de tareas, es el pulso del proyecto. Refleja nuestro compromiso con la excelencia, documentando no solo _qué_ hemos hecho, sino _por qué_ lo hemos hecho y el _valor_ que cada fase aporta al producto final.
 
-_Última actualización: 13 de julio de 2025, 06:30 CEST_
+_Última actualización: 15 de julio de 2025, 20:00 CEST_
 
 ---
 
-## 1. Visión Estratégica Actual: Sprint Final hacia la Versión 1.0
+## 1. Visión Estratégica Actual: Hacia la Planificación Inteligente v2.0
 
-El proyecto entra en su fase final de desarrollo para la Versión 1.0. El objetivo es consolidar una aplicación funcional, robusta y con funcionalidades diferenciales clave. Durante los próximos 3 días, el enfoque será total en la implementación de las herramientas de gestión financiera, análisis y supervisión proactiva que definirán el producto para su presentación.
+Tras una fase intensiva de desarrollo y estabilización, el proyecto se encuentra en un punto de inflexión. Se ha consolidado una base operativa robusta y se han implementado las primeras herramientas de inteligencia de negocio. El siguiente gran salto evolutivo es la implementación de un sistema de **planificación avanzada y semi-automatizada** que reducirá drásticamente la carga de trabajo administrativo y optimizará las operaciones de campo.
 
 ---
 
 ## 2. Hitos de Desarrollo Validados
 
-### ✅ **Módulo de Informes de Consumo y Rentabilidad v1**
+### ✅ **Dashboard de Gerencia Interactivo v1**
 
 - **Estado:** `COMPLETADO Y VALIDADO`
-- **Resumen:** Se ha implementado con éxito la primera versión del módulo de informes. Esta base nos proporciona una visión de la **rentabilidad interna** (basada en el coste de los productos) y una potente funcionalidad de **desglose interactivo (drill-down)** que permite auditar cualquier coste hasta el parte de trabajo original. La infraestructura técnica (API, componentes de UI, exportación a CSV) está lista para evolucionar.
+- **Resumen:** Se ha implementado con éxito un dashboard dinámico para el rol de Gerente. Los widgets son interactivos, permitiendo la navegación desde KPIs de alto nivel (coste de productos, incidencias abiertas) a las páginas de detalle correspondientes para un análisis en profundidad. Se ha añadido un selector de periodo para un análisis histórico.
 
-### ✅ **Flujo de Trabajo Avanzado para Incidencias (Ticketing)**
+### ✅ **Estabilización de la Plataforma y Refactorización del Backend**
 
 - **Estado:** `COMPLETADO Y VALIDADO`
-- **Resumen:** Se ha finalizado la implementación del sistema de ticketing avanzado, creando un flujo de comunicación bidireccional y completamente trazable entre administradores y técnicos. La comunicación y la resolución de problemas ahora son eficientes y auditables.
+- **Resumen:** Se ha llevado a cabo una fase crítica de depuración y refactorización. Se han resuelto inconsistencias entre el esquema de la base de datos y la lógica de los servicios, asegurando que todas las funcionalidades existentes (gestión de incidencias, informes, etc.) operan de forma estable y predecible.
+
+### ✅ **Coherencia del "Rol Camaleón"**
+
+- **Estado:** `COMPLETADO Y VALIDADO`
+- **Resumen:** Se ha mejorado la lógica de asignación para permitir que los usuarios con rol `MANAGER` puedan ser asignatarios directos de visitas y tareas de incidencia, cerrando un hueco funcional clave en el concepto del "Rol Camaleón".
 
 ---
 
-## 3. Plan de Acción y Tareas Pendientes
+## 3. Plan de Acción y Tareas Pendientes (Sprint v2.0)
 
-### **Plan de Ataque para la Versión 1.0 (Próximos 3 Días)**
+Esta es la máxima prioridad actual. El objetivo es construir el núcleo del nuevo motor de planificación.
 
-Esta es la máxima prioridad actual. El plan se ha detallado para maximizar el valor entregado en el sprint final.
+### **Fase 1: El Nuevo Núcleo de Datos (Backend)**
 
-#### **Mejoras de Usabilidad y UI (Tareas Rápidas)**
+- **Estado:** `COMPLETADO`
+- **Objetivo:** Modificar la estructura de la base de datos para dar soporte a la planificación avanzada.
+- **Tareas Técnicas Validadas:**
+  - **`schema.prisma`:** Se han añadido los nuevos modelos (`Zone`, `RouteTemplate`, `RouteTemplateSeason`, `SpecialWorkOrder`) y se han modificado los modelos existentes (`Pool`, `User`) para soportar la nueva lógica.
+  - **`seed.ts`:** El script de semillado ha sido completamente reescrito para poblar la base de datos con una estructura de datos coherente que incluye zonas, rutas maestras y visitas generadas automáticamente.
+
+### **Fase 2: Construcción de APIs y Lógica de Negocio (Backend)**
+
+- **Estado:** `PENDIENTE (Prioridad Máxima)`
+- **Objetivo:** Desarrollar todos los endpoints de la API necesarios para gestionar la nueva estructura de planificación.
+- **Tareas Técnicas:**
+  - **API de Zonas:** Crear el CRUD completo para `Zone`.
+  - **API de Rutas Maestras:** Crear el CRUD para `RouteTemplate` y sus `RouteTemplateSeason`.
+  - **Job de Generación de Visitas:** Implementar el script (`visit-generator.job.ts`) que se ejecutará periódicamente para generar las visitas de forma automática.
+  - **Evolución de API de Visitas:** Refactorizar el endpoint `GET /api/visits/scheduled` para que lea las visitas pre-generadas y devuelva también las visitas vencidas.
+
+### **Fase 3: Maratón de Frontend e Integración**
 
 - **Estado:** `PENDIENTE`
-- **Objetivo:** Implementar pequeñas mejoras de alto impacto en la interfaz actual para aumentar la eficiencia del `ADMIN`.
+- **Objetivo:** Construir todas las interfaces de usuario para la gestión de la planificación.
 - **Tareas Técnicas:**
-  - **Navegación desde el Dashboard:** Hacer que las tarjetas de "Visitas de Hoy" en el `AdminDashboard` sean clicables, permitiendo al administrador navegar directamente al detalle del parte de trabajo (`WorkOrderPage`) con un solo clic, de la misma forma que ya funciona con las incidencias.
-  - **Mejora Visual de Alertas:** Recuperar y estandarizar el indicador visual para las incidencias críticas. Además del fondo tenue, se añadirá un **borde izquierdo rojo intenso** a las incidencias vencidas o críticas en el `AdminDashboard`, replicando el estilo del `PlannerPage` para una coherencia visual y una identificación más rápida de los problemas urgentes.
+  - **Página de Gestión de Zonas:** Crear la interfaz para el CRUD de Zonas.
+  - **Páginas de Rutas Maestras:** Crear las interfaces para listar y configurar las `RouteTemplate`.
+  - **Refactorización del Planificador (`PlannerPage.tsx`):** Rediseñar la página para que visualice el plan generado, la columna de "Deuda Operativa" (visitas vencidas) y la de "Trabajo Huérfano" (por bajas).
+  - **Integrar Órdenes de Trabajo Especiales:** Añadir la funcionalidad para crear y asignar visitas únicas.
 
-#### **DÍA 1: La Gran Refundación (Cimientos del Backend)**
+### **Tareas de Futuras Iteraciones (Post-v2.0)**
 
-- **Estado:** `PENDIENTE`
-- **Objetivo:** Modificar el `schema.prisma` para dar soporte a TODAS las nuevas funcionalidades de la v1.0. Es el paso más crítico y bloqueante.
-- **Tareas Técnicas:**
-  - **Motor Financiero:** Añadir campos `salePrice` (PVP), `taxRate` (IVA), `monthlyFee` (Cuota Fija) y `billingModel` (Modelo de Contrato).
-  - **Precios Avanzados:** Crear los nuevos modelos `ProductCategory` (para familias de productos) y `ClientProductPricing` (para reglas de descuento).
-  - **Historial de Pagos:** Crear el nuevo modelo `Payment` para registrar los pagos de los clientes.
-  - **Gastos Adicionales:** Crear el nuevo modelo `Expense` para el registro de gastos manuales.
-  - **Actualizar Seed:** Modificar el script de `seed.ts` para generar datos de prueba realistas para toda esta nueva estructura.
-
-#### **DÍA 2: Construcción de APIs y Lógica de Negocio (Backend)**
-
-- **Estado:** `PENDIENTE`
-- **Objetivo:** Desarrollar todos los endpoints de la API necesarios.
-- **Tareas Técnicas:**
-  - **API Financiera:** Crear los endpoints para gestionar las reglas de precios, gastos y pagos.
-  - **API de Alertas:** Implementar la lógica en `visits.service.ts` para comprobar umbrales de parámetros y crear las notificaciones de alerta.
-  - **API de Dashboard:** Crear los endpoints de agregación de datos para los KPIs del Dashboard de Gerencia.
-  - **Evolución de Informes:** Actualizar el `reports.service.ts` para generar el "Informe para Facturación".
-
-#### **DÍA 3: Maratón de Frontend e Integración Final**
-
-- **Estado:** `PENDIENTE`
-- **Objetivo:** Construir todas las interfaces de usuario necesarias.
-- **Tareas Técnicas:**
-  - **Ficha de Cliente:** Añadir la sección de "Configuración de Facturación".
-  - **Página de Informes:** Implementar el selector de modo ("Rentabilidad" vs "Facturación").
-  - **Historial de Pagos:** Añadir la pestaña y formulario de pagos en la ficha del cliente.
-  - **Dashboard de Gerencia:** Construir la primera versión del `ManagerDashboard.tsx` con los KPIs principales y el "Selector de Vista".
-
-### **Tareas de Refinamiento (Post-v1.0)**
-
-Estas son las tareas que teníamos pendientes del hito anterior. Se abordarán después del sprint de la v1.0 para pulir la aplicación.
-
-- **Refinamiento de UI del Módulo de Incidencias:** Realizar una pasada de pulido visual sobre la interfaz de `IncidentDetailPage`.
-- **Mejora a Notificaciones en Tiempo Real:** Implementar WebSockets para que la campana de notificaciones se actualice de forma instantánea.
-
----
-
-## 4. Bloqueos Actuales
-
-- **ESTADO:** `SIN BLOQUEOS`
-- **Descripción:** El bloqueo crítico de frontend que afectaba al módulo de incidencias ha sido **resuelto**. No existen impedimentos técnicos para comenzar la implementación del plan.
+- **Alertas Proactivas por Umbrales.**
+- **Módulo de Estado de Cuentas por Cliente.**
+- **Optimización de Rutas con API de Mapas.**
+- **Gestión de Inventario.**

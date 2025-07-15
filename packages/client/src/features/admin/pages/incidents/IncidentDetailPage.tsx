@@ -1,5 +1,6 @@
+// ====== [17] packages/client/src/features/admin/pages/incidents/IncidentDetailPage.tsx ======
 // filename: packages/client/src/features/admin/pages/incidents/IncidentDetailPage.tsx
-// version: 2.8.0 (Cleaned)
+// version: 2.8.1 (FIX: Use existing visit timestamp instead of createdAt)
 
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
@@ -30,9 +31,10 @@ interface IncidentTask {
   priority: IncidentPriority; deadline: string | null; assignedTo: User | null; resolutionNotes: string | null;
 }
 interface NotificationDetails {
-  id:string; message: string; status: IncidentStatus; priority: IncidentPriority | null; createdAt: string;
+  id:string; message: string; status: IncidentStatus; priority: IncidentPriority | null;
+  // createdAt no existe, lo quitamos de la interfaz para ser precisos
   images: IncidentImage[];
-  visit: { id: string; pool: { name: string; }; technician: { name: string } | null; } | null;
+  visit: { id: string; timestamp: string; pool: { name: string; }; technician: { name: string } | null; } | null;
 }
 interface ApiResponse<T> { success: boolean; data: T; }
 const taskStatusColors: Record<IncidentTaskStatus, string> = { PENDING: 'gray', IN_PROGRESS: 'blue', COMPLETED: 'green', CANCELLED: 'red' };
@@ -40,6 +42,7 @@ const priorityColors: Record<IncidentPriority, string> = { LOW: 'gray', NORMAL: 
 
 // ===================================================================
 // --- VISTA PARA EL TÉCNICO ---
+// (Componente sin cambios, se omite por brevedad)
 // ===================================================================
 const TechnicianTaskView = ({ tasks, onUpdate }: { tasks: IncidentTask[], onUpdate: () => void }) => {
   const { user } = useAuth();
@@ -161,9 +164,9 @@ const TechnicianTaskView = ({ tasks, onUpdate }: { tasks: IncidentTask[], onUpda
   );
 };
 
-
 // ===================================================================
 // --- VISTA PARA EL ADMIN ---
+// (Componente sin cambios, se omite por brevedad)
 // ===================================================================
 const AdminIncidentView = ({ notification, tasks, technicians, onUpdate }: { notification: NotificationDetails, tasks: IncidentTask[], technicians: User[], onUpdate: () => void }) => {
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
@@ -245,7 +248,6 @@ const AdminIncidentView = ({ notification, tasks, technicians, onUpdate }: { not
         handleViewLogs(tasks[0]);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tasks]); 
   
   const handleAcceptDeadline = async (taskId: string, logDetails: string) => {
@@ -429,7 +431,13 @@ export function IncidentDetailPage() {
 
       <Paper withBorder p="md" mb="xl">
         <Group justify="space-between"><Title order={4}>Reporte Original</Title><Badge color={notification.status === 'PENDING' ? 'orange' : 'green'} size="lg">{notification.status}</Badge></Group>
-        <Text size="sm" c="dimmed" mt="xs">Reportado por {notification.visit?.technician?.name || 'Sistema'} el {format(new Date(notification.createdAt), 'd MMM yyyy, HH:mm', { locale: es })}</Text>
+        
+        {/* ✅ CORRECCIÓN: Usar una fecha que sí existe y proteger contra valores nulos */}
+        <Text size="sm" c="dimmed" mt="xs">
+          Reportado por {notification.visit?.technician?.name || 'Sistema'}
+          {notification.visit?.timestamp && ` el ${format(new Date(notification.visit.timestamp), 'd MMM yyyy, HH:mm', { locale: es })}`}
+        </Text>
+
         <Textarea value={notification.message} readOnly minRows={2} mt="md" label="Mensaje del técnico" />
         {notification.images && notification.images.length > 0 && (
           <><Text fw={500} size="sm" mt="md">Imágenes Adjuntas:</Text><SimpleGrid cols={{ base: 2, sm: 4, lg: 6 }} mt="xs">{notification.images.map(image => (<Paper key={image.id} withBorder radius="md" style={{ cursor: 'pointer' }} onClick={() => handleImageClick(image.url)}><Image src={image.url} height={100} radius="md" fit="cover" /></Paper>))}</SimpleGrid></>

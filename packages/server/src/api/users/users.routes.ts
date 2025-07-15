@@ -1,8 +1,10 @@
+// ====== [101] packages/server/src/api/users/users.routes.ts ======
 // filename: packages/server/src/api/users/users.routes.ts
-// Version: 2.0.0 (FEAT: Protect routes with ADMIN/MANAGER authorization)
+// Version: 2.1.0 (FEAT: Adapt routes to use the new controller handler)
+// description: The route now points to the new handler for fetching assignable users (technicians and managers).
 
 import { Router } from 'express';
-import { getTechniciansByTenantHandler } from './users.controller.js';
+import { getAssignableUsersHandler } from './users.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
 import { authorize } from '../../middleware/authorize.middleware.js';
 
@@ -13,10 +15,9 @@ usersRouter.use(protect);
 
 /**
  * @route   GET /api/users/technicians
- * @desc    Obtiene una lista de todos los técnicos del tenant.
+ * @desc    Obtiene una lista de todos los usuarios asignables (técnicos y gerentes) del tenant.
  * @access  Private (Admin, Manager)
  */
-usersRouter.get('/technicians', authorize('ADMIN', 'MANAGER'), getTechniciansByTenantHandler);
-
+usersRouter.get('/technicians', authorize('ADMIN', 'MANAGER'), getAssignableUsersHandler);
 
 export default usersRouter;

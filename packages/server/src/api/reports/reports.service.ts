@@ -1,26 +1,28 @@
+// ====== [90] packages/server/src/api/reports/reports.service.ts ======
 // filename: packages/server/src/api/reports/reports.service.ts
-// version: 1.2.1 (FIXED)
+// version: 1.4.0 (FEAT: Add productId filter to consumption report)
+// description: The consumption report can now be filtered by a specific product ID.
 
 import { PrismaClient } from '@prisma/client';
+import type { ClientProductPricing } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// --- Tipos de Datos (Existentes) ---
+// --- Tipos de Datos (Interfaces) ---
 
 interface ReportFilters {
   tenantId: string;
   startDate: Date;
   endDate: Date;
   clientId?: string;
+  // ✅ 1. Añadir productId como filtro opcional
+  productId?: string;
 }
 
 interface ConsumptionReport {
   summary: {
     totalCost: number;
     totalVisits: number;
-    totalConsumptionRecords: number;
-    startDate: string;
-    endDate: string;
   };
   byClient: {
     clientId: string;
@@ -50,16 +52,11 @@ export interface ProductConsumptionDetail {
     technicianName: string | null;
 }
 
-
-// --- Nueva Interfaz para el Informe de Facturación ---
-
 export interface InvoicingReport {
   summary: {
     totalToInvoice: number;
     totalFees: number;
     totalMaterials: number;
-    startDate: string;
-    endDate: string;
   };
   byClient: {
     clientId: string;
@@ -73,47 +70,36 @@ export interface InvoicingReport {
       productName: string;
       unit: string;
       totalQuantity: number;
-      salePrice: number; // Precio de venta unitario aplicado
+      salePrice: number;
       totalLine: number;
     }[];
   }[];
 }
 
 
-// --- Funciones de Servicio (Existentes) ---
+// --- Funciones de Servicio ---
 
 export const generateConsumptionReport = async (filters: ReportFilters): Promise<ConsumptionReport> => {
-  const { tenantId, startDate, endDate, clientId } = filters;
-
-  const whereClause: any = {
-    visit: {
-      pool: {
-        tenantId: tenantId,
-      },
-      timestamp: {
-        gte: startDate,
-        lte: endDate,
-      },
-    },
-  };
-
-  if (clientId) {
-    whereClause.visit.pool.clientId = clientId;
-  }
+  const { tenantId, startDate, endDate, clientId, productId } = filters;
 
   const consumptions = await prisma.consumption.findMany({
-    where: whereClause,
-    include: {
-      product: true,
+    where: {
+      // ✅ 2. Añadir la condición del productId a la consulta
+      productId: productId ? productId : undefined,
       visit: {
-        include: {
-          pool: {
-            include: {
-              client: true,
-            },
-          },
+        pool: {
+          tenantId: tenantId,
+          clientId: clientId ? clientId : undefined,
+        },
+        timestamp: {
+          gte: startDate,
+          lte: endDate,
         },
       },
+    },
+    include: {
+      product: true,
+      visit: { include: { pool: { include: { client: true } } } },
     },
   });
   
@@ -122,9 +108,7 @@ export const generateConsumptionReport = async (filters: ReportFilters): Promise
   const visitedVisits = new Set<string>();
 
   for (const consumption of consumptions) {
-    if (!consumption.visit || !consumption.visit.pool || !consumption.visit.pool.client) {
-      continue;
-    }
+    if (!consumption.visit || !consumption.visit.pool || !consumption.visit.pool.client) continue;
     
     const client = consumption.visit.pool.client;
     const product = consumption.product;
@@ -146,8 +130,9 @@ export const generateConsumptionReport = async (filters: ReportFilters): Promise
     reportData[client.id].totalClientCost += itemCost;
     reportData[client.id].visitCount.add(consumption.visitId);
     
-    if (!reportData[client.id].detailedConsumption[product.id]) {
-      reportData[client.id].detailedConsumption[product.id] = {
+    const detailedConsumption = reportData[client.id].detailedConsumption;
+    if (!detailedConsumption[product.id]) {
+      detailedConsumption[product.id] = {
         productId: product.id,
         productName: product.name,
         unit: product.unit,
@@ -156,8 +141,8 @@ export const generateConsumptionReport = async (filters: ReportFilters): Promise
       };
     }
     
-    reportData[client.id].detailedConsumption[product.id].totalQuantity += consumption.quantity;
-    reportData[client.id].detailedConsumption[product.id].totalCost += itemCost;
+    detailedConsumption[product.id].totalQuantity += consumption.quantity;
+    detailedConsumption[product.id].totalCost += itemCost;
   }
   
   const byClientArray = Object.values(reportData).map(clientData => ({
@@ -170,9 +155,6 @@ export const generateConsumptionReport = async (filters: ReportFilters): Promise
     summary: {
       totalCost: overallTotalCost,
       totalVisits: visitedVisits.size,
-      totalConsumptionRecords: consumptions.length,
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
     },
     byClient: byClientArray,
   };
@@ -183,35 +165,17 @@ export const getConsumptionDetailsForProduct = async (filters: DetailFilters): P
 
     const consumptions = await prisma.consumption.findMany({
         where: {
-            productId: productId,
+            productId,
             visit: {
-                pool: {
-                    clientId: clientId,
-                    tenantId: tenantId,
-                },
-                timestamp: {
-                    gte: startDate,
-                    lte: endDate,
-                }
+                pool: { clientId, tenantId },
+                timestamp: { gte: startDate, lte: endDate }
             }
         },
         include: {
             product: true,
-            visit: {
-                include: {
-                    technician: {
-                        select: {
-                            name: true,
-                        }
-                    }
-                }
-            }
+            visit: { include: { technician: { select: { name: true } } } }
         },
-        orderBy: {
-            visit: {
-                timestamp: 'desc'
-            }
-        }
+        orderBy: { visit: { timestamp: 'desc' } }
     });
 
     return consumptions.map(c => ({
@@ -223,44 +187,34 @@ export const getConsumptionDetailsForProduct = async (filters: DetailFilters): P
     }));
 };
 
-
-// --- ✅ NUEVA FUNCIÓN DE SERVICIO ---
 export const generateInvoicingReport = async (filters: ReportFilters): Promise<InvoicingReport> => {
     const { tenantId, startDate, endDate, clientId } = filters;
 
-    // 1. Obtener los clientes relevantes y sus reglas de precios
     const clients = await prisma.client.findMany({
         where: {
             tenantId,
             id: clientId ? clientId : undefined,
         },
-        // --- CAMBIO APLICADO ---
-        // Al no usar 'select', Prisma incluirá todos los campos escalares por defecto,
-        // además de la relación especificada en 'include'. Esto soluciona el error de tipado.
         include: {
-            pricingRules: true,
+            clientPricingRules: true, 
         },
     });
 
-    // 2. Obtener todos los consumos del periodo para los clientes filtrados
     const consumptions = await prisma.consumption.findMany({
         where: {
             visit: {
-                pool: {
-                    tenantId: tenantId,
-                    clientId: clientId ? clientId : undefined,
-                },
+                pool: { tenantId, clientId: clientId ? clientId : undefined },
                 timestamp: { gte: startDate, lte: endDate },
             },
         },
         include: {
             product: true,
-            visit: { include: { pool: { include: { client: true } } } },
+            visit: { include: { pool: true } },
         },
     });
 
     const report: InvoicingReport = {
-        summary: { totalToInvoice: 0, totalFees: 0, totalMaterials: 0, startDate: startDate.toISOString(), endDate: endDate.toISOString() },
+        summary: { totalToInvoice: 0, totalFees: 0, totalMaterials: 0 },
         byClient: [],
     };
 
@@ -280,7 +234,7 @@ export const generateInvoicingReport = async (filters: ReportFilters): Promise<I
         if (client.billingModel === 'ALL_INCLUSIVE') {
             report.summary.totalToInvoice += client.monthlyFee;
             report.byClient.push(clientReport);
-            continue; // No se facturan materiales, pasar al siguiente cliente
+            continue;
         }
 
         const clientConsumptions = consumptions.filter(c => c.visit.pool.clientId === client.id);
@@ -289,22 +243,20 @@ export const generateInvoicingReport = async (filters: ReportFilters): Promise<I
             const product = consumption.product;
             let finalSalePrice = product.salePrice;
 
-            // Aplicar jerarquía de precios
-            const productRule = client.pricingRules.find(r => r.productId === product.id);
-            const categoryRule = client.pricingRules.find(r => r.productCategoryId === product.categoryId);
+            const productRule = client.clientPricingRules.find((r: ClientProductPricing) => r.productId === product.id);
+            const categoryRule = client.clientPricingRules.find((r: ClientProductPricing) => r.productCategoryId === product.categoryId);
 
-            if (productRule) { // 1. Descuento específico de producto
+            if (productRule) {
                 finalSalePrice *= (1 - productRule.discountPercentage / 100);
-            } else if (categoryRule) { // 2. Descuento de categoría
+            } else if (categoryRule) {
                 finalSalePrice *= (1 - categoryRule.discountPercentage / 100);
-            } else { // 3. Modificador general del cliente
+            } else {
                 finalSalePrice *= client.priceModifier;
             }
             
             const lineTotal = consumption.quantity * finalSalePrice;
             clientReport.materialsSubtotal += lineTotal;
 
-            // Agregar al detalle de consumo facturado
             const existingBilledItem = clientReport.billedConsumption.find(item => item.productId === product.id);
             if (existingBilledItem) {
                 existingBilledItem.totalQuantity += consumption.quantity;
@@ -323,9 +275,10 @@ export const generateInvoicingReport = async (filters: ReportFilters): Promise<I
         
         clientReport.totalToInvoice += clientReport.materialsSubtotal;
         report.summary.totalMaterials += clientReport.materialsSubtotal;
-        report.summary.totalToInvoice += clientReport.totalToInvoice;
         report.byClient.push(clientReport);
     }
+    
+    report.summary.totalToInvoice = report.summary.totalFees + report.summary.totalMaterials;
 
     return report;
 };

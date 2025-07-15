@@ -1,9 +1,10 @@
+// ====== [66] packages/server/src/api/incident-tasks/incident-tasks.service.ts ======
 // filename: packages/server/src/api/incident-tasks/incident-tasks.service.ts
-// version: 1.5.1 (FIX: Correctly compare nullable dates)
+// version: 1.6.0 (FIX: Use existing fields for query)
+// description: Corrected the getTasksByNotificationId function to select and order by fields that exist in the current schema.
 
 import { PrismaClient } from '@prisma/client';
 import type { IncidentTask, IncidentPriority, IncidentTaskStatus, IncidentTaskLog } from '@prisma/client';
-// ✅ Se elimina 'isEqual' que no se usa y causaba el error
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -57,6 +58,7 @@ export const createIncidentTask = async (data: CreateIncidentTaskInput, actorId:
 };
 
 export const getTasksByNotificationId = async (notificationId: string, tenantId: string): Promise<IncidentTask[]> => {
+  // ✅ CORRECCIÓN: Se ajusta la consulta para usar campos existentes.
   return prisma.incidentTask.findMany({
     where: { notificationId, tenantId },
     select: {
@@ -73,14 +75,15 @@ export const getTasksByNotificationId = async (notificationId: string, tenantId:
           name: true,
         },
       },
-      createdAt: true,
-      updatedAt: true,
-      tenantId: true,
-      notificationId: true,
+      // Los campos createdAt y updatedAt no existen en el modelo IncidentTask,
+      // por lo tanto, no se pueden seleccionar.
+      notificationId: true, 
       assignedToId: true,
-      logs: false,
+      tenantId: true,
+      logs: false, // No incluimos los logs en esta consulta por rendimiento
     },
-    orderBy: { createdAt: 'asc' },
+    // Se ordena por prioridad y luego por id.
+    orderBy: [{ priority: 'desc' }, { id: 'asc' }],
   });
 };
 
@@ -90,13 +93,11 @@ export const getTasksAssignedToUser = async (userId: string): Promise<IncidentTa
 
 export const updateIncidentTask = async (id: string, data: UpdateIncidentTaskInput): Promise<IncidentTask> => {
   return prisma.$transaction(async (tx) => {
-    // 1. Obtenemos el estado de la tarea ANTES de la actualización
     const originalTask = await tx.incidentTask.findUniqueOrThrow({
       where: { id },
       include: { assignedTo: true }
     });
 
-    // 2. Realizamos la actualización
     const updatedTask = await tx.incidentTask.update({
         where: { id },
         data: {
@@ -106,11 +107,9 @@ export const updateIncidentTask = async (id: string, data: UpdateIncidentTaskInp
         include: { assignedTo: true, notification: true }
     });
 
-    // 3. Comparamos el plazo (deadline) de forma segura
     const originalDeadline = originalTask.deadline;
     const updatedDeadline = updatedTask.deadline;
     
-    // ✅ LA SOLUCIÓN: Comparamos el valor numérico de las fechas, que maneja null/undefined correctamente.
     if (originalDeadline?.getTime() !== updatedDeadline?.getTime() && updatedTask.assignedTo) {
       const formattedDeadline = updatedDeadline 
         ? format(updatedDeadline, "d MMMM yyyy 'a las' HH:mm", { locale: es })
@@ -118,7 +117,6 @@ export const updateIncidentTask = async (id: string, data: UpdateIncidentTaskInp
       
       const message = `El plazo para tu tarea "${updatedTask.title}" ha sido actualizado a: ${formattedDeadline}.`;
       
-      // Creamos la notificación para el técnico
       await tx.notification.create({
         data: {
           message,

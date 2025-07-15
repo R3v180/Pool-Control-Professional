@@ -11,7 +11,8 @@
     "build": "pnpm --filter \"./packages/**\" build",
     "prisma:generate": "pnpm --filter @pool-control/server prisma:generate",
     "prisma:migrate": "pnpm --filter @pool-control/server prisma:migrate --",
-    "prisma:studio": "pnpm --filter @pool-control/server prisma:studio"
+    "prisma:studio": "pnpm --filter @pool-control/server prisma:studio",
+    "db:reset": "pnpm prisma:migrate reset --skip-seed --force && pnpm --filter @pool-control/server db:seed"
   },
   "devDependencies": {
     "typescript": "^5.4.5"

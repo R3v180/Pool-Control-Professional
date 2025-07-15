@@ -108,12 +108,13 @@
 106. packages/server/src/app.ts
 107. packages/server/src/config/index.ts
 108. packages/server/src/middleware/auth.middleware.ts
-109. packages/server/src/middleware/error.middleware.ts
-110. packages/server/src/server.ts
-111. packages/server/src/utils/jwt.utils.ts
-112. packages/server/src/utils/password.utils.ts
-113. packages/server/tsconfig.json
-114. tsconfig.json
+109. packages/server/src/middleware/authorize.middleware.ts
+110. packages/server/src/middleware/error.middleware.ts
+111. packages/server/src/server.ts
+112. packages/server/src/utils/jwt.utils.ts
+113. packages/server/src/utils/password.utils.ts
+114. packages/server/tsconfig.json
+115. tsconfig.json
 
 
 # CONTENIDO DE ARCHIVOS
@@ -403,7 +404,8 @@ Nuestro enfoque inmediato para tener una versión de presentación increíblemen
     "build": "pnpm --filter \"./packages/**\" build",
     "prisma:generate": "pnpm --filter @pool-control/server prisma:generate",
     "prisma:migrate": "pnpm --filter @pool-control/server prisma:migrate --",
-    "prisma:studio": "pnpm --filter @pool-control/server prisma:studio"
+    "prisma:studio": "pnpm --filter @pool-control/server prisma:studio",
+    "db:reset": "pnpm prisma:migrate reset --skip-seed --force && pnpm --filter @pool-control/server db:seed"
   },
   "devDependencies": {
     "typescript": "^5.4.5"
@@ -4948,8 +4950,7 @@ export const useAuth = (): AuthContextType => {
 
 // ====== [31] packages/client/src/router/components.tsx ======
 // filename: packages/client/src/router/components.tsx
-// version: 2.3.2 (COMPLETE)
-// description: Añade el enlace a Gastos Generales en el menú de Finanzas.
+// version: 2.4.0 (REFACTOR: Rename ManagerRoute to FinancialAdminRoute and adjust logic)
 
 import { AppShell, Burger, Group, NavLink, Title, Button, Indicator, ActionIcon, Popover, Text, Stack, SegmentedControl } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
@@ -5113,7 +5114,10 @@ export const AppLayout = () => {
             <NavLink component={Link} to="/" label="Dashboard de Admin" onClick={toggle} />
             <NavLink component={Link} to="/planner" label="Planificador" onClick={toggle} />
             <NavLink component={Link} to="/clients" label="Clientes" onClick={toggle} />
-            <NavLink component={Link} to="/incidents-history" label="Historial de Incidencias" onClick={toggle} />
+            <NavLink component={Link} to="/incidents-history" label="Gestión de Incidencias" onClick={toggle} />
+            <NavLink label="Informes" defaultOpened>
+                <NavLink component={Link} to="/reports/invoicing" label="Informe para Facturación" onClick={toggle}/>
+            </NavLink>
             <NavLink label="Catálogos" defaultOpened>
               <NavLink component={Link} to="/catalog/parameters" label="Parámetros" onClick={toggle} />
               <NavLink component={Link} to="/catalog/tasks" label="Tareas" onClick={toggle} />
@@ -5158,27 +5162,29 @@ export const SuperAdminRoute = () => {
 };
 
 export const AdminRoute = () => {
-  const { user, isLoading } = useAuth();
+  const { activeRole, isLoading } = useAuth();
   if (isLoading) return <div>Cargando...</div>;
-  if (user?.role !== 'ADMIN' && user?.role !== 'MANAGER') {
+  if (activeRole !== 'ADMIN') {
     return <Navigate to="/" replace />;
   }
   return <Outlet />;
 };
 
 export const TechnicianRoute = () => {
-  const { user, isLoading } = useAuth();
+  const { activeRole, isLoading } = useAuth();
   if (isLoading) return <div>Cargando...</div>;
-  if (user?.role !== 'TECHNICIAN' && user?.role !== 'MANAGER') {
+  if (activeRole !== 'TECHNICIAN') {
     return <Navigate to="/" replace />;
   }
   return <Outlet />;
 };
 
-export const ManagerRoute = () => {
-    const { user, isLoading } = useAuth();
+// Renombrado de ManagerRoute -> FinancialAdminRoute
+export const FinancialAdminRoute = () => {
+    const { activeRole, isLoading } = useAuth();
     if (isLoading) return <div>Cargando...</div>;
-    if (user?.role !== 'MANAGER' && user?.role !== 'SUPER_ADMIN') {
+    // Ahora permite el acceso a MANAGER o ADMIN
+    if (activeRole !== 'MANAGER' && activeRole !== 'ADMIN') {
       return <Navigate to="/" replace />;
     }
     return <Outlet />;
@@ -5187,8 +5193,7 @@ export const ManagerRoute = () => {
 
 // ====== [32] packages/client/src/router/index.tsx ======
 // filename: packages/client/src/router/index.tsx
-// Version: 2.4.2 (COMPLETE)
-// description: Añade la ruta para la página de gestión de gastos.
+// Version: 2.5.0 (REFACTOR: Use FinancialAdminRoute and activeRole for navigation logic)
 
 import { createBrowserRouter } from 'react-router-dom';
 import { LoginPage } from '../features/auth/pages/LoginPage.js';
@@ -5217,12 +5222,15 @@ import {
   SuperAdminRoute,
   AdminRoute,
   TechnicianRoute,
-  ManagerRoute,
+  FinancialAdminRoute, // <-- Se importa el componente de ruta renombrado
 } from './components.js';
 
+// Este componente decide qué dashboard mostrar basado en el rol activo (respetando el "rol camaleón")
 const RoleBasedDashboard = () => {
   const { activeRole, user } = useAuth();
   if (user?.role === 'SUPER_ADMIN') return <TenantsPage />;
+  
+  // Se usa activeRole para que el cambio de vista del Manager funcione
   switch (activeRole) {
     case 'ADMIN': return <AdminDashboard />;
     case 'TECHNICIAN': return <MyRoutePage />;
@@ -5247,7 +5255,8 @@ export const router = createBrowserRouter([
           { index: true, element: <RoleBasedDashboard /> },
           {
             path: 'reports',
-            element: <ManagerRoute />,
+            // Se usa la nueva ruta que permite acceso a ADMIN y MANAGER
+            element: <FinancialAdminRoute />, 
             children: [
                 { path: 'invoicing', element: <InvoicingReportPage /> }
             ]
@@ -5290,7 +5299,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'incidents/:notificationId',
-            element: <ProtectedRoute />,
+            element: <ProtectedRoute />, // Accesible por Admin y Técnico
             children: [ { index: true, element: <IncidentDetailPage /> } ]
           },
           {
@@ -5310,7 +5319,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'visits/:visitId',
-            element: <ProtectedRoute />,
+            element: <ProtectedRoute />, // Accesible por Admin y Técnico
             children: [ { index: true, element: <WorkOrderPage /> } ],
           },
         ],
@@ -5467,10 +5476,10 @@ export default defineConfig({
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate",
     "prisma:studio": "prisma studio",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "prisma generate && tsx prisma/seed.ts"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "prisma generate && tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.15.0",
@@ -6108,8 +6117,7 @@ export const usersData: { name: string; email: string; password: string; role: U
 
 // ====== [48] packages/server/prisma/seed.ts ======
 // filename: packages/server/prisma/seed.ts
-// version: 4.0.2 (Final)
-// description: Versión final compatible con el schema 3.0.4.
+// version: 6.0.1 (COMPLETE AND LINT-FIXED)
 
 import { PrismaClient } from '@prisma/client';
 import type { Frequency, ParameterTemplate, ScheduledTaskTemplate, User, Pool, Product, Client, ProductCategory } from '@prisma/client';
@@ -6126,8 +6134,6 @@ import { productCategoriesData } from './data/product-categories.js';
 import { clientPricingRulesData } from './data/financial-rules.js';
 import { paymentsData, expensesData } from './data/transactions.js';
 
-const prisma = new PrismaClient();
-
 // --- Funciones de ayuda ---
 const getRandomItems = <T>(arr: T[], count: number): T[] => {
   if (arr.length < count) {
@@ -6139,197 +6145,208 @@ const getRandomItems = <T>(arr: T[], count: number): T[] => {
 
 // --- Script Principal ---
 async function main() {
-  console.log('🌱 Empezando el proceso de seeding para la demo v4.0 (con motor financiero)...');
+  // Instanciamos el cliente aquí, dentro de la función, para garantizar una conexión fresca.
+  const prisma = new PrismaClient();
 
-  // 1. --- CREACIÓN DE ENTIDADES DEL SISTEMA ---
-  const systemTenant = await prisma.tenant.create({
-    data: { companyName: 'SYSTEM_INTERNAL', subdomain: 'system', subscriptionStatus: 'ACTIVE' },
-  });
-  const superAdminPassword = await hashPassword('superadmin123');
-  await prisma.user.create({
-    data: { email: 'super@admin.com', name: 'Super Admin', password: superAdminPassword, role: 'SUPER_ADMIN', tenantId: systemTenant.id },
-  });
-  console.log('👑 SuperAdmin y Tenant del sistema creados.');
+  try {
+    console.log('🌱 Empezando el proceso de seeding para la demo v4.0 (con motor financiero)...');
 
-  // 2. --- CREACIÓN DEL TENANT DE PRUEBA Y USUARIOS ---
-  const mainTenant = await prisma.tenant.create({
-    data: { companyName: 'Piscival S.L.', subdomain: 'piscival', subscriptionStatus: 'ACTIVE' },
-  });
-  console.log(`\n🏢 Tenant de prueba creado: ${mainTenant.companyName}`);
-  
-  const createdUsers: User[] = [];
-  for (const userData of usersData) {
-    const hashedPassword = await hashPassword(userData.password);
-    const user = await prisma.user.create({ data: { ...userData, password: hashedPassword, tenantId: mainTenant.id } });
-    createdUsers.push(user);
-    console.log(`   👤 Usuario creado: ${userData.name} (${userData.role})`);
-  }
-  const adminUser = createdUsers.find(u => u.role === 'ADMIN');
-  const technicians = createdUsers.filter(u => u.role === 'TECHNICIAN');
-  if (!adminUser || technicians.length < 3) throw new Error('Seeding fallido: No se encontraron suficientes usuarios admin o técnicos.');
-
-  // 3. --- CREACIÓN DE CATÁLOGOS Y ENTIDADES FINANCIERAS BASE ---
-  console.log('\n- Fase de creación de catálogos y finanzas -');
-
-  const createdParams: ParameterTemplate[] = [];
-  for (const p of parameterData) {
-    const param = await prisma.parameterTemplate.create({ data: { ...p, tenantId: mainTenant.id } });
-    createdParams.push(param);
-  }
-  console.log(`📊 Creados ${createdParams.length} parámetros en el catálogo.`);
-
-  const createdTasks: ScheduledTaskTemplate[] = [];
-  for (const t of taskData) {
-    const task = await prisma.scheduledTaskTemplate.create({ data: { ...t, tenantId: mainTenant.id } });
-    createdTasks.push(task);
-  }
-  console.log(`📋 Creadas ${createdTasks.length} tareas en el catálogo.`);
-
-  const createdCategories: ProductCategory[] = [];
-  for (const catData of productCategoriesData) {
-    const category = await prisma.productCategory.create({ data: { ...catData, tenantId: mainTenant.id } });
-    createdCategories.push(category);
-  }
-  console.log(`📁 Creadas ${createdCategories.length} categorías de productos.`);
-
-  const createdProducts: Product[] = [];
-  for (const prodData of productData) {
-    const { categoryName, ...restOfProdData } = prodData;
-    const category = createdCategories.find(c => c.name === categoryName);
-    const product = await prisma.product.create({
-      data: {
-        ...restOfProdData,
-        tenantId: mainTenant.id,
-        categoryId: category?.id,
-      },
+    // 1. --- CREACIÓN DE ENTIDADES DEL SISTEMA ---
+    const systemTenant = await prisma.tenant.create({
+      data: { companyName: 'SYSTEM_INTERNAL', subdomain: 'system', subscriptionStatus: 'ACTIVE' },
     });
-    createdProducts.push(product);
-  }
-  console.log(`📦 Creados ${createdProducts.length} productos en el catálogo.`);
-
-  // 4. --- CREACIÓN DE CLIENTES Y PISCINAS ---
-  console.log('\n- Fase de creación de clientes y piscinas -');
-  const allPools: Pool[] = [];
-  const createdClients: Client[] = [];
-  for (const data of clientsData) {
-    const client = await prisma.client.create({ data: { ...data.client, tenantId: mainTenant.id } });
-    createdClients.push(client);
-    console.log(`\n👨‍💼 Cliente creado: ${client.name} (Modelo: ${client.billingModel})`);
-    for (const poolData of data.pools) {
-      const pool = await prisma.pool.create({ data: { ...poolData, clientId: client.id, tenantId: mainTenant.id } });
-      allPools.push(pool);
-      console.log(`   🏊 Piscina creada: ${pool.name}`);
-      const configsToCreate = createPoolMaintenanceSheet(pool.id, createdParams, createdTasks, poolData.type);
-      await prisma.poolConfiguration.createMany({ data: configsToCreate, skipDuplicates: true });
-      console.log(`      📝 Ficha de mantenimiento creada para ${pool.name} con ${configsToCreate.length} ítems.`);
-    }
-  }
-  if (allPools.length < 5) throw new Error('Seeding fallido: No se crearon suficientes piscinas.');
-
-  // 5. --- CREACIÓN DE REGLAS DE PRECIOS Y TRANSACCIONES ---
-  console.log('\n- Fase de creación de reglas de precios y transacciones -');
-  let rulesCount = 0;
-  for (const rule of clientPricingRulesData) {
-    const client = createdClients.find(c => c.name === rule.clientName);
-    if (!client) continue;
-
-    const product = rule.productName ? createdProducts.find(p => p.name === rule.productName) : null;
-    const category = rule.categoryName ? createdCategories.find(c => c.name === rule.categoryName) : null;
-
-    await prisma.clientProductPricing.create({
-      data: {
-        clientId: client.id,
-        productId: product?.id,
-        productCategoryId: category?.id,
-        discountPercentage: rule.discountPercentage,
-      },
+    const superAdminPassword = await hashPassword('superadmin123');
+    await prisma.user.create({
+      data: { email: 'super@admin.com', name: 'Super Admin', password: superAdminPassword, role: 'SUPER_ADMIN', tenantId: systemTenant.id },
     });
-    rulesCount++;
-  }
-  console.log(`💰 Creadas ${rulesCount} reglas de precios personalizadas.`);
+    console.log('👑 SuperAdmin y Tenant del sistema creados.');
 
-  for (const payment of paymentsData) {
-    const client = createdClients.find(c => c.name === payment.clientName);
-    if (!client) continue;
-    await prisma.payment.create({
-      data: {
-        amount: payment.amount,
-        paymentDate: payment.paymentDate,
-        method: payment.method,
-        notes: payment.notes,
-        clientId: client.id,
-      },
+    // 2. --- CREACIÓN DEL TENANT DE PRUEBA Y USUARIOS ---
+    const mainTenant = await prisma.tenant.create({
+      data: { companyName: 'Piscival S.L.', subdomain: 'piscival', subscriptionStatus: 'ACTIVE' },
     });
-  }
-  console.log(`💳 Creados ${paymentsData.length} registros de pagos.`);
-
-  await prisma.expense.createMany({
-    data: expensesData.map(e => ({ ...e, tenantId: mainTenant.id })),
-  });
-  console.log(`💸 Creados ${expensesData.length} registros de gastos.`);
-
-  // 6. --- SIMULACIÓN DE ACTIVIDAD RECIENTE (VISITAS, INCIDENCIAS, ETC.) ---
-  console.log('\n- Fase de simulación de actividad operativa -');
-  const today = new Date();
-  const threeDaysAgo = subDays(today, 3);
-  const tomorrow = addDays(today, 1);
-  
-  await prisma.visit.create({ data: { timestamp: today, poolId: allPools[1]!.id, technicianId: technicians[0]!.id, status: 'PENDING' } });
-  await prisma.visit.create({ data: { timestamp: today, poolId: allPools[3]!.id, technicianId: technicians[1]!.id, status: 'PENDING' } });
-  console.log('   - 2 visitas PENDIENTES para hoy creadas.');
-
-  const okVisit = await prisma.visit.create({ data: { timestamp: today, poolId: allPools[2]!.id, technicianId: technicians[1]!.id, status: 'COMPLETED', hasIncident: false, notes: 'Todo en orden. Valores perfectos. El cliente ha comentado que está muy contento con el servicio.', completedTasks: ['Limpieza de cestos de skimmers', 'Revisión de clorador salino'] } });
-  await prisma.visitResult.createMany({ data: [ { visitId: okVisit.id, parameterName: 'Nivel de pH', value: '7.4', parameterUnit: 'pH' }, { visitId: okVisit.id, parameterName: 'Nivel de Sal (para piscinas de sal)', value: '4500', parameterUnit: 'ppm' } ] });
-  const salProduct = createdProducts.find(p => p.name.includes('Sal para Piscinas'));
-  if(salProduct) { await prisma.consumption.create({ data: { visitId: okVisit.id, productId: salProduct.id, quantity: 1 }}); }
-  console.log('   - 1 visita COMPLETADA OK (con consumo de sal) creada.');
-  
-  const criticalVisitNotes = 'Fuga de agua detectada en la tubería principal del skimmer. Gotea constantemente, el nivel de la piscina ha bajado notablemente.';
-  const criticalVisit = await prisma.visit.create({ data: { timestamp: threeDaysAgo, poolId: allPools[0]!.id, technicianId: technicians[0]!.id, status: 'COMPLETED', hasIncident: true, notes: criticalVisitNotes, completedTasks: ['Limpieza de cestos de skimmers'] } });
-  await prisma.visitResult.createMany({ data: [ { visitId: criticalVisit.id, parameterName: 'Nivel del Agua en Skimmer', value: 'Bajo' }, { visitId: criticalVisit.id, parameterName: 'Nivel de pH', value: '7.9' }, ] });
-  await prisma.notification.create({ data: { message: criticalVisitNotes, visitId: criticalVisit.id, tenantId: mainTenant.id, userId: adminUser.id, createdAt: threeDaysAgo, } });
-  console.log('   - 1 incidencia CRÍTICA (de hace 3 días) creada.');
-
-  const pendingVisitNotes = 'El nivel de sal es bajo, pero no hay producto en el almacén. Avisar para reponer.';
-  const pendingVisit = await prisma.visit.create({ data: { timestamp: today, poolId: allPools[1]!.id, technicianId: technicians[1]!.id, status: 'COMPLETED', hasIncident: true, notes: pendingVisitNotes, completedTasks: ['Limpieza de cestos de skimmers'] } });
-  await prisma.visitResult.createMany({ data: [{ visitId: pendingVisit.id, parameterName: 'Nivel de Sal (para piscinas de sal)', value: '3800', parameterUnit: 'ppm' }] });
-  await prisma.notification.create({ data: { message: pendingVisitNotes, visitId: pendingVisit.id, tenantId: mainTenant.id, userId: adminUser.id, } });
-  console.log('   - 1 incidencia PENDIENTE (de hoy) creada.');
-  
-  const classifiedVisitNotes = 'La bomba de calor hace un ruido metálico muy fuerte al arrancar. Podría romperse. Recomiendo no encenderla hasta que se revise.';
-  const classifiedVisit = await prisma.visit.create({ data: { timestamp: today, poolId: allPools[4]!.id, technicianId: technicians[2]!.id, status: 'COMPLETED', hasIncident: true, notes: classifiedVisitNotes, completedTasks: ['Limpieza de cestos de skimmers', 'Cepillado de paredes y línea de flotación'] } });
-  await prisma.visitResult.createMany({ data: [ { visitId: classifiedVisit.id, parameterName: 'Temperatura del Agua', value: '24', parameterUnit: '°C' }, { visitId: classifiedVisit.id, parameterName: 'Presión del Filtro', value: '1.5', parameterUnit: 'bar' }, ] });
-  await prisma.notification.create({ data: { message: classifiedVisitNotes, visitId: classifiedVisit.id, tenantId: mainTenant.id, userId: adminUser.id, priority: 'HIGH',  resolutionDeadline: tomorrow, } });
-  console.log('   - 1 incidencia PENDIENTE CLASIFICADA (Prioridad ALTA) creada.');
-
-  // 7. --- SIMULACIÓN DE TICKETING AVANZADO ---
-  const allNotifications = await prisma.notification.findMany({ where: { tenantId: mainTenant.id } });
-  let taskCount = 0;
-  for (const taskSeed of incidentTasksData) {
-    const parentNotification = allNotifications.find(n => n.message.includes(taskSeed.notificationMessage));
-    if (!parentNotification) { console.warn(`   - ⚠️  No se encontró la notificación padre para la tarea: "${taskSeed.task.title}"`); continue; }
+    console.log(`\n🏢 Tenant de prueba creado: ${mainTenant.companyName}`);
     
-    const assignedUser = taskSeed.task.title.includes('Contactar') ? adminUser : technicians[taskCount % technicians.length];
-    if (!assignedUser) continue;
-
-    const taskData = { ...taskSeed.task, notificationId: parentNotification.id, assignedToId: assignedUser.id, tenantId: mainTenant.id };
-    const createdTask = await prisma.incidentTask.create({ data: taskData });
-    taskCount++;
-
-    await prisma.incidentTaskLog.create({ data: { action: 'CREATION', details: `Tarea creada por ${adminUser.name}. Asignada a ${assignedUser.name}.`, incidentTaskId: createdTask.id, userId: adminUser.id, }});
-    if (createdTask.status !== 'PENDING') {
-      await prisma.incidentTaskLog.create({ data: { action: 'STATUS_CHANGE', details: `Estado cambiado a ${createdTask.status}.`, incidentTaskId: createdTask.id, userId: assignedUser.id, }});
+    const createdUsers: User[] = [];
+    for (const userData of usersData) {
+      const hashedPassword = await hashPassword(userData.password);
+      const user = await prisma.user.create({ data: { ...userData, password: hashedPassword, tenantId: mainTenant.id } });
+      createdUsers.push(user);
+      console.log(`   👤 Usuario creado: ${userData.name} (${userData.role})`);
     }
+    const adminUser = createdUsers.find(u => u.role === 'ADMIN');
+    const technicians = createdUsers.filter(u => u.role === 'TECHNICIAN');
+    if (!adminUser || technicians.length < 3) throw new Error('Seeding fallido: No se encontraron suficientes usuarios admin o técnicos.');
+
+    // 3. --- CREACIÓN DE CATÁLOGOS Y ENTIDADES FINANCIERAS BASE ---
+    console.log('\n- Fase de creación de catálogos y finanzas -');
+
+    const createdParams: ParameterTemplate[] = [];
+    for (const p of parameterData) {
+      const param = await prisma.parameterTemplate.create({ data: { ...p, tenantId: mainTenant.id } });
+      createdParams.push(param);
+    }
+    console.log(`📊 Creados ${createdParams.length} parámetros en el catálogo.`);
+
+    const createdTasks: ScheduledTaskTemplate[] = [];
+    for (const t of taskData) {
+      const task = await prisma.scheduledTaskTemplate.create({ data: { ...t, tenantId: mainTenant.id } });
+      createdTasks.push(task);
+    }
+    console.log(`📋 Creadas ${createdTasks.length} tareas en el catálogo.`);
+
+    const createdCategories: ProductCategory[] = [];
+    for (const catData of productCategoriesData) {
+      const category = await prisma.productCategory.create({ data: { ...catData, tenantId: mainTenant.id } });
+      createdCategories.push(category);
+    }
+    console.log(`📁 Creadas ${createdCategories.length} categorías de productos.`);
+
+    const createdProducts: Product[] = [];
+    for (const prodData of productData) {
+      const { categoryName, ...restOfProdData } = prodData;
+      const category = createdCategories.find(c => c.name === categoryName);
+      const product = await prisma.product.create({
+        data: {
+          ...restOfProdData,
+          tenantId: mainTenant.id,
+          categoryId: category?.id,
+        },
+      });
+      createdProducts.push(product);
+    }
+    console.log(`📦 Creados ${createdProducts.length} productos en el catálogo.`);
+
+    // 4. --- CREACIÓN DE CLIENTES Y PISCINAS ---
+    console.log('\n- Fase de creación de clientes y piscinas -');
+    const allPools: Pool[] = [];
+    const createdClients: Client[] = [];
+    for (const data of clientsData) {
+      const client = await prisma.client.create({ data: { ...data.client, tenantId: mainTenant.id } });
+      createdClients.push(client);
+      console.log(`\n👨‍💼 Cliente creado: ${client.name} (Modelo: ${client.billingModel})`);
+      for (const poolData of data.pools) {
+        const pool = await prisma.pool.create({ data: { ...poolData, clientId: client.id, tenantId: mainTenant.id } });
+        allPools.push(pool);
+        console.log(`   🏊 Piscina creada: ${pool.name}`);
+        const configsToCreate = createPoolMaintenanceSheet(pool.id, createdParams, createdTasks, poolData.type);
+        await prisma.poolConfiguration.createMany({ data: configsToCreate, skipDuplicates: true });
+        console.log(`      📝 Ficha de mantenimiento creada para ${pool.name} con ${configsToCreate.length} ítems.`);
+      }
+    }
+    if (allPools.length < 5) throw new Error('Seeding fallido: No se crearon suficientes piscinas.');
+
+    // 5. --- CREACIÓN DE REGLAS DE PRECIOS Y TRANSACCIONES ---
+    console.log('\n- Fase de creación de reglas de precios y transacciones -');
+    let rulesCount = 0;
+    for (const rule of clientPricingRulesData) {
+      const client = createdClients.find(c => c.name === rule.clientName);
+      if (!client) continue;
+
+      const product = rule.productName ? createdProducts.find(p => p.name === rule.productName) : null;
+      const category = rule.categoryName ? createdCategories.find(c => c.name === rule.categoryName) : null;
+
+      await prisma.clientProductPricing.create({
+        data: {
+          clientId: client.id,
+          productId: product?.id,
+          productCategoryId: category?.id,
+          discountPercentage: rule.discountPercentage,
+        },
+      });
+      rulesCount++;
+    }
+    console.log(`💰 Creadas ${rulesCount} reglas de precios personalizadas.`);
+
+    for (const payment of paymentsData) {
+      const client = createdClients.find(c => c.name === payment.clientName);
+      if (!client) continue;
+      await prisma.payment.create({
+        data: {
+          amount: payment.amount,
+          paymentDate: payment.paymentDate,
+          method: payment.method,
+          notes: payment.notes,
+          clientId: client.id,
+        },
+      });
+    }
+    console.log(`💳 Creados ${paymentsData.length} registros de pagos.`);
+
+    await prisma.expense.createMany({
+      data: expensesData.map(e => ({ ...e, tenantId: mainTenant.id })),
+    });
+    console.log(`💸 Creados ${expensesData.length} registros de gastos.`);
+
+    // 6. --- SIMULACIÓN DE ACTIVIDAD RECIENTE (VISITAS, INCIDENCIAS, ETC.) ---
+    console.log('\n- Fase de simulación de actividad operativa -');
+    const today = new Date();
+    const threeDaysAgo = subDays(today, 3);
+    const tomorrow = addDays(today, 1);
+    
+    await prisma.visit.create({ data: { timestamp: today, poolId: allPools[1]!.id, technicianId: technicians[0]!.id, status: 'PENDING' } });
+    await prisma.visit.create({ data: { timestamp: today, poolId: allPools[3]!.id, technicianId: technicians[1]!.id, status: 'PENDING' } });
+    console.log('   - 2 visitas PENDIENTES para hoy creadas.');
+
+    const okVisit = await prisma.visit.create({ data: { timestamp: today, poolId: allPools[2]!.id, technicianId: technicians[1]!.id, status: 'COMPLETED', hasIncident: false, notes: 'Todo en orden. Valores perfectos. El cliente ha comentado que está muy contento con el servicio.', completedTasks: ['Limpieza de cestos de skimmers', 'Revisión de clorador salino'] } });
+    await prisma.visitResult.createMany({ data: [ { visitId: okVisit.id, parameterName: 'Nivel de pH', value: '7.4', parameterUnit: 'pH' }, { visitId: okVisit.id, parameterName: 'Nivel de Sal (para piscinas de sal)', value: '4500', parameterUnit: 'ppm' } ] });
+    const salProduct = createdProducts.find(p => p.name.includes('Sal para Piscinas'));
+    if(salProduct) { await prisma.consumption.create({ data: { visitId: okVisit.id, productId: salProduct.id, quantity: 1 }}); }
+    console.log('   - 1 visita COMPLETADA OK (con consumo de sal) creada.');
+    
+    const criticalVisitNotes = 'Fuga de agua detectada en la tubería principal del skimmer. Gotea constantemente, el nivel de la piscina ha bajado notablemente.';
+    const criticalVisit = await prisma.visit.create({ data: { timestamp: threeDaysAgo, poolId: allPools[0]!.id, technicianId: technicians[0]!.id, status: 'COMPLETED', hasIncident: true, notes: criticalVisitNotes, completedTasks: ['Limpieza de cestos de skimmers'] } });
+    await prisma.visitResult.createMany({ data: [ { visitId: criticalVisit.id, parameterName: 'Nivel del Agua en Skimmer', value: 'Bajo' }, { visitId: criticalVisit.id, parameterName: 'Nivel de pH', value: '7.9' }, ] });
+    await prisma.notification.create({ data: { message: criticalVisitNotes, visitId: criticalVisit.id, tenantId: mainTenant.id, userId: adminUser.id, createdAt: threeDaysAgo, } });
+    console.log('   - 1 incidencia CRÍTICA (de hace 3 días) creada.');
+
+    const pendingVisitNotes = 'El nivel de sal es bajo, pero no hay producto en el almacén. Avisar para reponer.';
+    const pendingVisit = await prisma.visit.create({ data: { timestamp: today, poolId: allPools[1]!.id, technicianId: technicians[1]!.id, status: 'COMPLETED', hasIncident: true, notes: pendingVisitNotes, completedTasks: ['Limpieza de cestos de skimmers'] } });
+    await prisma.visitResult.createMany({ data: [{ visitId: pendingVisit.id, parameterName: 'Nivel de Sal (para piscinas de sal)', value: '3800', parameterUnit: 'ppm' }] });
+    await prisma.notification.create({ data: { message: pendingVisitNotes, visitId: pendingVisit.id, tenantId: mainTenant.id, userId: adminUser.id, } });
+    console.log('   - 1 incidencia PENDIENTE (de hoy) creada.');
+    
+    const classifiedVisitNotes = 'La bomba de calor hace un ruido metálico muy fuerte al arrancar. Podría romperse. Recomiendo no encenderla hasta que se revise.';
+    const classifiedVisit = await prisma.visit.create({ data: { timestamp: today, poolId: allPools[4]!.id, technicianId: technicians[2]!.id, status: 'COMPLETED', hasIncident: true, notes: classifiedVisitNotes, completedTasks: ['Limpieza de cestos de skimmers', 'Cepillado de paredes y línea de flotación'] } });
+    await prisma.visitResult.createMany({ data: [ { visitId: classifiedVisit.id, parameterName: 'Temperatura del Agua', value: '24', parameterUnit: '°C' }, { visitId: classifiedVisit.id, parameterName: 'Presión del Filtro', value: '1.5', parameterUnit: 'bar' }, ] });
+    await prisma.notification.create({ data: { message: classifiedVisitNotes, visitId: classifiedVisit.id, tenantId: mainTenant.id, userId: adminUser.id, priority: 'HIGH',  resolutionDeadline: tomorrow, } });
+    console.log('   - 1 incidencia PENDIENTE CLASIFICADA (Prioridad ALTA) creada.');
+
+    // 7. --- SIMULACIÓN DE TICKETING AVANZADO ---
+    const allNotifications = await prisma.notification.findMany({ where: { tenantId: mainTenant.id } });
+    let taskCount = 0;
+    for (const taskSeed of incidentTasksData) {
+      const parentNotification = allNotifications.find(n => n.message.includes(taskSeed.notificationMessage));
+      if (!parentNotification) { console.warn(`   - ⚠️  No se encontró la notificación padre para la tarea: "${taskSeed.task.title}"`); continue; }
+      
+      const assignedUser = taskSeed.task.title.includes('Contactar') ? adminUser : technicians[taskCount % technicians.length];
+      if (!assignedUser) continue;
+
+      const taskData = { ...taskSeed.task, notificationId: parentNotification.id, assignedToId: assignedUser.id, tenantId: mainTenant.id };
+      const createdTask = await prisma.incidentTask.create({ data: taskData });
+      taskCount++;
+
+      await prisma.incidentTaskLog.create({ data: { action: 'CREATION', details: `Tarea creada por ${adminUser.name}. Asignada a ${assignedUser.name}.`, incidentTaskId: createdTask.id, userId: adminUser.id, }});
+      if (createdTask.status !== 'PENDING') {
+        await prisma.incidentTaskLog.create({ data: { action: 'STATUS_CHANGE', details: `Estado cambiado a ${createdTask.status}.`, incidentTaskId: createdTask.id, userId: assignedUser.id, }});
+      }
+    }
+    console.log(`   - ${taskCount} tareas de incidencia creadas con sus logs.`);
+
+
+    console.log('\n\n✅ Seeding de demostración completado con éxito!');
+    console.log('--- Credenciales de prueba ---');
+    console.log('SuperAdmin: super@admin.com / superadmin123');
+    console.log('Admin:      admin@piscival.com / password123');
+    console.log('Técnicos:   carlos.t@piscival.com, ana.t@piscival.com, leo.a@piscival.com (pass: password123)');
+    console.log('Manager:    manager@piscival.com / password123');
+
+  } catch (e) {
+    console.error('❌ Error fatal durante el proceso de seeding:', e);
+    throw e;
+  } finally {
+    await prisma.$disconnect();
   }
-  console.log(`   - ${taskCount} tareas de incidencia creadas con sus logs.`);
-
-
-  console.log('\n\n✅ Seeding de demostración completado con éxito!');
-  console.log('--- Credenciales de prueba ---');
-  console.log('SuperAdmin: super@admin.com / superadmin123');
-  console.log('Admin:      admin@piscival.com / password123');
-  console.log('Técnicos:   carlos.t@piscival.com, ana.t@piscival.com, leo.a@piscival.com (pass: password123)');
-  console.log('Manager:    manager@piscival.com / password123');
 }
 
 function createPoolMaintenanceSheet(
@@ -6372,7 +6389,10 @@ function createPoolMaintenanceSheet(
   return configs;
 }
 
-main().catch((e) => { console.error('❌ Error fatal durante el proceso de seeding:', e); process.exit(1); }).finally(async () => { await prisma.$disconnect(); });
+// ✅ Corrección final: Eliminamos el argumento 'e' para que no dé el aviso del linter.
+main().catch(() => {
+    process.exit(1);
+});
 
 
 // ====== [49] packages/server/src/api/auth/auth.controller.ts ======
@@ -6673,8 +6693,7 @@ export const deletePricingRuleHandler = async (
 
 // ====== [53] packages/server/src/api/client-product-pricing/client-product-pricing.routes.ts ======
 // filename: packages/server/src/api/client-product-pricing/client-product-pricing.routes.ts
-// version: 1.0.0
-// description: Define los endpoints de la API para el CRUD de reglas de precios.
+// version: 2.0.0 (FEAT: Protect routes with ADMIN authorization)
 
 import { Router } from 'express';
 import {
@@ -6684,12 +6703,14 @@ import {
   deletePricingRuleHandler,
 } from './client-product-pricing.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
-// TODO: Importar y usar un middleware de autorización para 'ADMIN'
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const clientProductPricingRouter = Router();
 
 // Protegemos todas las rutas de este módulo.
-clientProductPricingRouter.use(protect);
+// Solo los usuarios autenticados con rol de ADMIN pueden gestionar las reglas de precios.
+clientProductPricingRouter.use(protect, authorize('ADMIN'));
+
 
 // Ruta para crear una nueva regla
 clientProductPricingRouter.post('/', createPricingRuleHandler);
@@ -6784,7 +6805,8 @@ export const deletePricingRule = async (id: string): Promise<void> => {
 
 // ====== [55] packages/server/src/api/clients/clients.controller.ts ======
 // filename: packages/server/src/api/clients/clients.controller.ts
-// Version: 1.0.0 (Initial creation of the controller for Client management)
+// Version: 2.0.0 (FEAT: Pass tenantId to service for validation)
+
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
 import {
@@ -6806,7 +6828,7 @@ export const createClientHandler = async (
   try {
     const tenantId = req.user?.tenantId;
     if (!tenantId) {
-      return res.status(403).json({ message: 'Acción no permitida.' });
+      return res.status(403).json({ success: false, message: 'Acción no permitida.' });
     }
 
     const input = { ...req.body, tenantId };
@@ -6828,7 +6850,7 @@ export const getClientsByTenantHandler = async (
   try {
     const tenantId = req.user?.tenantId;
     if (!tenantId) {
-      return res.status(403).json({ message: 'Acción no permitida.' });
+      return res.status(403).json({ success: false, message: 'Acción no permitida.' });
     }
 
     const clients = await getClientsByTenant(tenantId);
@@ -6850,16 +6872,13 @@ export const getClientByIdHandler = async (
     const tenantId = req.user?.tenantId;
     const { id: clientId } = req.params;
 
-    if (!tenantId) {
-      return res.status(403).json({ message: 'Acción no permitida.' });
-    }
-    if (!clientId) {
-      return res.status(400).json({ message: 'El ID del cliente es requerido.' });
+    if (!tenantId || !clientId) {
+      return res.status(400).json({ success: false, message: 'ID de cliente o de tenant faltante.' });
     }
 
     const client = await getClientById(clientId, tenantId);
     if (!client) {
-      return res.status(404).json({ message: 'Cliente no encontrado.' });
+      return res.status(404).json({ success: false, message: 'Cliente no encontrado.' });
     }
 
     res.status(200).json({ success: true, data: client });
@@ -6879,12 +6898,13 @@ export const updateClientHandler = async (
 ) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ message: 'El ID del cliente es requerido.' });
-    }
-    // TODO: Verificar que el cliente que se quiere editar pertenece al tenant del usuario logueado.
+    const tenantId = req.user?.tenantId;
     
-    const updatedClient = await updateClient(id, req.body);
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de cliente o de tenant faltante.' });
+    }
+    
+    const updatedClient = await updateClient(id, tenantId, req.body);
     res.status(200).json({ success: true, data: updatedClient });
   } catch (error) {
     next(error);
@@ -6901,12 +6921,13 @@ export const deleteClientHandler = async (
 ) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ message: 'El ID del cliente es requerido.' });
-    }
-    // TODO: Verificar que el cliente que se quiere eliminar pertenece al tenant del usuario logueado.
+    const tenantId = req.user?.tenantId;
 
-    await deleteClient(id);
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de cliente o de tenant faltante.' });
+    }
+
+    await deleteClient(id, tenantId);
     res.status(204).send();
   } catch (error) {
     next(error);
@@ -6916,7 +6937,8 @@ export const deleteClientHandler = async (
 
 // ====== [56] packages/server/src/api/clients/clients.routes.ts ======
 // filename: packages/server/src/api/clients/clients.routes.ts
-// Version: 1.0.0 (Initial creation of routes for Client management)
+// Version: 2.0.0 (FEAT: Protect routes with ADMIN/MANAGER authorization)
+
 import { Router } from 'express';
 import {
   createClientHandler,
@@ -6926,32 +6948,34 @@ import {
   updateClientHandler,
 } from './clients.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const clientsRouter = Router();
 
 // Aplicamos el middleware 'protect' a TODAS las rutas de este enrutador.
 clientsRouter.use(protect);
 
-// TODO: Añadir un middleware de autorización para asegurar que el rol sea 'ADMIN'.
-
+// Las rutas para listar y crear clientes solo son accesibles para ADMINS.
 clientsRouter.route('/')
-  .get(getClientsByTenantHandler)
-  .post(createClientHandler);
+  .get(authorize('ADMIN', 'MANAGER'), getClientsByTenantHandler)
+  .post(authorize('ADMIN'), createClientHandler);
 
+// Las rutas para un cliente específico son accesibles para ADMIN y MANAGER para ver,
+// pero solo para ADMIN para modificar o eliminar.
+// Esto permite al MANAGER ver los detalles del cliente desde su dashboard.
 clientsRouter.route('/:id')
-  .get(getClientByIdHandler)
-  .patch(updateClientHandler)
-  .delete(deleteClientHandler);
+  .get(authorize('ADMIN', 'MANAGER'), getClientByIdHandler)
+  .patch(authorize('ADMIN'), updateClientHandler)
+  .delete(authorize('ADMIN'), deleteClientHandler);
 
 export default clientsRouter;
 
 
 // ====== [57] packages/server/src/api/clients/clients.service.ts ======
 // filename: packages/server/src/api/clients/clients.service.ts
-// Version: 1.1.1 (FIXED)
-// description: Elimina la importación no utilizada de BillingModel.
+// Version: 2.0.0 (FEAT: Add tenantId validation for CUD operations)
+
 import { PrismaClient } from '@prisma/client';
-// --- La importación de BillingModel ha sido eliminada de aquí ---
 import type { Client } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -6982,7 +7006,6 @@ export const getClientsByTenant = async (tenantId: string): Promise<Client[]> =>
   return prisma.client.findMany({
     where: { tenantId },
     orderBy: { name: 'asc' },
-    // Incluimos las piscinas asociadas a cada cliente
     include: {
       pools: true,
     },
@@ -7006,28 +7029,44 @@ export const getClientById = async (id: string, tenantId: string): Promise<Clien
 
 
 /**
- * Actualiza un cliente existente.
+ * Actualiza un cliente existente, verificando la pertenencia al tenant.
  * @param id - El ID del cliente a actualizar.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  * @param data - Los datos a actualizar.
  * @returns El cliente actualizado.
  */
-export const updateClient = async (id: string, data: UpdateClientInput): Promise<Client> => {
-  return prisma.client.update({
-    where: { id },
+export const updateClient = async (id: string, tenantId: string, data: UpdateClientInput): Promise<Client> => {
+  const { count } = await prisma.client.updateMany({
+    where: {
+      id,
+      tenantId, // <-- Condición de seguridad
+    },
     data,
   });
+
+  if (count === 0) {
+    throw new Error('Cliente no encontrado o sin permisos para modificar.');
+  }
+
+  return prisma.client.findUniqueOrThrow({ where: { id } });
 };
 
 /**
- * Elimina un cliente.
+ * Elimina un cliente, verificando la pertenencia al tenant.
  * @param id - El ID del cliente a eliminar.
- * @returns El cliente que fue eliminado.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  */
-export const deleteClient = async (id: string): Promise<Client> => {
-  // Al borrar el cliente, se borrarán en cascada sus piscinas asociadas.
-  return prisma.client.delete({
-    where: { id },
+export const deleteClient = async (id: string, tenantId: string): Promise<void> => {
+  const { count } = await prisma.client.deleteMany({
+    where: {
+      id,
+      tenantId, // <-- Condición de seguridad
+    },
   });
+
+  if (count === 0) {
+    throw new Error('Cliente no encontrado o sin permisos para eliminar.');
+  }
 };
 
 
@@ -7098,8 +7137,8 @@ export default dashboardRouter;
 
 // ====== [60] packages/server/src/api/dashboard/dashboard.service.ts ======
 // filename: packages/server/src/api/dashboard/dashboard.service.ts
-// version: 1.1.1 (FIXED)
-// description: Corrige la consulta de consumos para incluir los datos de la visita.
+// version: 1.3.0 (FIXED: Correct relation name 'clientPricingRules')
+// description: Corrige el nombre de la relación en la consulta de clientes para que coincida con el schema.prisma.
 
 import { PrismaClient } from '@prisma/client';
 import { startOfMonth, subDays } from 'date-fns';
@@ -7140,7 +7179,6 @@ export const getManagerDashboardData = async (tenantId: string): Promise<Dashboa
     where: { tenantId, expenseDate: { gte: thirtyDaysAgo, lte: today } },
   });
 
-  // ✅ CORRECCIÓN: La consulta ahora incluye la visita y el cliente asociado
   const consumptions = await prisma.consumption.findMany({
     where: {
       visit: {
@@ -7152,9 +7190,7 @@ export const getManagerDashboardData = async (tenantId: string): Promise<Dashboa
       product: true,
       visit: {
         include: {
-          pool: {
-            select: { clientId: true }, // Solo necesitamos el clientId aquí
-          },
+          pool: true,
         },
       },
     },
@@ -7182,22 +7218,24 @@ export const getManagerDashboardData = async (tenantId: string): Promise<Dashboa
   });
 
   // --- 3. Top 5 Clientes por Rentabilidad ---
+  // ✅ CORRECCIÓN 1: Usar el nombre de relación correcto 'clientPricingRules' del schema.prisma
   const clientsWithPricing = await prisma.client.findMany({
     where: { tenantId },
-    include: { pricingRules: true },
+    include: { clientPricingRules: true }, 
   });
 
   const clientProfits = clientsWithPricing.map(client => {
     let clientRevenue = client.monthlyFee;
-    // Ahora esta línea es segura porque la consulta de consumptions incluye la visita.
     const clientConsumptions = consumptions.filter(c => c.visit.pool.clientId === client.id);
 
     if (client.billingModel !== 'ALL_INCLUSIVE') {
       for (const consumption of clientConsumptions) {
         const product = consumption.product;
         let finalSalePrice = product.salePrice;
-        const productRule = client.pricingRules.find(r => r.productId === product.id);
-        const categoryRule = client.pricingRules.find(r => r.productCategoryId === product.categoryId);
+        
+        // ✅ CORRECCIÓN 2: Usar el nombre de propiedad correcto 'clientPricingRules' en el resto del código
+        const productRule = client.clientPricingRules.find(r => r.productId === product.id);
+        const categoryRule = client.clientPricingRules.find(r => r.productCategoryId === product.categoryId);
 
         if (productRule) {
           finalSalePrice *= (1 - productRule.discountPercentage / 100);
@@ -7345,8 +7383,7 @@ export const deleteExpenseHandler = async (
 
 // ====== [62] packages/server/src/api/expenses/expenses.routes.ts ======
 // filename: packages/server/src/api/expenses/expenses.routes.ts
-// version: 1.0.0
-// description: Define los endpoints de la API para el CRUD de gastos.
+// version: 2.0.0 (FEAT: Protect routes with ADMIN authorization)
 
 import { Router } from 'express';
 import {
@@ -7355,12 +7392,14 @@ import {
   deleteExpenseHandler,
 } from './expenses.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
-// TODO: Importar y usar un middleware de autorización para 'ADMIN' o 'MANAGER'
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const expensesRouter = Router();
 
 // Protegemos todas las rutas de este módulo.
-expensesRouter.use(protect);
+// Solo los usuarios autenticados con rol de ADMIN pueden gestionar los gastos.
+expensesRouter.use(protect, authorize('ADMIN'));
+
 
 // Rutas para /api/expenses
 expensesRouter.route('/')
@@ -7557,7 +7596,7 @@ export const updateTaskDeadlineHandler = async (req: AuthRequest, res: Response,
 
 // ====== [65] packages/server/src/api/incident-tasks/incident-tasks.routes.ts ======
 // filename: packages/server/src/api/incident-tasks/incident-tasks.routes.ts
-// version: 1.3.0 (Adds route to update a task's deadline)
+// version: 2.0.0 (FEAT: Protect routes with granular ADMIN/TECHNICIAN authorization)
 
 import { Router } from 'express';
 import {
@@ -7569,26 +7608,38 @@ import {
   updateTaskStatusHandler,
   addTaskLogHandler,
   getTaskLogsHandler,
-  updateTaskDeadlineHandler, // <-- 1. Importar el nuevo manejador (aún no creado)
+  updateTaskDeadlineHandler,
 } from './incident-tasks.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const incidentTasksRouter = Router();
 
+// Todas las rutas de tareas de incidencia requieren autenticación.
 incidentTasksRouter.use(protect);
 
 // --- Rutas Generales y de Listado ---
-incidentTasksRouter.get('/my-tasks', getMyAssignedTasksHandler);
-incidentTasksRouter.get('/by-notification/:notificationId', getTasksByNotificationHandler);
-incidentTasksRouter.post('/', createIncidentTaskHandler);
+// El técnico ve sus tareas pendientes.
+incidentTasksRouter.get('/my-tasks', authorize('TECHNICIAN'), getMyAssignedTasksHandler);
+// El admin ve las tareas asociadas a una notificación.
+incidentTasksRouter.get('/by-notification/:notificationId', authorize('ADMIN'), getTasksByNotificationHandler);
+// Solo el admin puede crear tareas.
+incidentTasksRouter.post('/', authorize('ADMIN'), createIncidentTaskHandler);
+
 
 // --- Rutas para una Tarea Específica por ID ---
-incidentTasksRouter.get('/:id/logs', getTaskLogsHandler);
-incidentTasksRouter.post('/:id/log', addTaskLogHandler);
-incidentTasksRouter.patch('/:id/status', updateTaskStatusHandler);
-incidentTasksRouter.patch('/:id/deadline', updateTaskDeadlineHandler); // <-- 2. Añadir la nueva ruta
-incidentTasksRouter.patch('/:id', updateIncidentTaskHandler);
-incidentTasksRouter.delete('/:id', deleteIncidentTaskHandler);
+// Tanto admin como técnico pueden ver el historial de una tarea.
+incidentTasksRouter.get('/:id/logs', authorize('ADMIN', 'TECHNICIAN'), getTaskLogsHandler);
+// Tanto admin como técnico pueden añadir comentarios/logs.
+incidentTasksRouter.post('/:id/log', authorize('ADMIN', 'TECHNICIAN'), addTaskLogHandler);
+// El técnico actualiza el estado (ej: a IN_PROGRESS o COMPLETED).
+incidentTasksRouter.patch('/:id/status', authorize('TECHNICIAN'), updateTaskStatusHandler);
+// El admin actualiza el plazo (deadline).
+incidentTasksRouter.patch('/:id/deadline', authorize('ADMIN'), updateTaskDeadlineHandler);
+// El admin edita los detalles principales de la tarea.
+incidentTasksRouter.patch('/:id', authorize('ADMIN'), updateIncidentTaskHandler);
+// El admin elimina la tarea.
+incidentTasksRouter.delete('/:id', authorize('ADMIN'), deleteIncidentTaskHandler);
 
 export default incidentTasksRouter;
 
@@ -8246,100 +8297,109 @@ export const getNotificationById = async (notificationId: string) => {
 
 // ====== [70] packages/server/src/api/parameters/parameters.controller.ts ======
 // filename: packages/server/src/api/parameters/parameters.controller.ts
-// Version: 1.0.0 (Initial creation of the controller for Parameter Templates)
+// Version: 2.0.0 (FEAT: Pass tenantId to service for validation)
+
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
 import {
-createParameterTemplate,
-deleteParameterTemplate,
-getParameterTemplatesByTenant,
-updateParameterTemplate,
+  createParameterTemplate,
+  deleteParameterTemplate,
+  getParameterTemplatesByTenant,
+  updateParameterTemplate,
 } from './parameters.service.js';
+
 /**
-Maneja la creación de una nueva plantilla de parámetro.
-*/
+ * Maneja la creación de una nueva plantilla de parámetro.
+ */
 export const createParameterTemplateHandler = async (
-req: AuthRequest,
-res: Response,
-next: NextFunction
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
 ) => {
-try {
-// Aseguramos que el usuario esté autenticado y tenga un tenantId
-const tenantId = req.user?.tenantId;
-if (!tenantId) {
-return res.status(403).json({ message: 'Acción no permitida.' });
-}
-const input = { ...req.body, tenantId };
-const newTemplate = await createParameterTemplate(input);
-res.status(201).json({ success: true, data: newTemplate });
-} catch (error) {
-next(error);
-}
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(403).json({ success: false, message: 'Acción no permitida.' });
+    }
+    const input = { ...req.body, tenantId };
+    const newTemplate = await createParameterTemplate(input);
+    res.status(201).json({ success: true, data: newTemplate });
+  } catch (error) {
+    next(error);
+  }
 };
+
 /**
-Maneja la obtención de todas las plantillas de un tenant.
-*/
+ * Maneja la obtención de todas las plantillas de un tenant.
+ */
 export const getParameterTemplatesByTenantHandler = async (
-req: AuthRequest,
-res: Response,
-next: NextFunction
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
 ) => {
-try {
-const tenantId = req.user?.tenantId;
-if (!tenantId) {
-return res.status(403).json({ message: 'Acción no permitida.' });
-}
-const templates = await getParameterTemplatesByTenant(tenantId);
-res.status(200).json({ success: true, data: templates });
-} catch (error) {
-next(error);
-}
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(403).json({ success: false, message: 'Acción no permitida.' });
+    }
+    const templates = await getParameterTemplatesByTenant(tenantId);
+    res.status(200).json({ success: true, data: templates });
+  } catch (error) {
+    next(error);
+  }
 };
+
 /**
-Maneja la actualización de una plantilla de parámetro.
-*/
+ * Maneja la actualización de una plantilla de parámetro.
+ */
 export const updateParameterTemplateHandler = async (
-req: AuthRequest,
-res: Response,
-next: NextFunction
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
 ) => {
-try {
-const { id } = req.params;
-if (!id) {
-return res.status(400).json({ message: 'El ID de la plantilla es requerido.' });
-}
-// TODO: Verificar que la plantilla que se quiere editar pertenece al tenant del usuario logueado.
-const updatedTemplate = await updateParameterTemplate(id, req.body);
-res.status(200).json({ success: true, data: updatedTemplate });
-} catch (error) {
-next(error);
-}
+  try {
+    const { id } = req.params;
+    const tenantId = req.user?.tenantId;
+
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de plantilla o de tenant faltante.' });
+    }
+
+    const updatedTemplate = await updateParameterTemplate(id, tenantId, req.body);
+    res.status(200).json({ success: true, data: updatedTemplate });
+  } catch (error) {
+    next(error);
+  }
 };
+
 /**
-Maneja la eliminación de una plantilla de parámetro.
-*/
+ * Maneja la eliminación de una plantilla de parámetro.
+ */
 export const deleteParameterTemplateHandler = async (
-req: AuthRequest,
-res: Response,
-next: NextFunction
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
 ) => {
-try {
-const { id } = req.params;
-if (!id) {
-return res.status(400).json({ message: 'El ID de la plantilla es requerido.' });
-}
-// TODO: Verificar que la plantilla que se quiere eliminar pertenece al tenant del usuario logueado.
-await deleteParameterTemplate(id);
-res.status(204).send();
-} catch (error) {
-next(error);
-}
+  try {
+    const { id } = req.params;
+    const tenantId = req.user?.tenantId;
+
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de plantilla o de tenant faltante.' });
+    }
+
+    await deleteParameterTemplate(id, tenantId);
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
 };
 
 
 // ====== [71] packages/server/src/api/parameters/parameters.routes.ts ======
 // filename: packages/server/src/api/parameters/parameters.routes.ts
-// Version: 1.0.0 (Initial creation of routes for Parameter Templates)
+// Version: 2.0.0 (FEAT: Protect routes with ADMIN authorization)
+
 import { Router } from 'express';
 import {
   createParameterTemplateHandler,
@@ -8348,14 +8408,13 @@ import {
   updateParameterTemplateHandler,
 } from './parameters.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const parametersRouter = Router();
 
-// Aplicamos el middleware 'protect' a TODAS las rutas definidas en este archivo.
-// Esto asegura que solo los usuarios autenticados pueden gestionar el catálogo.
-parametersRouter.use(protect);
-
-// TODO: Añadir un middleware de autorización para asegurar que el rol sea 'ADMIN'.
+// Aplicamos la protección y autorización a todas las rutas de este fichero.
+// Solo los usuarios autenticados con rol de ADMIN pueden gestionar el catálogo.
+parametersRouter.use(protect, authorize('ADMIN'));
 
 parametersRouter.route('/')
   .get(getParameterTemplatesByTenantHandler)
@@ -8370,7 +8429,8 @@ export default parametersRouter;
 
 // ====== [72] packages/server/src/api/parameters/parameters.service.ts ======
 // filename: packages/server/src/api/parameters/parameters.service.ts
-// Version: 1.0.0 (Initial creation of the service with CRUD functions)
+// Version: 2.0.1 (FIXED: Correct type definition for create operation)
+
 import { PrismaClient } from '@prisma/client';
 import type { ParameterTemplate, InputType } from '@prisma/client';
 
@@ -8381,7 +8441,7 @@ export type CreateParameterTemplateInput = {
   name: string;
   tenantId: string; // Cada plantilla pertenece a un tenant
   unit?: string;
-  type?: InputType;
+  type: InputType; // <-- CORREGIDO: Se ha eliminado el '?' para hacerlo obligatorio.
   selectOptions?: string[];
 };
 
@@ -8417,34 +8477,51 @@ export const getParameterTemplatesByTenant = async (
 };
 
 /**
- * Actualiza una plantilla de parámetro existente.
+ * Actualiza una plantilla de parámetro existente, verificando la pertenencia al tenant.
  * @param id - El ID de la plantilla a actualizar.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  * @param data - Los datos a actualizar.
  * @returns La plantilla de parámetro actualizada.
  */
 export const updateParameterTemplate = async (
   id: string,
+  tenantId: string,
   data: UpdateParameterTemplateInput
 ): Promise<ParameterTemplate> => {
-  return prisma.parameterTemplate.update({
-    where: { id },
+  const { count } = await prisma.parameterTemplate.updateMany({
+    where: {
+      id,
+      tenantId, // <-- Condición de seguridad
+    },
     data,
   });
+
+  if (count === 0) {
+    throw new Error('Plantilla de parámetro no encontrada o sin permisos para modificar.');
+  }
+
+  return prisma.parameterTemplate.findUniqueOrThrow({ where: { id } });
 };
 
 /**
- * Elimina una plantilla de parámetro.
+ * Elimina una plantilla de parámetro, verificando la pertenencia al tenant.
  * @param id - El ID de la plantilla a eliminar.
- * @returns La plantilla de parámetro que fue eliminada.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  */
 export const deleteParameterTemplate = async (
-  id: string
-): Promise<ParameterTemplate> => {
-  // TODO: Añadir lógica para verificar que esta plantilla no está siendo
-  // usada en ninguna PoolConfiguration antes de permitir el borrado.
-  return prisma.parameterTemplate.delete({
-    where: { id },
+  id: string,
+  tenantId: string
+): Promise<void> => {
+  const { count } = await prisma.parameterTemplate.deleteMany({
+    where: {
+      id,
+      tenantId, // <-- Condición de seguridad
+    },
   });
+
+  if (count === 0) {
+    throw new Error('Plantilla de parámetro no encontrada o sin permisos para eliminar.');
+  }
 };
 
 
@@ -8523,8 +8600,7 @@ export const deletePaymentHandler = async (
 
 // ====== [74] packages/server/src/api/payments/payments.routes.ts ======
 // filename: packages/server/src/api/payments/payments.routes.ts
-// version: 1.0.1 (FIXED)
-// description: Define los endpoints de la API para el CRUD de pagos.
+// version: 2.0.0 (FEAT: Protect routes with ADMIN authorization)
 
 import { Router } from 'express';
 import {
@@ -8533,12 +8609,14 @@ import {
   deletePaymentHandler,
 } from './payments.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
-// TODO: Importar y usar un middleware de autorización para 'ADMIN' o 'MANAGER'
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const paymentsRouter = Router();
 
 // Protegemos todas las rutas de este módulo.
-paymentsRouter.use(protect);
+// Solo los usuarios autenticados con rol de ADMIN pueden gestionar los pagos.
+paymentsRouter.use(protect, authorize('ADMIN'));
+
 
 // Ruta para crear un nuevo pago
 paymentsRouter.post('/', createPaymentHandler);
@@ -8601,7 +8679,8 @@ export const deletePayment = async (id: string): Promise<void> => {
 
 // ====== [76] packages/server/src/api/pool-configurations/pool-configurations.controller.ts ======
 // filename: packages/server/src/api/pool-configurations/pool-configurations.controller.ts
-// Version: 1.1.0 (Add handler for update functionality)
+// Version: 2.0.0 (FEAT: Pass tenantId to service for validation)
+
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
 import {
@@ -8622,8 +8701,9 @@ export const createPoolConfigurationHandler = async (
   try {
     const tenantId = req.user?.tenantId;
     if (!tenantId) {
-      return res.status(403).json({ message: 'Acción no permitida.' });
+      return res.status(403).json({ success: false, message: 'Acción no permitida.' });
     }
+    // TODO: El servicio de creación aún necesita validación de tenantId.
     const newConfig = await createPoolConfiguration(req.body);
     res.status(201).json({ success: true, data: newConfig });
   } catch (error) {
@@ -8642,8 +8722,9 @@ export const getConfigurationsByPoolHandler = async (
   try {
     const { poolId } = req.params;
     if (!poolId) {
-      return res.status(400).json({ message: 'El ID de la piscina es requerido.' });
+      return res.status(400).json({ success: false, message: 'El ID de la piscina es requerido.' });
     }
+    // TODO: Validar que poolId pertenece al tenant del usuario.
     const configs = await getConfigurationsByPool(poolId);
     res.status(200).json({ success: true, data: configs });
   } catch (error) {
@@ -8661,11 +8742,13 @@ export const updatePoolConfigurationHandler = async (
 ) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ message: 'El ID de la configuración es requerido.' });
+    const tenantId = req.user?.tenantId;
+
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de configuración o de tenant faltante.' });
     }
-    // TODO: Verificar que la configuración que se quiere editar pertenece al tenant del usuario.
-    const updatedConfig = await updatePoolConfiguration(id, req.body);
+    
+    const updatedConfig = await updatePoolConfiguration(id, tenantId, req.body);
     res.status(200).json({ success: true, data: updatedConfig });
   } catch (error) {
     next(error);
@@ -8683,10 +8766,13 @@ export const deletePoolConfigurationHandler = async (
 ) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ message: 'El ID de la configuración es requerido.' });
+    const tenantId = req.user?.tenantId;
+    
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de configuración o de tenant faltante.' });
     }
-    await deletePoolConfiguration(id);
+
+    await deletePoolConfiguration(id, tenantId);
     res.status(204).send();
   } catch (error) {
     next(error);
@@ -8727,7 +8813,8 @@ export default poolConfigurationsRouter;
 
 // ====== [78] packages/server/src/api/pool-configurations/pool-configurations.service.ts ======
 // filename: packages/server/src/api/pool-configurations/pool-configurations.service.ts
-// Version: 1.1.0 (Add update functionality)
+// Version: 2.0.0 (FEAT: Add tenantId validation for CUD operations)
+
 import { PrismaClient } from '@prisma/client';
 import type { PoolConfiguration, Frequency } from '@prisma/client';
 
@@ -8761,6 +8848,7 @@ export const createPoolConfiguration = async (
     throw new Error('La configuración debe estar asociada a un parámetro o a una tarea.');
   }
 
+  // TODO: Añadir validación para asegurar que poolId pertenece al tenant del usuario.
   return prisma.poolConfiguration.create({
     data,
   });
@@ -8780,35 +8868,62 @@ export const getConfigurationsByPool = async (poolId: string): Promise<PoolConfi
 };
 
 /**
- * Actualiza una configuración de mantenimiento existente.
+ * Actualiza una configuración de mantenimiento existente, verificando la pertenencia al tenant.
  * @param id - El ID de la configuración a actualizar.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  * @param data - Los datos a actualizar.
  * @returns La configuración actualizada.
  */
 export const updatePoolConfiguration = async (
   id: string,
+  tenantId: string,
   data: UpdatePoolConfigurationInput
 ): Promise<PoolConfiguration> => {
-  return prisma.poolConfiguration.update({
-    where: { id },
+  const { count } = await prisma.poolConfiguration.updateMany({
+    where: {
+      id,
+      // Verificamos la pertenencia a través de la relación con la piscina
+      pool: {
+        tenantId: tenantId,
+      },
+    },
     data,
   });
+
+  if (count === 0) {
+    throw new Error('Configuración no encontrada o sin permisos para modificar.');
+  }
+
+  return prisma.poolConfiguration.findUniqueOrThrow({ where: { id } });
 };
 
 
 /**
- * Elimina una configuración de mantenimiento de una piscina.
+ * Elimina una configuración de mantenimiento de una piscina, verificando la pertenencia al tenant.
+ * @param id - El ID de la configuración a eliminar.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  */
-export const deletePoolConfiguration = async (id: string): Promise<PoolConfiguration> => {
-  return prisma.poolConfiguration.delete({
-    where: { id },
+export const deletePoolConfiguration = async (id: string, tenantId: string): Promise<void> => {
+  const { count } = await prisma.poolConfiguration.deleteMany({
+    where: {
+      id,
+      // Verificamos la pertenencia a través de la relación con la piscina
+      pool: {
+        tenantId: tenantId,
+      },
+    },
   });
+
+  if (count === 0) {
+    throw new Error('Configuración no encontrada o sin permisos para eliminar.');
+  }
 };
 
 
 // ====== [79] packages/server/src/api/pools/pools.controller.ts ======
 // filename: packages/server/src/api/pools/pools.controller.ts
-// Version: 1.0.0 (Initial creation of the controller for Pool management)
+// Version: 2.0.0 (FEAT: Pass tenantId to service for validation)
+
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
 import { createPool, deletePool, updatePool } from './pools.service.js';
@@ -8824,7 +8939,7 @@ export const createPoolHandler = async (
   try {
     const tenantId = req.user?.tenantId;
     if (!tenantId) {
-      return res.status(403).json({ message: 'Acción no permitida.' });
+      return res.status(403).json({ success: false, message: 'Acción no permitida.' });
     }
 
     // Aseguramos que la piscina se asigne al tenant del usuario.
@@ -8846,12 +8961,13 @@ export const updatePoolHandler = async (
 ) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ message: 'El ID de la piscina es requerido.' });
-    }
-    // TODO: Verificar que la piscina que se quiere editar pertenece al tenant del usuario logueado.
+    const tenantId = req.user?.tenantId;
 
-    const updatedPool = await updatePool(id, req.body);
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de piscina o de tenant faltante.' });
+    }
+
+    const updatedPool = await updatePool(id, tenantId, req.body);
     res.status(200).json({ success: true, data: updatedPool });
   } catch (error) {
     next(error);
@@ -8868,12 +8984,13 @@ export const deletePoolHandler = async (
 ) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ message: 'El ID de la piscina es requerido.' });
-    }
-    // TODO: Verificar que la piscina que se quiere eliminar pertenece al tenant del usuario logueado.
+    const tenantId = req.user?.tenantId;
 
-    await deletePool(id);
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de piscina o de tenant faltante.' });
+    }
+
+    await deletePool(id, tenantId);
     res.status(204).send();
   } catch (error) {
     next(error);
@@ -8883,7 +9000,8 @@ export const deletePoolHandler = async (
 
 // ====== [80] packages/server/src/api/pools/pools.routes.ts ======
 // filename: packages/server/src/api/pools/pools.routes.ts
-// Version: 1.0.0 (Initial creation of routes for Pool management)
+// Version: 2.0.0 (FEAT: Protect routes with ADMIN authorization)
+
 import { Router } from 'express';
 import {
   createPoolHandler,
@@ -8891,13 +9009,15 @@ import {
   updatePoolHandler,
 } from './pools.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const poolsRouter = Router();
 
-// Aplicamos el middleware 'protect' a TODAS las rutas de este enrutador.
-poolsRouter.use(protect);
+// Aplicamos la protección en dos niveles a TODAS las rutas de este enrutador:
+// 1. `protect`: Asegura que el usuario esté autenticado.
+// 2. `authorize('ADMIN')`: Asegura que el usuario autenticado tenga el rol de ADMIN.
+poolsRouter.use(protect, authorize('ADMIN'));
 
-// TODO: Añadir un middleware de autorización para asegurar que el rol sea 'ADMIN'.
 
 // No hay una ruta GET / aquí porque las piscinas se obtienen
 // a través de la ruta del cliente (/api/clients/:id) para mantener el contexto.
@@ -8913,16 +9033,16 @@ export default poolsRouter;
 
 // ====== [81] packages/server/src/api/pools/pools.service.ts ======
 // filename: packages/server/src/api/pools/pools.service.ts
-// Version: 1.0.0 (Initial creation of the service for Pool management)
+// Version: 2.0.0 (FEAT: Add tenantId validation for CUD operations)
+
 import { PrismaClient } from '@prisma/client';
 import type { Pool } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 // --- Tipos de Entrada (DTOs) ---
-// Omitimos los campos autogenerados por la base de datos (id, qrCode, timestamps)
 export type CreatePoolInput = Omit<Pool, 'id' | 'qrCode' | 'createdAt' | 'updatedAt'>;
-export type UpdatePoolInput = Partial<CreatePoolInput>;
+export type UpdatePoolInput = Partial<Omit<CreatePoolInput, 'tenantId'>>;
 
 // --- Funciones del Servicio ---
 
@@ -8938,12 +9058,23 @@ export const createPool = async (data: CreatePoolInput): Promise<Pool> => {
 };
 
 /**
- * Actualiza una piscina existente.
+ * Actualiza una piscina existente, verificando la pertenencia al tenant.
  * @param id - El ID de la piscina a actualizar.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  * @param data - Los datos a actualizar.
  * @returns La piscina actualizada.
  */
-export const updatePool = async (id: string, data: UpdatePoolInput): Promise<Pool> => {
+export const updatePool = async (id: string, tenantId: string, data: UpdatePoolInput): Promise<Pool> => {
+  // Primero, verificamos que la piscina pertenece al tenant.
+  // Esto es un paso extra de seguridad antes de la actualización.
+  const poolExists = await prisma.pool.findFirst({
+    where: { id, tenantId },
+  });
+
+  if (!poolExists) {
+    throw new Error('Piscina no encontrada o sin permisos para modificar.');
+  }
+
   return prisma.pool.update({
     where: { id },
     data,
@@ -8951,22 +9082,28 @@ export const updatePool = async (id: string, data: UpdatePoolInput): Promise<Poo
 };
 
 /**
- * Elimina una piscina.
+ * Elimina una piscina, verificando la pertenencia al tenant.
  * @param id - El ID de la piscina a eliminar.
- * @returns La piscina que fue eliminada.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  */
-export const deletePool = async (id: string): Promise<Pool> => {
-  // Al borrar la piscina, se borrarán en cascada sus visitas, etc.
-  return prisma.pool.delete({
-    where: { id },
+export const deletePool = async (id: string, tenantId: string): Promise<void> => {
+  // Utilizamos deleteMany con una cláusula where para asegurar la pertenencia al tenant.
+  const { count } = await prisma.pool.deleteMany({
+    where: {
+      id,
+      tenantId, // <-- Condición de seguridad
+    },
   });
+
+  if (count === 0) {
+    throw new Error('Piscina no encontrada o sin permisos para eliminar.');
+  }
 };
 
 
 // ====== [82] packages/server/src/api/product-categories/product-categories.controller.ts ======
 // filename: packages/server/src/api/product-categories/product-categories.controller.ts
-// version: 1.0.0
-// description: Controlador para manejar las peticiones HTTP del CRUD de categorías de productos.
+// version: 2.0.0 (FEAT: Pass tenantId to service for validation)
 
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
@@ -9030,11 +9167,13 @@ export const updateProductCategoryHandler = async (
 ) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ success: false, message: 'El ID de la categoría es requerido.' });
+    const tenantId = req.user?.tenantId;
+
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de categoría o de tenant faltante.' });
     }
     
-    const updatedCategory = await updateProductCategory(id, req.body);
+    const updatedCategory = await updateProductCategory(id, tenantId, req.body);
     res.status(200).json({ success: true, data: updatedCategory });
   } catch (error) {
     next(error);
@@ -9051,11 +9190,13 @@ export const deleteProductCategoryHandler = async (
 ) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ success: false, message: 'El ID de la categoría es requerido.' });
+    const tenantId = req.user?.tenantId;
+
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de categoría o de tenant faltante.' });
     }
 
-    await deleteProductCategory(id);
+    await deleteProductCategory(id, tenantId);
     res.status(204).send();
   } catch (error) {
     next(error);
@@ -9065,8 +9206,7 @@ export const deleteProductCategoryHandler = async (
 
 // ====== [83] packages/server/src/api/product-categories/product-categories.routes.ts ======
 // filename: packages/server/src/api/product-categories/product-categories.routes.ts
-// version: 1.0.0
-// description: Define los endpoints de la API para el CRUD de categorías de productos.
+// version: 2.0.0 (FEAT: Protect routes with ADMIN authorization)
 
 import { Router } from 'express';
 import {
@@ -9076,12 +9216,13 @@ import {
   deleteProductCategoryHandler,
 } from './product-categories.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
-// TODO: Importar y usar un middleware de autorización para 'ADMIN'
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const productCategoriesRouter = Router();
 
-// Protegemos todas las rutas de este módulo. Solo usuarios autenticados podrán acceder.
-productCategoriesRouter.use(protect);
+// Protegemos todas las rutas de este módulo.
+// Solo usuarios autenticados con rol de ADMIN podrán acceder.
+productCategoriesRouter.use(protect, authorize('ADMIN'));
 
 // Rutas para /api/product-categories
 productCategoriesRouter.route('/')
@@ -9098,8 +9239,7 @@ export default productCategoriesRouter;
 
 // ====== [84] packages/server/src/api/product-categories/product-categories.service.ts ======
 // filename: packages/server/src/api/product-categories/product-categories.service.ts
-// version: 1.0.0
-// description: Servicio para la lógica de negocio de las categorías de productos.
+// version: 2.0.0 (FEAT: Add tenantId validation for CUD operations)
 
 import { PrismaClient } from '@prisma/client';
 import type { ProductCategory } from '@prisma/client';
@@ -9138,38 +9278,50 @@ export const getProductCategoriesByTenant = async (tenantId: string): Promise<Pr
 };
 
 /**
- * Actualiza una categoría de producto existente.
+ * Actualiza una categoría de producto existente, verificando la pertenencia al tenant.
  * @param id - El ID de la categoría a actualizar.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  * @param data - Los datos a modificar.
  * @returns La categoría actualizada.
  */
-export const updateProductCategory = async (id: string, data: UpdateProductCategoryInput): Promise<ProductCategory> => {
-  // TODO: Añadir verificación para asegurar que la categoría pertenece al tenant del usuario.
-  return prisma.productCategory.update({
-    where: { id },
+export const updateProductCategory = async (id: string, tenantId: string, data: UpdateProductCategoryInput): Promise<ProductCategory> => {
+  const { count } = await prisma.productCategory.updateMany({
+    where: {
+      id,
+      tenantId, // <-- Condición de seguridad
+    },
     data,
   });
+
+  if (count === 0) {
+    throw new Error('Categoría no encontrada o sin permisos para modificar.');
+  }
+
+  return prisma.productCategory.findUniqueOrThrow({ where: { id } });
 };
 
 /**
- * Elimina una categoría de producto.
- * Gracias a `onDelete: SetNull` en la relación con Producto, los productos
- * de esta categoría no se eliminarán, sino que su `categoryId` pasará a ser `null`.
+ * Elimina una categoría de producto, verificando la pertenencia al tenant.
  * @param id - El ID de la categoría a eliminar.
- * @returns La categoría que fue eliminada.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  */
-export const deleteProductCategory = async (id: string): Promise<ProductCategory> => {
-  // TODO: Añadir verificación para asegurar que la categoría pertenece al tenant del usuario.
-  return prisma.productCategory.delete({
-    where: { id },
+export const deleteProductCategory = async (id: string, tenantId: string): Promise<void> => {
+  const { count } = await prisma.productCategory.deleteMany({
+    where: {
+      id,
+      tenantId, // <-- Condición de seguridad
+    },
   });
+
+  if (count === 0) {
+    throw new Error('Categoría no encontrada o sin permisos para eliminar.');
+  }
 };
 
 
 // ====== [85] packages/server/src/api/products/products.controller.ts ======
 // filename: packages/server/src/api/products/products.controller.ts
-// version: 1.0.0
-// description: Controlador para manejar las peticiones HTTP del catálogo de productos.
+// version: 2.0.0 (FEAT: Pass tenantId to service for validation)
 
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
@@ -9194,7 +9346,6 @@ export const createProductHandler = async (
       return res.status(403).json({ success: false, message: 'Acción no permitida.' });
     }
 
-    // El tenantId se añade al cuerpo de la petición para asegurar la pertenencia.
     const input = { ...req.body, tenantId };
     const newProduct = await createProduct(input);
     res.status(201).json({ success: true, data: newProduct });
@@ -9234,11 +9385,14 @@ export const updateProductHandler = async (
 ) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ success: false, message: 'El ID del producto es requerido.' });
+    const tenantId = req.user?.tenantId;
+
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de producto o de tenant faltante.' });
     }
     
-    const updatedProduct = await updateProduct(id, req.body);
+    // Pasamos el tenantId al servicio para la validación de pertenencia.
+    const updatedProduct = await updateProduct(id, tenantId, req.body);
     res.status(200).json({ success: true, data: updatedProduct });
   } catch (error) {
     next(error);
@@ -9255,15 +9409,16 @@ export const deleteProductHandler = async (
 ) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ success: false, message: 'El ID del producto es requerido.' });
+    const tenantId = req.user?.tenantId;
+    
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de producto o de tenant faltante.' });
     }
 
-    await deleteProduct(id);
-    res.status(204).send(); // 204 No Content es la respuesta estándar para un DELETE exitoso.
+    // Pasamos el tenantId al servicio para la validación de pertenencia.
+    await deleteProduct(id, tenantId);
+    res.status(204).send();
   } catch (error) {
-    // Si Prisma lanza un error de restricción de clave foránea (P2003),
-    // el errorHandler global lo capturará. Podríamos añadir un manejo más específico aquí si quisiéramos.
     next(error);
   }
 };
@@ -9271,8 +9426,7 @@ export const deleteProductHandler = async (
 
 // ====== [86] packages/server/src/api/products/products.routes.ts ======
 // filename: packages/server/src/api/products/products.routes.ts
-// version: 1.0.0
-// description: Define los endpoints de la API para el catálogo de productos.
+// version: 2.0.0 (FEAT: Protect routes with ADMIN authorization)
 
 import { Router } from 'express';
 import {
@@ -9282,13 +9436,13 @@ import {
   deleteProductHandler,
 } from './products.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
-// TODO: Importar y usar un middleware de autorización para 'ADMIN'
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const productsRouter = Router();
 
-// Aplicamos el middleware 'protect' a todas las rutas de este enrutador.
-// Solo los usuarios autenticados podrán interactuar con el catálogo de productos.
-productsRouter.use(protect);
+// Aplicamos el middleware `protect` y `authorize` a todas las rutas de este enrutador.
+// Solo los usuarios autenticados con rol de ADMIN podrán interactuar con el catálogo de productos.
+productsRouter.use(protect, authorize('ADMIN'));
 
 // Definimos las rutas para el recurso /api/products
 productsRouter.route('/')
@@ -9305,8 +9459,7 @@ export default productsRouter;
 
 // ====== [87] packages/server/src/api/products/products.service.ts ======
 // filename: packages/server/src/api/products/products.service.ts
-// version: 1.0.0
-// description: Servicio para la lógica de negocio del catálogo de productos.
+// version: 2.0.0 (FEAT: Add tenantId validation for CUD operations)
 
 import { PrismaClient } from '@prisma/client';
 import type { Product } from '@prisma/client';
@@ -9315,7 +9468,7 @@ const prisma = new PrismaClient();
 
 // --- Tipos de Entrada (DTOs) para la creación y actualización ---
 export type CreateProductInput = Omit<Product, 'id' | 'createdAt' | 'updatedAt' | 'consumptions'>;
-export type UpdateProductInput = Partial<CreateProductInput>;
+export type UpdateProductInput = Partial<Omit<CreateProductInput, 'tenantId'>>;
 
 /**
  * Crea un nuevo producto para un tenant específico.
@@ -9341,31 +9494,46 @@ export const getProductsByTenant = async (tenantId: string): Promise<Product[]> 
 };
 
 /**
- * Actualiza un producto existente.
+ * Actualiza un producto existente, verificando la pertenencia al tenant.
  * @param id - El ID del producto a actualizar.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  * @param data - Los datos a modificar.
  * @returns El producto actualizado.
  */
-export const updateProduct = async (id: string, data: UpdateProductInput): Promise<Product> => {
-  // TODO: Añadir una verificación para asegurar que el producto pertenece al tenant del usuario que realiza la acción.
-  return prisma.product.update({
-    where: { id },
+export const updateProduct = async (id: string, tenantId: string, data: UpdateProductInput): Promise<Product> => {
+  const { count } = await prisma.product.updateMany({
+    where: {
+      id,
+      tenantId, // <-- La condición de seguridad clave
+    },
     data,
   });
+
+  if (count === 0) {
+    throw new Error('Producto no encontrado o sin permisos para modificar.');
+  }
+
+  // Devolvemos el producto actualizado para mantener la consistencia de la API
+  return prisma.product.findUniqueOrThrow({ where: { id } });
 };
 
 /**
- * Elimina un producto.
- * La operación fallará si el producto ya ha sido usado en algún registro de consumo,
- * gracias a la restricción 'onDelete: Restrict' en el schema.
+ * Elimina un producto, verificando la pertenencia al tenant.
+ * La operación fallará si el producto ya ha sido usado en algún registro de consumo.
  * @param id - El ID del producto a eliminar.
- * @returns El producto que fue eliminado.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  */
-export const deleteProduct = async (id: string): Promise<Product> => {
-  // TODO: Añadir una verificación para asegurar que el producto pertenece al tenant del usuario que realiza la acción.
-  return prisma.product.delete({
-    where: { id },
+export const deleteProduct = async (id: string, tenantId: string): Promise<void> => {
+  const { count } = await prisma.product.deleteMany({
+    where: {
+      id,
+      tenantId, // <-- La condición de seguridad clave
+    },
   });
+
+  if (count === 0) {
+    throw new Error('Producto no encontrado o sin permisos para eliminar.');
+  }
 };
 
 
@@ -9509,22 +9677,23 @@ export const getInvoicingReportHandler = async (
 
 // ====== [89] packages/server/src/api/reports/reports.routes.ts ======
 // filename: packages/server/src/api/reports/reports.routes.ts
-// version: 1.2.0 (FEAT: Add route for invoicing report)
+// version: 2.0.0 (FEAT: Protect routes with ADMIN/MANAGER authorization)
 
 import { Router } from 'express';
-// --- 1. Importar el nuevo manejador ---
 import { 
     getConsumptionReportHandler, 
     getProductConsumptionDetailHandler,
     getInvoicingReportHandler 
 } from './reports.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
-// TODO: Implementar y añadir un middleware de autorización para 'ADMIN' y 'MANAGER'.
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const reportsRouter = Router();
 
-// Aplicamos el middleware 'protect' para asegurar que solo usuarios autenticados puedan acceder.
-reportsRouter.use(protect);
+// Aplicamos la protección en dos niveles a todas las rutas de informes:
+// 1. `protect`: Asegura que el usuario esté autenticado.
+// 2. `authorize('ADMIN', 'MANAGER')`: Asegura que el usuario sea Admin o Manager.
+reportsRouter.use(protect, authorize('ADMIN', 'MANAGER'));
 
 /**
  * @route   GET /api/reports/consumption
@@ -9541,7 +9710,6 @@ reportsRouter.get('/consumption', getConsumptionReportHandler);
 reportsRouter.get('/consumption/details', getProductConsumptionDetailHandler);
 
 /**
- * --- ✅ 2. AÑADIR LA NUEVA RUTA ---
  * @route   GET /api/reports/invoicing
  * @desc    Genera un informe de pre-facturación con precios de venta y cuotas.
  * @access  Private (Admin, Manager)
@@ -9553,13 +9721,15 @@ export default reportsRouter;
 
 // ====== [90] packages/server/src/api/reports/reports.service.ts ======
 // filename: packages/server/src/api/reports/reports.service.ts
-// version: 1.2.1 (FIXED)
+// version: 1.3.1 (FIXED: Correct relation name in generateInvoicingReport to match schema)
+// description: Se ha corregido el nombre de la relación a 'clientPricingRules' en la función del informe de facturación.
 
 import { PrismaClient } from '@prisma/client';
+import type { ClientProductPricing } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// --- Tipos de Datos (Existentes) ---
+// --- Tipos de Datos (Interfaces) ---
 
 interface ReportFilters {
   tenantId: string;
@@ -9572,9 +9742,6 @@ interface ConsumptionReport {
   summary: {
     totalCost: number;
     totalVisits: number;
-    totalConsumptionRecords: number;
-    startDate: string;
-    endDate: string;
   };
   byClient: {
     clientId: string;
@@ -9604,16 +9771,11 @@ export interface ProductConsumptionDetail {
     technicianName: string | null;
 }
 
-
-// --- Nueva Interfaz para el Informe de Facturación ---
-
 export interface InvoicingReport {
   summary: {
     totalToInvoice: number;
     totalFees: number;
     totalMaterials: number;
-    startDate: string;
-    endDate: string;
   };
   byClient: {
     clientId: string;
@@ -9627,47 +9789,34 @@ export interface InvoicingReport {
       productName: string;
       unit: string;
       totalQuantity: number;
-      salePrice: number; // Precio de venta unitario aplicado
+      salePrice: number;
       totalLine: number;
     }[];
   }[];
 }
 
 
-// --- Funciones de Servicio (Existentes) ---
+// --- Funciones de Servicio ---
 
 export const generateConsumptionReport = async (filters: ReportFilters): Promise<ConsumptionReport> => {
   const { tenantId, startDate, endDate, clientId } = filters;
 
-  const whereClause: any = {
-    visit: {
-      pool: {
-        tenantId: tenantId,
-      },
-      timestamp: {
-        gte: startDate,
-        lte: endDate,
-      },
-    },
-  };
-
-  if (clientId) {
-    whereClause.visit.pool.clientId = clientId;
-  }
-
   const consumptions = await prisma.consumption.findMany({
-    where: whereClause,
-    include: {
-      product: true,
+    where: {
       visit: {
-        include: {
-          pool: {
-            include: {
-              client: true,
-            },
-          },
+        pool: {
+          tenantId: tenantId,
+          clientId: clientId ? clientId : undefined,
+        },
+        timestamp: {
+          gte: startDate,
+          lte: endDate,
         },
       },
+    },
+    include: {
+      product: true,
+      visit: { include: { pool: { include: { client: true } } } },
     },
   });
   
@@ -9676,9 +9825,7 @@ export const generateConsumptionReport = async (filters: ReportFilters): Promise
   const visitedVisits = new Set<string>();
 
   for (const consumption of consumptions) {
-    if (!consumption.visit || !consumption.visit.pool || !consumption.visit.pool.client) {
-      continue;
-    }
+    if (!consumption.visit || !consumption.visit.pool || !consumption.visit.pool.client) continue;
     
     const client = consumption.visit.pool.client;
     const product = consumption.product;
@@ -9700,8 +9847,9 @@ export const generateConsumptionReport = async (filters: ReportFilters): Promise
     reportData[client.id].totalClientCost += itemCost;
     reportData[client.id].visitCount.add(consumption.visitId);
     
-    if (!reportData[client.id].detailedConsumption[product.id]) {
-      reportData[client.id].detailedConsumption[product.id] = {
+    const detailedConsumption = reportData[client.id].detailedConsumption;
+    if (!detailedConsumption[product.id]) {
+      detailedConsumption[product.id] = {
         productId: product.id,
         productName: product.name,
         unit: product.unit,
@@ -9710,8 +9858,8 @@ export const generateConsumptionReport = async (filters: ReportFilters): Promise
       };
     }
     
-    reportData[client.id].detailedConsumption[product.id].totalQuantity += consumption.quantity;
-    reportData[client.id].detailedConsumption[product.id].totalCost += itemCost;
+    detailedConsumption[product.id].totalQuantity += consumption.quantity;
+    detailedConsumption[product.id].totalCost += itemCost;
   }
   
   const byClientArray = Object.values(reportData).map(clientData => ({
@@ -9724,9 +9872,6 @@ export const generateConsumptionReport = async (filters: ReportFilters): Promise
     summary: {
       totalCost: overallTotalCost,
       totalVisits: visitedVisits.size,
-      totalConsumptionRecords: consumptions.length,
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
     },
     byClient: byClientArray,
   };
@@ -9737,35 +9882,17 @@ export const getConsumptionDetailsForProduct = async (filters: DetailFilters): P
 
     const consumptions = await prisma.consumption.findMany({
         where: {
-            productId: productId,
+            productId,
             visit: {
-                pool: {
-                    clientId: clientId,
-                    tenantId: tenantId,
-                },
-                timestamp: {
-                    gte: startDate,
-                    lte: endDate,
-                }
+                pool: { clientId, tenantId },
+                timestamp: { gte: startDate, lte: endDate }
             }
         },
         include: {
             product: true,
-            visit: {
-                include: {
-                    technician: {
-                        select: {
-                            name: true,
-                        }
-                    }
-                }
-            }
+            visit: { include: { technician: { select: { name: true } } } }
         },
-        orderBy: {
-            visit: {
-                timestamp: 'desc'
-            }
-        }
+        orderBy: { visit: { timestamp: 'desc' } }
     });
 
     return consumptions.map(c => ({
@@ -9777,44 +9904,35 @@ export const getConsumptionDetailsForProduct = async (filters: DetailFilters): P
     }));
 };
 
-
-// --- ✅ NUEVA FUNCIÓN DE SERVICIO ---
 export const generateInvoicingReport = async (filters: ReportFilters): Promise<InvoicingReport> => {
     const { tenantId, startDate, endDate, clientId } = filters;
 
-    // 1. Obtener los clientes relevantes y sus reglas de precios
     const clients = await prisma.client.findMany({
         where: {
             tenantId,
             id: clientId ? clientId : undefined,
         },
-        // --- CAMBIO APLICADO ---
-        // Al no usar 'select', Prisma incluirá todos los campos escalares por defecto,
-        // además de la relación especificada en 'include'. Esto soluciona el error de tipado.
+        // ✅ CORRECCIÓN APLICADA AQUÍ
         include: {
-            pricingRules: true,
+            clientPricingRules: true, 
         },
     });
 
-    // 2. Obtener todos los consumos del periodo para los clientes filtrados
     const consumptions = await prisma.consumption.findMany({
         where: {
             visit: {
-                pool: {
-                    tenantId: tenantId,
-                    clientId: clientId ? clientId : undefined,
-                },
+                pool: { tenantId, clientId: clientId ? clientId : undefined },
                 timestamp: { gte: startDate, lte: endDate },
             },
         },
         include: {
             product: true,
-            visit: { include: { pool: { include: { client: true } } } },
+            visit: { include: { pool: true } },
         },
     });
 
     const report: InvoicingReport = {
-        summary: { totalToInvoice: 0, totalFees: 0, totalMaterials: 0, startDate: startDate.toISOString(), endDate: endDate.toISOString() },
+        summary: { totalToInvoice: 0, totalFees: 0, totalMaterials: 0 },
         byClient: [],
     };
 
@@ -9834,7 +9952,7 @@ export const generateInvoicingReport = async (filters: ReportFilters): Promise<I
         if (client.billingModel === 'ALL_INCLUSIVE') {
             report.summary.totalToInvoice += client.monthlyFee;
             report.byClient.push(clientReport);
-            continue; // No se facturan materiales, pasar al siguiente cliente
+            continue;
         }
 
         const clientConsumptions = consumptions.filter(c => c.visit.pool.clientId === client.id);
@@ -9843,22 +9961,21 @@ export const generateInvoicingReport = async (filters: ReportFilters): Promise<I
             const product = consumption.product;
             let finalSalePrice = product.salePrice;
 
-            // Aplicar jerarquía de precios
-            const productRule = client.pricingRules.find(r => r.productId === product.id);
-            const categoryRule = client.pricingRules.find(r => r.productCategoryId === product.categoryId);
+            // ✅ CORRECCIÓN APLICADA AQUÍ
+            const productRule = client.clientPricingRules.find((r: ClientProductPricing) => r.productId === product.id);
+            const categoryRule = client.clientPricingRules.find((r: ClientProductPricing) => r.productCategoryId === product.categoryId);
 
-            if (productRule) { // 1. Descuento específico de producto
+            if (productRule) {
                 finalSalePrice *= (1 - productRule.discountPercentage / 100);
-            } else if (categoryRule) { // 2. Descuento de categoría
+            } else if (categoryRule) {
                 finalSalePrice *= (1 - categoryRule.discountPercentage / 100);
-            } else { // 3. Modificador general del cliente
+            } else {
                 finalSalePrice *= client.priceModifier;
             }
             
             const lineTotal = consumption.quantity * finalSalePrice;
             clientReport.materialsSubtotal += lineTotal;
 
-            // Agregar al detalle de consumo facturado
             const existingBilledItem = clientReport.billedConsumption.find(item => item.productId === product.id);
             if (existingBilledItem) {
                 existingBilledItem.totalQuantity += consumption.quantity;
@@ -9877,9 +9994,10 @@ export const generateInvoicingReport = async (filters: ReportFilters): Promise<I
         
         clientReport.totalToInvoice += clientReport.materialsSubtotal;
         report.summary.totalMaterials += clientReport.materialsSubtotal;
-        report.summary.totalToInvoice += clientReport.totalToInvoice;
         report.byClient.push(clientReport);
     }
+    
+    report.summary.totalToInvoice = report.summary.totalFees + report.summary.totalMaterials;
 
     return report;
 };
@@ -9887,7 +10005,8 @@ export const generateInvoicingReport = async (filters: ReportFilters): Promise<I
 
 // ====== [91] packages/server/src/api/tasks/tasks.controller.ts ======
 // filename: packages/server/src/api/tasks/tasks.controller.ts
-// Version: 1.0.0 (Initial creation of the controller for Scheduled Tasks)
+// Version: 2.0.0 (FEAT: Pass tenantId to service for validation)
+
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
 import {
@@ -9908,7 +10027,7 @@ export const createTaskTemplateHandler = async (
   try {
     const tenantId = req.user?.tenantId;
     if (!tenantId) {
-      return res.status(403).json({ message: 'Acción no permitida.' });
+      return res.status(403).json({ success: false, message: 'Acción no permitida.' });
     }
 
     const input = { ...req.body, tenantId };
@@ -9930,7 +10049,7 @@ export const getTaskTemplatesByTenantHandler = async (
   try {
     const tenantId = req.user?.tenantId;
     if (!tenantId) {
-      return res.status(403).json({ message: 'Acción no permitida.' });
+      return res.status(403).json({ success: false, message: 'Acción no permitida.' });
     }
 
     const templates = await getTaskTemplatesByTenant(tenantId);
@@ -9950,12 +10069,13 @@ export const updateTaskTemplateHandler = async (
 ) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ message: 'El ID de la plantilla es requerido.' });
-    }
-    // TODO: Verificar que la plantilla que se quiere editar pertenece al tenant del usuario logueado.
+    const tenantId = req.user?.tenantId;
 
-    const updatedTemplate = await updateTaskTemplate(id, req.body);
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de plantilla o de tenant faltante.' });
+    }
+    
+    const updatedTemplate = await updateTaskTemplate(id, tenantId, req.body);
     res.status(200).json({ success: true, data: updatedTemplate });
   } catch (error) {
     next(error);
@@ -9972,12 +10092,13 @@ export const deleteTaskTemplateHandler = async (
 ) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ message: 'El ID de la plantilla es requerido.' });
-    }
-    // TODO: Verificar que la plantilla que se quiere eliminar pertenece al tenant del usuario logueado.
+    const tenantId = req.user?.tenantId;
 
-    await deleteTaskTemplate(id);
+    if (!id || !tenantId) {
+      return res.status(400).json({ success: false, message: 'ID de plantilla o de tenant faltante.' });
+    }
+
+    await deleteTaskTemplate(id, tenantId);
     res.status(204).send();
   } catch (error) {
     next(error);
@@ -9987,7 +10108,8 @@ export const deleteTaskTemplateHandler = async (
 
 // ====== [92] packages/server/src/api/tasks/tasks.routes.ts ======
 // filename: packages/server/src/api/tasks/tasks.routes.ts
-// Version: 1.0.0 (Initial creation of routes for Scheduled Tasks)
+// Version: 2.0.0 (FEAT: Protect routes with ADMIN authorization)
+
 import { Router } from 'express';
 import {
   createTaskTemplateHandler,
@@ -9996,13 +10118,13 @@ import {
   updateTaskTemplateHandler,
 } from './tasks.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const tasksRouter = Router();
 
-// Aplicamos el middleware 'protect' a TODAS las rutas de este enrutador.
-tasksRouter.use(protect);
-
-// TODO: Añadir un middleware de autorización para asegurar que el rol sea 'ADMIN'.
+// Aplicamos la protección y autorización a todas las rutas de este fichero.
+// Solo los usuarios autenticados con rol de ADMIN pueden gestionar el catálogo.
+tasksRouter.use(protect, authorize('ADMIN'));
 
 tasksRouter.route('/')
   .get(getTaskTemplatesByTenantHandler)
@@ -10017,7 +10139,8 @@ export default tasksRouter;
 
 // ====== [93] packages/server/src/api/tasks/tasks.service.ts ======
 // filename: packages/server/src/api/tasks/tasks.service.ts
-// Version: 1.0.0 (Initial creation of the service for Scheduled Tasks)
+// Version: 2.0.0 (FEAT: Add tenantId validation for CUD operations)
+
 import { PrismaClient } from '@prisma/client';
 import type { ScheduledTaskTemplate } from '@prisma/client';
 
@@ -10062,34 +10185,53 @@ export const getTaskTemplatesByTenant = async (
 };
 
 /**
- * Actualiza una plantilla de tarea existente.
+ * Actualiza una plantilla de tarea existente, verificando la pertenencia al tenant.
  * @param id - El ID de la plantilla a actualizar.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  * @param data - Los datos a actualizar.
  * @returns La plantilla de tarea actualizada.
  */
 export const updateTaskTemplate = async (
   id: string,
+  tenantId: string,
   data: UpdateTaskTemplateInput
 ): Promise<ScheduledTaskTemplate> => {
-  return prisma.scheduledTaskTemplate.update({
-    where: { id },
+  const { count } = await prisma.scheduledTaskTemplate.updateMany({
+    where: {
+      id,
+      tenantId, // <-- Condición de seguridad
+    },
     data,
   });
+
+  if (count === 0) {
+    throw new Error('Plantilla de tarea no encontrada o sin permisos para modificar.');
+  }
+
+  return prisma.scheduledTaskTemplate.findUniqueOrThrow({ where: { id } });
 };
 
 /**
- * Elimina una plantilla de tarea.
+ * Elimina una plantilla de tarea, verificando la pertenencia al tenant.
  * @param id - El ID de la plantilla a eliminar.
- * @returns La plantilla de tarea que fue eliminada.
+ * @param tenantId - El ID del tenant del usuario que realiza la acción.
  */
 export const deleteTaskTemplate = async (
-  id: string
-): Promise<ScheduledTaskTemplate> => {
+  id: string,
+  tenantId: string,
+): Promise<void> => {
   // TODO: Añadir lógica para verificar que esta plantilla no está siendo
   // usada en ninguna PoolConfiguration antes de permitir el borrado.
-  return prisma.scheduledTaskTemplate.delete({
-    where: { id },
+  const { count } = await prisma.scheduledTaskTemplate.deleteMany({
+    where: {
+      id,
+      tenantId, // <-- Condición de seguridad
+    },
   });
+
+  if (count === 0) {
+    throw new Error('Plantilla de tarea no encontrada o sin permisos para eliminar.');
+  }
 };
 
 
@@ -10211,6 +10353,9 @@ export const deleteTenantHandler = async (
 
 
 // ====== [95] packages/server/src/api/tenants/tenants.routes.ts ======
+// filename: packages/server/src/api/tenants/tenants.routes.ts
+// version: 2.0.0 (FEAT: Protect routes with SUPER_ADMIN authorization)
+
 import { Router } from 'express';
 import {
   createTenantHandler,
@@ -10219,10 +10364,16 @@ import {
   updateTenantStatusHandler,
   deleteTenantHandler,
 } from './tenants.controller.js';
+import { protect } from '../../middleware/auth.middleware.js';
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const tenantsRouter = Router();
 
-// TODO: Proteger todas estas rutas para que solo sean accesibles por un SUPER_ADMIN.
+// Aplicamos la protección en dos niveles a TODAS las rutas de este enrutador:
+// 1. `protect`: Asegura que el usuario esté autenticado.
+// 2. `authorize('SUPER_ADMIN')`: Asegura que el usuario autenticado tenga el rol de SUPER_ADMIN.
+tenantsRouter.use(protect, authorize('SUPER_ADMIN'));
+
 
 /**
  * @route   GET /api/tenants
@@ -10516,24 +10667,24 @@ export const getTechniciansByTenantHandler = async (
 
 // ====== [101] packages/server/src/api/users/users.routes.ts ======
 // filename: packages/server/src/api/users/users.routes.ts
-// Version: 1.0.0 (Initial creation of routes for User queries)
+// Version: 2.0.0 (FEAT: Protect routes with ADMIN/MANAGER authorization)
+
 import { Router } from 'express';
 import { getTechniciansByTenantHandler } from './users.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const usersRouter = Router();
 
 // Aplicamos el middleware 'protect' a TODAS las rutas de este enrutador.
 usersRouter.use(protect);
 
-// TODO: Añadir un middleware de autorización para asegurar que el rol sea 'ADMIN'.
-
 /**
  * @route   GET /api/users/technicians
  * @desc    Obtiene una lista de todos los técnicos del tenant.
- * @access  Private (Admin)
+ * @access  Private (Admin, Manager)
  */
-usersRouter.get('/technicians', getTechniciansByTenantHandler);
+usersRouter.get('/technicians', authorize('ADMIN', 'MANAGER'), getTechniciansByTenantHandler);
 
 
 export default usersRouter;
@@ -10717,7 +10868,8 @@ export const submitWorkOrderHandler = async (
 
 // ====== [104] packages/server/src/api/visits/visits.routes.ts ======
 // filename: packages/server/src/api/visits/visits.routes.ts
-// Version: 1.4.4 (Clean up unused imports and finalize route order)
+// Version: 2.0.0 (FEAT: Protect routes with granular ADMIN/TECHNICIAN authorization)
+
 import { Router } from 'express';
 import { 
   getScheduledVisitsForWeekHandler,
@@ -10727,31 +10879,31 @@ import {
   submitWorkOrderHandler,
 } from './visits.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
+import { authorize } from '../../middleware/authorize.middleware.js';
 
 const visitsRouter = Router();
 
+// Todas las rutas de visitas requieren que el usuario esté autenticado.
 visitsRouter.use(protect);
 
-// --- Rutas para ADMIN ---
-visitsRouter.get('/scheduled', getScheduledVisitsForWeekHandler);
-visitsRouter.post('/assign', assignTechnicianHandler);
+// --- Rutas exclusivas para ADMIN (y MANAGER en vista de Admin) ---
+visitsRouter.get('/scheduled', authorize('ADMIN'), getScheduledVisitsForWeekHandler);
+visitsRouter.post('/assign', authorize('ADMIN'), assignTechnicianHandler);
 
-// --- Rutas para TECHNICIAN ---
-visitsRouter.get('/my-route', getMyRouteHandler);
+// --- Rutas exclusivas para TECHNICIAN (y MANAGER en vista de Técnico) ---
+visitsRouter.get('/my-route', authorize('TECHNICIAN'), getMyRouteHandler);
+visitsRouter.post('/:id/complete', authorize('TECHNICIAN'), submitWorkOrderHandler);
 
-/**
- * @route   POST /api/visits/:id/complete
- * @desc    Envía y procesa los datos de un Parte de Trabajo.
- * @access  Private (Technician)
- */
-visitsRouter.post('/:id/complete', submitWorkOrderHandler);
+
+// --- Rutas compartidas por ADMIN y TECHNICIAN ---
 
 /**
  * @route   GET /api/visits/:id
  * @desc    Obtiene los detalles de una visita específica (para el Parte de Trabajo)
- * @access  Private (Technician/Admin)
+ * @access  Private (Admin, Technician)
  */
-visitsRouter.get('/:id', getVisitDetailsHandler);
+// El ADMIN necesita ver los partes completados, el TECHNICIAN necesita ver los pendientes para rellenarlos.
+visitsRouter.get('/:id', authorize('ADMIN', 'TECHNICIAN'), getVisitDetailsHandler);
 
 export default visitsRouter;
 
@@ -11238,7 +11390,51 @@ export const protect = async (
 };
 
 
-// ====== [109] packages/server/src/middleware/error.middleware.ts ======
+// ====== [109] packages/server/src/middleware/authorize.middleware.ts ======
+// filename: packages/server/src/middleware/authorize.middleware.ts
+// version: 1.0.0
+// description: Middleware para la autorización basada en roles.
+
+import type { Response, NextFunction } from 'express';
+import type { AuthRequest } from './auth.middleware.js';
+import type { UserRole } from '@prisma/client';
+
+/**
+ * Crea un middleware de Express que verifica si el rol del usuario autenticado
+ * está incluido en la lista de roles permitidos.
+ *
+ * @param {...UserRole} allowedRoles - Una lista de roles que tienen permiso para acceder a la ruta.
+ * @returns Un middleware de Express.
+ */
+export const authorize = (...allowedRoles: UserRole[]) => {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    // El middleware 'protect' debe haberse ejecutado antes, por lo que 'req.user' debería existir.
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'No autenticado. Imposible realizar la autorización.',
+      });
+    }
+
+    const { role } = req.user;
+
+    // Comprobamos si el rol del usuario está en la lista de roles permitidos.
+    // Importante: Esto comprueba el rol REAL del usuario en la DB, no el de la vista "Camaleón".
+    // La lógica de la vista "Camaleón" ya se ha aplicado en el middleware `protect`.
+    if (!allowedRoles.includes(role)) {
+      return res.status(403).json({
+        success: false,
+        message: `Acceso denegado. Tu rol ('${role}') no tiene permiso para este recurso. Roles permitidos: ${allowedRoles.join(', ')}.`,
+      });
+    }
+
+    // Si el rol es válido, pasamos al siguiente middleware o al controlador de la ruta.
+    next();
+  };
+};
+
+
+// ====== [110] packages/server/src/middleware/error.middleware.ts ======
 import type { Request, Response, NextFunction } from 'express';
 
 // Interfaz para asegurar que nuestros errores puedan tener un código de estado
@@ -11266,7 +11462,7 @@ export const errorHandler = (
 };
 
 
-// ====== [110] packages/server/src/server.ts ======
+// ====== [111] packages/server/src/server.ts ======
 import app from './app.js';
 import config from './config/index.js';
 
@@ -11277,7 +11473,7 @@ app.listen(PORT, () => {
 });
 
 
-// ====== [111] packages/server/src/utils/jwt.utils.ts ======
+// ====== [112] packages/server/src/utils/jwt.utils.ts ======
 import jwt from 'jsonwebtoken';
 import type { SignOptions } from 'jsonwebtoken';
 import config from '../config/index.js';
@@ -11311,7 +11507,7 @@ export const verifyToken = <T>(token: string): T | null => {
 };
 
 
-// ====== [112] packages/server/src/utils/password.utils.ts ======
+// ====== [113] packages/server/src/utils/password.utils.ts ======
 import bcrypt from 'bcryptjs';
 
 const SALT_ROUNDS = 12;
@@ -11336,7 +11532,7 @@ export const comparePassword = (password: string, hash: string): Promise<boolean
 };
 
 
-// ====== [113] packages/server/tsconfig.json ======
+// ====== [114] packages/server/tsconfig.json ======
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
@@ -11347,7 +11543,7 @@ export const comparePassword = (password: string, hash: string): Promise<boolean
 }
 
 
-// ====== [114] tsconfig.json ======
+// ====== [115] tsconfig.json ======
 {
   "compilerOptions": {
     /* Base Options */

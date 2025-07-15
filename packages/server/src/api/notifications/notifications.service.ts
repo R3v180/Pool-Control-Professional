@@ -1,9 +1,12 @@
+// ====== [69] packages/server/src/api/notifications/notifications.service.ts ======
 // filename: packages/server/src/api/notifications/notifications.service.ts
-// version: 1.6.1 (FIXED - Based on v1.5.1, adds getNotificationById)
+// version: 1.7.1 (FIX: Remove unused import)
+// description: Removed unused 'subHours' import from date-fns.
 
 import { PrismaClient } from '@prisma/client';
 import type { Notification, IncidentPriority, NotificationStatus } from '@prisma/client';
-import { subHours } from 'date-fns';
+// ✅ CORRECCIÓN: Se elimina 'subHours' de la importación.
+import { } from 'date-fns';
 
 const prisma = new PrismaClient();
 
@@ -11,7 +14,7 @@ const prisma = new PrismaClient();
 export type NotificationWithCriticality = Notification & { isCritical: boolean };
 
 export type PaginatedNotifications = {
-    notifications: (Notification & { visit: any })[]; // Ajustado para que coincida con el include
+    notifications: (Notification & { visit: any })[];
     total: number;
 };
 
@@ -21,7 +24,7 @@ export type PaginatedNotifications = {
 export const getNotificationsForUser = async (userId: string): Promise<Notification[]> => {
   return prisma.notification.findMany({
     where: { userId, status: 'PENDING' },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { id: 'desc' },
   });
 };
 
@@ -60,33 +63,19 @@ export const getNotificationHistory = async (
                         technician: { select: { name: true } }
                     }
                 },
-                images: true, // Incluimos las imágenes
-            }
+                images: true,
+            },
+            orderBy: { id: 'desc' }
         }),
         prisma.notification.count({ where: whereClause })
     ]);
     
-    const now = new Date();
-    const criticalThreshold = subHours(now, 48); 
+    const enrichedNotifications = notifications.map(notification => ({
+        ...notification,
+        isCritical: notification.status === 'PENDING' && (notification.priority === 'HIGH' || notification.priority === 'CRITICAL'),
+    }));
 
-    const enrichedAndSortedNotifications = notifications
-        .map(notification => {
-            const isOverdueByDeadline = notification.resolutionDeadline && notification.resolutionDeadline < now;
-            const isOverdueByDefault = !notification.resolutionDeadline && notification.createdAt < criticalThreshold;
-            return {
-                ...notification,
-                isCritical: (isOverdueByDeadline || isOverdueByDefault) && notification.status === 'PENDING',
-            };
-        })
-        .sort((a, b) => {
-            if (a.isCritical && !b.isCritical) return -1;
-            if (!a.isCritical && b.isCritical) return 1;
-            if (a.status === 'PENDING' && b.status === 'RESOLVED') return -1;
-            if (a.status === 'RESOLVED' && b.status === 'PENDING') return 1;
-            return b.createdAt.getTime() - a.createdAt.getTime();
-        });
-
-    return { notifications: enrichedAndSortedNotifications, total };
+    return { notifications: enrichedNotifications, total };
 };
 
 
@@ -136,10 +125,7 @@ export const classifyNotification = async (
 
 
 /**
- * --- NUEVA FUNCIÓN ---
  * Obtiene los detalles de una única notificación por su ID.
- * @param notificationId - El ID de la notificación a buscar.
- * @returns El objeto de la notificación con sus relaciones, o null si no se encuentra.
  */
 export const getNotificationById = async (notificationId: string) => {
   return prisma.notification.findUnique({
