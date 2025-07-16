@@ -1,6 +1,6 @@
 // filename: packages/client/src/router/index.tsx
-// Version: 2.9.3 (FEAT: Add route for AvailabilityPage)
-// description: Se importa y se añade la ruta para la nueva página de Gestión de Disponibilidad.
+// Version: 2.9.4 (FEAT: Add route for AccountStatusPage)
+// description: Se importa y se añade la ruta para la nueva página de Estado de Cuentas.
 
 import { createBrowserRouter } from 'react-router-dom';
 import { LoginPage } from '../features/auth/pages/LoginPage.js';
@@ -16,7 +16,6 @@ import { PlannerPage } from '../features/admin/pages/planner/PlannerPage.js';
 import { ZoneManagementPage } from '../features/admin/pages/zones/ZoneManagementPage.js';
 import { RouteTemplatesPage } from '../features/admin/pages/planning/RouteTemplatesPage.js';
 import { RouteTemplateFormPage } from '../features/admin/pages/planning/RouteTemplateFormPage.js';
-// ✅ 1. Importar el nuevo componente de página
 import { AvailabilityPage } from '../features/admin/pages/planning/AvailabilityPage.js';
 import { MyRoutePage } from '../features/technician/pages/MyRoutePage.js';
 import { WorkOrderPage } from '../features/technician/pages/WorkOrderPage.js';
@@ -28,6 +27,8 @@ import { InvoicingReportPage } from '../features/manager/pages/InvoicingReportPa
 import { ConsumptionReportPage } from '../features/admin/pages/reports/ConsumptionReportPage.js';
 import { PaymentsPage } from '../features/financials/pages/PaymentsPage.js';
 import { ExpensesPage } from '../features/financials/pages/ExpensesPage.js';
+// ✅ 1. Importar el nuevo componente de página
+import { AccountStatusPage } from '../features/financials/pages/AccountStatusPage.js';
 import { useAuth } from '../providers/AuthProvider.js';
 import {
   AppLayout,
@@ -77,7 +78,6 @@ export const router = createBrowserRouter([
                   { path: ':id', element: <RouteTemplateFormPage /> },
                 ]
               },
-              // ✅ 2. Añadir la nueva ruta
               { path: 'availability', element: <AvailabilityPage /> },
             ]
           },
@@ -131,10 +131,13 @@ export const router = createBrowserRouter([
           },
            {
             path: 'financials',
-            element: <AdminRoute />,
+            // ✅ Se cambia a FinancialAdminRoute para que el Manager también pueda acceder
+            element: <FinancialAdminRoute />,
             children: [
                 { path: 'payments', element: <PaymentsPage /> },
-                { path: 'expenses', element: <ExpensesPage /> }
+                { path: 'expenses', element: <ExpensesPage /> },
+                // ✅ 2. Añadir la nueva ruta
+                { path: 'account-status', element: <AccountStatusPage /> },
              ]
           },
           {

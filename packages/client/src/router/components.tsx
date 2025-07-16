@@ -1,6 +1,6 @@
 // filename: packages/client/src/router/components.tsx
-// version: 2.6.2 (FEAT: Add AvailabilityPage to navigation)
-// description: Se añade el enlace a la nueva página de Gestión de Disponibilidad en el menú de navegación del ADMIN.
+// version: 2.6.3 (FEAT: Add AccountStatusPage to navigation)
+// description: Se añade el enlace a la nueva página de Estado de Cuentas en el menú de navegación de ADMIN y MANAGER.
 
 import { AppShell, Burger, Group, NavLink, Title, Button, Indicator, ActionIcon, Popover, Text, Stack, SegmentedControl } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
@@ -151,12 +151,18 @@ export const AppLayout = () => {
 
       <AppShell.Navbar p="md">
         {activeRole === 'MANAGER' && (
-          <NavLink
-           component={Link}
-            to="/"
-            label="Dashboard de Gerencia"
-            onClick={toggle}
-          />
+          <>
+            <NavLink
+              component={Link}
+              to="/"
+              label="Dashboard de Gerencia"
+              onClick={toggle}
+            />
+            {/* ✅ El manager también ve el menú de finanzas */}
+            <NavLink label="Finanzas" defaultOpened>
+                <NavLink component={Link} to="/financials/account-status" label="Estado de Cuentas" onClick={toggle} />
+            </NavLink>
+          </>
         )}
         
         {activeRole === 'ADMIN' && (
@@ -166,7 +172,6 @@ export const AppLayout = () => {
             <NavLink label="Planificación" defaultOpened>
                 <NavLink component={Link} to="/planning/zones" label="Gestión de Zonas" onClick={toggle}/>
                 <NavLink component={Link} to="/planning/routes" label="Gestión de Rutas" onClick={toggle}/>
-                {/* ✅ NUEVO ENLACE AÑADIDO */}
                 <NavLink component={Link} to="/planning/availability" label="Gestión de Disponibilidad" onClick={toggle}/>
                 <NavLink component={Link} to="/planner" label="Planificador" onClick={toggle} /> 
             </NavLink>
@@ -184,6 +189,8 @@ export const AppLayout = () => {
               <NavLink component={Link} to="/catalog/product-categories" label="Categorías de Productos" onClick={toggle} />
             </NavLink>
             <NavLink label="Finanzas" defaultOpened>
+                {/* ✅ NUEVO ENLACE AÑADIDO */}
+                <NavLink component={Link} to="/financials/account-status" label="Estado de Cuentas" onClick={toggle} />
                 <NavLink component={Link} to="/financials/payments" label="Pagos Recibidos" onClick={toggle} />
                 <NavLink component={Link} to="/financials/expenses" label="Gastos Generales" onClick={toggle} />
             </NavLink>

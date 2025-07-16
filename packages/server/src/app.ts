@@ -1,11 +1,14 @@
 // filename: packages/server/src/app.ts
-// version: 3.0.0 (FEAT: Mount planningRouter)
+// version: 3.1.0 (FEAT: Mount financialsRouter)
+// description: Se monta el nuevo router para los endpoints de finanzas, haciendo accesible la nueva funcionalidad de estado de cuentas.
 
 import express from 'express';
 import type { Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { errorHandler } from './middleware/error.middleware.js';
+
+// Importación de todos los routers
 import authRouter from './api/auth/auth.routes.js';
 import tenantsRouter from './api/tenants/tenants.routes.js';
 import parametersRouter from './api/parameters/parameters.routes.js';
@@ -27,8 +30,9 @@ import dashboardRouter from './api/dashboard/dashboard.routes.js';
 import reportsRouter from './api/reports/reports.routes.js';
 import zonesRouter from './api/zones/zones.routes.js';
 import routeTemplatesRouter from './api/route-templates/route-templates.routes.js';
-// ✅ 1. Importar el nuevo router
 import planningRouter from './api/planning/planning.routes.js';
+// ✅ 1. Importar el nuevo router de finanzas
+import financialsRouter from './api/financials/financials.routes.js';
 
 const app = express();
 
@@ -44,6 +48,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
   res.status(200).json({ status: 'UP' });
 });
 
+// Montaje de todos los routers
 app.use('/api/auth', authRouter);
 app.use('/api/tenants', tenantsRouter);
 app.use('/api/parameters', parametersRouter);
@@ -65,8 +70,10 @@ app.use('/api/dashboard', dashboardRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/zones', zonesRouter);
 app.use('/api/route-templates', routeTemplatesRouter);
-// ✅ 2. Montar el nuevo router
 app.use('/api/planning', planningRouter);
+// ✅ 2. Montar el nuevo router
+app.use('/api/financials', financialsRouter);
+
 
 app.use(errorHandler);
 

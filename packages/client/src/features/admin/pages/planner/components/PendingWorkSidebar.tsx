@@ -1,11 +1,12 @@
 // filename: packages/client/src/features/admin/pages/planner/components/PendingWorkSidebar.tsx
-// version: 4.0.2 (FIX: Restore missing export statement)
-// description: Se vuelve a añadir la palabra clave 'export' a la función principal del componente para que pueda ser importada correctamente en otras partes de la aplicación.
+// version: 5.0.0 (REFACTOR: Remove drag-and-drop functionality)
+// description: Se elimina por completo la funcionalidad de arrastrar y soltar desde el muelle. La gestión de estas visitas se hará exclusivamente mediante el "Modo Selección".
 
 import { useEffect, useState } from 'react';
 import { Stack, Title, Paper, Text, Badge, ScrollArea, Loader, Alert, Accordion, Group, Checkbox } from '@mantine/core';
 import apiClient from '../../../../../api/apiClient';
-import { useDndStore } from '../../../../../stores/dnd.store';
+// ✅ Se elimina la importación de useDndStore que ya no se necesita
+// import { useDndStore } from '../../../../../stores/dnd.store';
 
 // --- Tipos ---
 interface Visit {
@@ -23,37 +24,19 @@ interface PendingWorkData {
 interface VisitItemProps {
   visit: Visit;
   isOverdue?: boolean;
-  isSelectionModeActive: boolean;
+  // ✅ El modo selección siempre estará activo para estos items
   isSelected: boolean;
   onSelect: (visitId: string) => void;
 }
 
 // --- Componente Interno Simple para la UI ---
-const VisitItem = ({ visit, isOverdue, isSelectionModeActive, isSelected, onSelect }: VisitItemProps) => {
+const VisitItem = ({ visit, isOverdue, isSelected, onSelect }: VisitItemProps) => {
   const overdueLabel = isOverdue
     ? `Visita Vencida`
     : `Técnico: ${visit.technician?.name || 'No disponible'}`;
-  
-  const setDraggingVisit = useDndStore((state) => state.setDraggingVisit);
-
-  const handleDragStart = () => {
-    if (!isSelectionModeActive) {
-      setDraggingVisit(visit);
-    }
-  };
-
-  const handleDragEnd = () => {
-    setDraggingVisit(null);
-  };
-
-  const handleItemClick = () => {
-    if (isSelectionModeActive) {
-      onSelect(visit.id);
-    }
-  };
 
   const paperStyle: React.CSSProperties = {
-    cursor: isSelectionModeActive ? 'pointer' : 'grab',
+    cursor: 'pointer', // El cursor siempre es 'pointer' ahora
     position: 'relative',
     transition: 'transform 0.2s ease, box-shadow 0.2s ease',
     ...(isSelected && {
@@ -64,30 +47,27 @@ const VisitItem = ({ visit, isOverdue, isSelectionModeActive, isSelected, onSele
   };
 
   return (
+    // ✅ Se elimina la propiedad 'draggable' y los eventos onDrag
     <Paper
-      draggable={!isSelectionModeActive}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
       withBorder 
       p="xs" 
       radius="sm" 
       mb="xs"
       style={paperStyle}
-      onClick={handleItemClick}
+      onClick={() => onSelect(visit.id)} // El clic siempre selecciona
     >
-      {isSelectionModeActive && (
-        <Checkbox
-          checked={isSelected}
-          onChange={() => { /* el onChange se maneja en el onClick del Paper */ }}
-          style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 10 }}
-        />
-      )}
-      <Stack style={{ paddingLeft: isSelectionModeActive ? '30px' : '0' }}>
+      <Checkbox
+        checked={isSelected}
+        readOnly
+        style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 10 }}
+        label=""
+      />
+      <Stack style={{ paddingLeft: '30px' }}>
         <Text fw={500} size="sm">{visit.pool.name}</Text>
         <Text c="dimmed" size="xs">{visit.pool.client.name}</Text>
         <Group justify="space-between" mt={4}>
           <Text c="red" size="xs" mt={2}>{overdueLabel}</Text>
-          {!isSelectionModeActive && <Badge variant="light" color="gray">Arrastrar</Badge>}
+          <Badge variant="light" color="gray">Seleccionar</Badge>
         </Group>
       </Stack>
     </Paper>
@@ -96,14 +76,11 @@ const VisitItem = ({ visit, isOverdue, isSelectionModeActive, isSelected, onSele
 
 interface PendingWorkSidebarProps {
   refreshKey: number;
-  isSelectionModeActive: boolean;
   selectedVisitIds: Set<string>;
   onSelectVisit: (visitId: string) => void;
 }
 
-// --- Componente Principal ---
-// ✅ CORRECCIÓN: Se añade la palabra 'export' que faltaba
-export function PendingWorkSidebar({ refreshKey, isSelectionModeActive, selectedVisitIds, onSelectVisit }: PendingWorkSidebarProps) {
+export function PendingWorkSidebar({ refreshKey, selectedVisitIds, onSelectVisit }: PendingWorkSidebarProps) {
   const [data, setData] = useState<PendingWorkData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -133,7 +110,6 @@ export function PendingWorkSidebar({ refreshKey, isSelectionModeActive, selected
           key={visit.id}
           visit={visit}
           isOverdue={isOverdue}
-          isSelectionModeActive={isSelectionModeActive}
           isSelected={selectedVisitIds.has(visit.id)}
           onSelect={onSelectVisit}
         />
