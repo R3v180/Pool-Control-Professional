@@ -1,6 +1,6 @@
 // filename: packages/client/src/features/admin/pages/clients/ClientDetailPage.tsx
-// Version: 2.1.0 (FEAT: Add Zone assignment to Pool modal)
-// description: Fetches available zones and adds a Select input to the pool form.
+// version: 2.1.4 (FIX: Force remount of select input using key prop)
+// description: Se soluciona definitivamente el bug del modal de reglas de precios forzando el remontaje del `Select` dependiente mediante un cambio en su prop `key`.
 
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
@@ -14,9 +14,8 @@ import apiClient from '../../../../api/apiClient';
 
 // --- Tipos ---
 type BillingModel = 'SERVICE_ONLY' | 'FEE_PLUS_MATERIALS' | 'ALL_INCLUSIVE';
-// ✅ 1. Añadido zoneId a la interfaz de la Piscina
 interface Pool { id: string; name: string; address: string; volume: number | null; type: string | null; zoneId: string | null; }
-interface Zone { id: string; name: string; } // ✅ 2. Nueva interfaz para Zonas
+interface Zone { id: string; name: string; }
 interface Client {
   id: string; name: string; contactPerson: string | null; email: string | null;
   phone: string | null; address: string | null; pools: Pool[];
@@ -37,7 +36,7 @@ interface ApiResponse<T> { success: boolean; data: T; }
 export function ClientDetailPage() {
   const { id: clientId } = useParams<{ id: string }>();
   const [client, setClient] = useState<Client | null>(null);
-  const [zones, setZones] = useState<Zone[]>([]); // ✅ 3. Nuevo estado para las zonas
+  const [zones, setZones] = useState<Zone[]>([]);
   const [pricingRules, setPricingRules] = useState<PricingRule[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
@@ -52,7 +51,6 @@ export function ClientDetailPage() {
     initialValues: { monthlyFee: 0, billingModel: 'SERVICE_ONLY' as BillingModel },
   });
 
-  // ✅ 4. Añadido zoneId al formulario de la piscina
   const poolForm = useForm({
     initialValues: { name: '', address: '', volume: null as number | null, type: '', zoneId: null as string | null },
     validate: {
@@ -60,19 +58,23 @@ export function ClientDetailPage() {
       address: (value) => (value.trim().length < 5 ? 'La dirección es demasiado corta' : null),
     },
   });
+
   const ruleForm = useForm({
-    initialValues: { type: 'product', targetId: '', discountPercentage: 0, },
+    initialValues: {
+      type: 'product',
+      targetId: '',
+      discountPercentage: 0,
+    },
     validate: {
         targetId: (value) => (!value ? 'Debe seleccionar un objetivo' : null),
         discountPercentage: (value) => (value <= 0 || value > 100 ? 'El descuento debe estar entre 1 y 100' : null),
     }
   });
-
+  
   const fetchData = async () => {
     if (!clientId) return;
     setIsLoading(true);
     try {
-      // ✅ 5. Se añade la petición de zonas al Promise.all
       const [clientRes, rulesRes, productsRes, categoriesRes, zonesRes] = await Promise.all([
         apiClient.get<ApiResponse<Client>>(`/clients/${clientId}`),
         apiClient.get<ApiResponse<PricingRule[]>>(`/client-product-pricing/by-client/${clientId}`),
@@ -81,7 +83,7 @@ export function ClientDetailPage() {
         apiClient.get<ApiResponse<Zone[]>>('/zones'),
       ]);
       setClient(clientRes.data.data);
-      setZones(zonesRes.data.data); // Guardamos las zonas en el estado
+      setZones(zonesRes.data.data);
       setPricingRules(rulesRes.data.data);
       setProducts(productsRes.data.data);
       setProductCategories(categoriesRes.data.data);
@@ -114,7 +116,6 @@ export function ClientDetailPage() {
   const handleOpenPoolModal = (pool: Pool | null = null) => {
     setEditingPool(pool);
     if (pool) {
-      // ✅ 6. Se establece el valor de zoneId al abrir el modal para editar
       poolForm.setValues({
         name: pool.name,
         address: pool.address,
@@ -128,7 +129,6 @@ export function ClientDetailPage() {
     openPoolModal();
   };
 
-  // No se necesita cambiar handlePoolSubmit, ya que el zoneId se incluye automáticamente en 'values'
   const handlePoolSubmit = async (values: typeof poolForm.values) => {
     if (!clientId) return;
     try {
@@ -184,7 +184,6 @@ export function ClientDetailPage() {
   const breadcrumbs = (<Breadcrumbs><Link to="/clients">Clientes</Link><Text>{client.name}</Text></Breadcrumbs>);
   const productOptions = products.map(p => ({ value: p.id, label: p.name }));
   const categoryOptions = productCategories.map(c => ({ value: c.id, label: c.name }));
-  // ✅ 7. Se preparan las opciones para el Select de Zonas
   const zoneOptions = zones.map(z => ({ value: z.id, label: z.name }));
 
   return (
@@ -194,8 +193,6 @@ export function ClientDetailPage() {
           <Stack>
             <TextInput required label="Nombre de la Piscina" {...poolForm.getInputProps('name')} />
             <TextInput required label="Dirección de la Piscina" {...poolForm.getInputProps('address')} />
-            
-            {/* ✅ 8. Se añade el campo Select para las zonas */}
             <Select
               label="Asignar Zona"
               placeholder="Sin asignar"
@@ -203,7 +200,6 @@ export function ClientDetailPage() {
               {...poolForm.getInputProps('zoneId')}
               clearable
             />
-
             <NumberInput label="Volumen (m³)" min={0} {...poolForm.getInputProps('volume')} />
             <Select label="Tipo de Piscina" data={['Cloro', 'Sal']} {...poolForm.getInputProps('type')} />
             <Button type="submit" mt="md">{editingPool ? 'Guardar Cambios' : 'Crear Piscina'}</Button>
@@ -211,14 +207,25 @@ export function ClientDetailPage() {
         </form>
       </Modal>
 
-      <Modal opened={ruleModalOpened} onClose={closeRuleModal} title="Nueva Regla de Precio" centered>
+      <Modal opened={ruleModalOpened} onClose={() => {
+        ruleForm.reset();
+        closeRuleModal();
+      }} title="Nueva Regla de Precio" centered>
         <form onSubmit={ruleForm.onSubmit(handleRuleSubmit)}>
             <Stack>
-                 <Select label="Tipo de Regla" data={[{value: 'product', label: 'A un Producto'}, {value: 'category', label: 'A una Categoría'}]} {...ruleForm.getInputProps('type')} />
+                 <Select
+                    label="Tipo de Regla"
+                    data={[{value: 'product', label: 'A un Producto'}, {value: 'category', label: 'A una Categoría'}]}
+                    value={ruleForm.values.type}
+                    onChange={(value) => {
+                      ruleForm.setFieldValue('type', value || 'product');
+                      ruleForm.setFieldValue('targetId', '');
+                    }}
+                 />
                 {ruleForm.values.type === 'product' ? (
-                    <Select label="Seleccione el Producto" data={productOptions} searchable required {...ruleForm.getInputProps('targetId')} />
+                    <Select key="product-select" label="Seleccione el Producto" placeholder="Busque o seleccione un producto" data={productOptions} searchable required {...ruleForm.getInputProps('targetId')} />
                 ) : (
-                    <Select label="Seleccione la Categoría" data={categoryOptions} searchable required {...ruleForm.getInputProps('targetId')} />
+                    <Select key="category-select" label="Seleccione la Categoría" placeholder="Busque o seleccione una categoría" data={categoryOptions} searchable required {...ruleForm.getInputProps('targetId')} />
                 )}
                  <NumberInput label="Porcentaje de Descuento (%)" min={1} max={100} required {...ruleForm.getInputProps('discountPercentage')} />
                 <Button type="submit" mt="md">Crear Regla</Button>
