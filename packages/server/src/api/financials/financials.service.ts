@@ -1,15 +1,15 @@
 // filename: packages/server/src/api/financials/financials.service.ts
-// version: 1.1.1 (FIX: Use type-only import for Prisma types)
-// description: Se corrige un error de TypeScript utilizando una importación de solo tipo (`import type`) para el tipo `Payment`, cumpliendo con la regla `verbatimModuleSyntax`.
+// version: 1.2.0 (FEAT: Support date range for account status)
+// description: Se actualiza el servicio para que acepte un rango de fechas (startDate, endDate) en lugar de un solo mes, permitiendo un análisis financiero más flexible.
 
 import { PrismaClient, BillingModel } from '@prisma/client';
-// ✅ CORRECCIÓN: Se importa el tipo 'Payment' de forma explícita
 import type { Payment } from '@prisma/client';
-import { startOfMonth, endOfMonth } from 'date-fns';
+// Se elimina startOfMonth y endOfMonth que ya no son necesarios aquí
+import { } from 'date-fns';
 
 const prisma = new PrismaClient();
 
-// --- Interfaces de Salida ---
+// --- Interfaces ---
 export interface AccountStatus {
   clientId: string;
   clientName: string;
@@ -32,12 +32,12 @@ export interface AccountStatus {
 /**
  * Calcula el estado de cuentas para todos los clientes en un período determinado.
  * @param tenantId El ID del tenant.
- * @param date La fecha para la que se calculará el estado (se usará el mes completo).
+ * @param startDate La fecha de inicio del período.
+ * @param endDate La fecha de fin del período.
  * @returns Un array con el estado de cuentas de cada cliente.
  */
-export const getAccountStatusByMonth = async (tenantId: string, date: Date): Promise<AccountStatus[]> => {
-  const startDate = startOfMonth(date);
-  const endDate = endOfMonth(date);
+// ✅ La función ahora acepta startDate y endDate
+export const getAccountStatusByPeriod = async (tenantId: string, startDate: Date, endDate: Date): Promise<AccountStatus[]> => {
 
   const clients = await prisma.client.findMany({
     where: { tenantId },
@@ -68,8 +68,12 @@ export const getAccountStatusByMonth = async (tenantId: string, date: Date): Pro
   const results: AccountStatus[] = [];
 
   for (const client of clients) {
+    // El cálculo del número de meses en el rango para la cuota fija
+    const months = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth()) + 1;
+    const totalFees = client.monthlyFee * months;
+
     const billingDetails: AccountStatus['billingDetails'] = {
-        monthlyFee: client.monthlyFee,
+        monthlyFee: totalFees, // Ahora es el total de cuotas del período
         materials: [],
         materialsSubtotal: 0,
     };
@@ -91,16 +95,24 @@ export const getAccountStatusByMonth = async (tenantId: string, date: Date): Pro
         
         const lineTotal = consumption.quantity * finalSalePrice;
         billingDetails.materialsSubtotal += lineTotal;
-        billingDetails.materials.push({
-            productName: product.name,
-            quantity: consumption.quantity,
-            salePrice: finalSalePrice,
-            total: lineTotal,
-        });
+        
+        // Agrupar materiales para el desglose
+        const existingMaterial = billingDetails.materials.find(m => m.productName === product.name);
+        if (existingMaterial) {
+            existingMaterial.quantity += consumption.quantity;
+            existingMaterial.total += lineTotal;
+        } else {
+             billingDetails.materials.push({
+                productName: product.name,
+                quantity: consumption.quantity,
+                salePrice: finalSalePrice,
+                total: lineTotal,
+            });
+        }
       }
     }
 
-    const totalBilled = client.monthlyFee + billingDetails.materialsSubtotal;
+    const totalBilled = totalFees + billingDetails.materialsSubtotal;
     
     const clientPayments = payments.filter(p => p.clientId === client.id);
     const totalPaid = clientPayments.reduce((sum, p) => sum + p.amount, 0);

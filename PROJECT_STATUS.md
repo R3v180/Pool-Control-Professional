@@ -1,73 +1,77 @@
-// ====== [2] PROJECT_STATUS.md ======
-
 # Estado del Proyecto y Crónica de Desarrollo: Pool-Control Professional
 
-**Filosofía de este documento:** Este no es solo un registro de tareas, es el pulso del proyecto. Refleja nuestro compromiso con la excelencia, documentando no solo _qué_ hemos hecho, sino _por qué_ lo hemos hecho y el _valor_ que cada fase aporta al producto final.
+**Filosofía de este documento:** Este no es solo un registro de tareas; es el pulso del proyecto. Refleja nuestro compromiso con la excelencia, documentando no solo _qué_ hemos hecho, sino _por qué_ lo hemos hecho y el _valor_ que cada fase aporta al producto final.
 
-_Última actualización: 15 de julio de 2025, 20:00 CEST_
-
----
-
-## 1. Visión Estratégica Actual: Hacia la Planificación Inteligente v2.0
-
-Tras una fase intensiva de desarrollo y estabilización, el proyecto se encuentra en un punto de inflexión. Se ha consolidado una base operativa robusta y se han implementado las primeras herramientas de inteligencia de negocio. El siguiente gran salto evolutivo es la implementación de un sistema de **planificación avanzada y semi-automatizada** que reducirá drásticamente la carga de trabajo administrativo y optimizará las operaciones de campo.
+_Última actualización: 16 de julio de 2025, 22:00 CEST_
 
 ---
 
-## 2. Hitos de Desarrollo Validados
+## 1. Visión Estratégica Actual: De la Gestión Eficiente a la Optimización Inteligente
 
-### ✅ **Dashboard de Gerencia Interactivo v1**
+Tras una fase intensiva de desarrollo y estabilización, el proyecto ha alcanzado un nuevo nivel de madurez. Hemos consolidado una base operativa robusta y hemos entregado con éxito el **Centro de Mando Operativo v1.0**, una herramienta que ya transforma la manera en que nuestros clientes gestionan su día a día.
 
-- **Estado:** `COMPLETADO Y VALIDADO`
-- **Resumen:** Se ha implementado con éxito un dashboard dinámico para el rol de Gerente. Los widgets son interactivos, permitiendo la navegación desde KPIs de alto nivel (coste de productos, incidencias abiertas) a las páginas de detalle correspondientes para un análisis en profundidad. Se ha añadido un selector de periodo para un análisis histórico.
-
-### ✅ **Estabilización de la Plataforma y Refactorización del Backend**
-
-- **Estado:** `COMPLETADO Y VALIDADO`
-- **Resumen:** Se ha llevado a cabo una fase crítica de depuración y refactorización. Se han resuelto inconsistencias entre el esquema de la base de datos y la lógica de los servicios, asegurando que todas las funcionalidades existentes (gestión de incidencias, informes, etc.) operan de forma estable y predecible.
-
-### ✅ **Coherencia del "Rol Camaleón"**
-
-- **Estado:** `COMPLETADO Y VALIDADO`
-- **Resumen:** Se ha mejorado la lógica de asignación para permitir que los usuarios con rol `MANAGER` puedan ser asignatarios directos de visitas y tareas de incidencia, cerrando un hueco funcional clave en el concepto del "Rol Camaleón".
+Con esta base sólida y validada, el siguiente gran salto evolutivo es la **Optimización Proactiva**. Nuestra máxima prioridad ahora es dotar a la plataforma de inteligencia para que no solo muestre datos, sino que **sugiera, optimice y prevenga problemas**.
 
 ---
 
-## 3. Plan de Acción y Tareas Pendientes (Sprint v2.0)
+## 2. Hitos de Desarrollo Validados (Sprint "Centro de Mando v1.0")
 
-Esta es la máxima prioridad actual. El objetivo es construir el núcleo del nuevo motor de planificación.
+Esta sección celebra la finalización de una de las fases más complejas y de mayor valor del proyecto.
 
-### **Fase 1: El Nuevo Núcleo de Datos (Backend)**
+### ✅ **Centro de Mando Operativo v1.0**
 
-- **Estado:** `COMPLETADO`
-- **Objetivo:** Modificar la estructura de la base de datos para dar soporte a la planificación avanzada.
-- **Tareas Técnicas Validadas:**
-  - **`schema.prisma`:** Se han añadido los nuevos modelos (`Zone`, `RouteTemplate`, `RouteTemplateSeason`, `SpecialWorkOrder`) y se han modificado los modelos existentes (`Pool`, `User`) para soportar la nueva lógica.
-  - **`seed.ts`:** El script de semillado ha sido completamente reescrito para poblar la base de datos con una estructura de datos coherente que incluye zonas, rutas maestras y visitas generadas automáticamente.
+- **Estado:** `COMPLETADO Y VALIDADO`
+- **Resumen:** Se ha construido desde cero y puesto en producción el nuevo **Planning Hub**. Esta herramienta centraliza toda la planificación y se fundamenta en los siguientes pilares funcionales ya entregados:
+  - **Generación Automática de Visitas:** El sistema ya lee las `RouteTemplates` y puebla el calendario, automatizando la planificación base.
+  - **Gestión de Excepciones Visual:** El "Muelle de Carga" con la "Deuda Operativa" y el "Trabajo Huérfano" funciona correctamente, permitiendo al `ADMIN` centrarse en lo que importa.
+  - **Acciones en Lote:** Se ha implementado con éxito la capacidad de seleccionar múltiples visitas y aplicar acciones masivas (`Reasignar Técnico` y `Reprogramar`), lo que supone una mejora radical en la eficiencia.
 
-### **Fase 2: Construcción de APIs y Lógica de Negocio (Backend)**
+### ✅ **Contexto Visual e Inteligencia de Interfaz**
+
+- **Estado:** `COMPLETADO Y VALIDADO`
+- **Resumen:** La interfaz del Planning Hub ha sido enriquecida para proporcionar información crucial de un solo vistazo:
+  - **Tooltips Detallados:** Toda la información de una visita es accesible al pasar el ratón sobre ella.
+  - **Visualización de Ausencias y Conflictos:** El calendario ahora muestra visualmente los periodos de no disponibilidad de los técnicos y alerta de forma inequívoca si se asigna una visita durante uno de esos periodos.
+
+### ✅ **Módulo Financiero v1.0: Estado de Cuentas**
+
+- **Estado:** `COMPLETADO Y VALIDADO`
+- **Resumen:** Se ha desarrollado y desplegado la primera versión del "Centro de Control de Cobros".
+  - **API Robusta:** El backend calcula el estado de cuentas de cada cliente para cualquier rango de fechas.
+  - **Trazabilidad Total:** La interfaz permite expandir la fila de cada cliente para ver un **desglose detallado de los conceptos facturados y los pagos recibidos**, proporcionando una herramienta de gestión de cobros de enorme valor.
+
+### ✅ **Estabilización y Coherencia del Rol "Camaleón"**
+
+- **Estado:** `COMPLETADO Y VALIDADO`
+- **Resumen:** Se han solucionado todos los bugs de permisos relacionados con el rol de `MANAGER`. Ahora puede asumir las vistas y responsabilidades de `ADMIN` y `TECHNICIAN` de forma fluida y sin errores, pudiendo crear tareas, ver partes de trabajo y ejecutar todas las acciones necesarias.
+
+---
+
+## 3. Plan de Acción y Tareas Pendientes (Sprint "Inteligencia Operativa v2.0")
+
+Esta es la máxima prioridad actual. El objetivo es construir las funcionalidades que harán que nuestro software "piense".
+
+### **Fase 1: Optimización de Rutas (Backend)**
 
 - **Estado:** `PENDIENTE (Prioridad Máxima)`
-- **Objetivo:** Desarrollar todos los endpoints de la API necesarios para gestionar la nueva estructura de planificación.
+- **Objetivo:** Crear el servicio que calculará la ruta más eficiente para un técnico en un día determinado.
 - **Tareas Técnicas:**
-  - **API de Zonas:** Crear el CRUD completo para `Zone`.
-  - **API de Rutas Maestras:** Crear el CRUD para `RouteTemplate` y sus `RouteTemplateSeason`.
-  - **Job de Generación de Visitas:** Implementar el script (`visit-generator.job.ts`) que se ejecutará periódicamente para generar las visitas de forma automática.
-  - **Evolución de API de Visitas:** Refactorizar el endpoint `GET /api/visits/scheduled` para que lea las visitas pre-generadas y devuelva también las visitas vencidas.
+  - **Diseñar la API:** Definir el `request` y `response` para el nuevo endpoint (ej. `POST /api/route-optimization/optimize-day`).
+  - **Integración con API de Mapas:** Investigar y elegir una API de mapas (Google Maps, Mapbox, etc.) para calcular las matrices de distancia y tiempo.
+  - **Implementar el Algoritmo:** Desarrollar la lógica que resuelva el "Problema del Viajante de Comercio" (TSP) para encontrar la secuencia óptima de visitas.
 
-### **Fase 3: Maratón de Frontend e Integración**
+### **Fase 2: Integración de la Optimización (Frontend)**
 
 - **Estado:** `PENDIENTE`
-- **Objetivo:** Construir todas las interfaces de usuario para la gestión de la planificación.
+- **Objetivo:** Permitir al `ADMIN` usar la nueva funcionalidad de optimización.
 - **Tareas Técnicas:**
-  - **Página de Gestión de Zonas:** Crear la interfaz para el CRUD de Zonas.
-  - **Páginas de Rutas Maestras:** Crear las interfaces para listar y configurar las `RouteTemplate`.
-  - **Refactorización del Planificador (`PlannerPage.tsx`):** Rediseñar la página para que visualice el plan generado, la columna de "Deuda Operativa" (visitas vencidas) y la de "Trabajo Huérfano" (por bajas).
-  - **Integrar Órdenes de Trabajo Especiales:** Añadir la funcionalidad para crear y asignar visitas únicas.
+  - **Añadir Botón "Optimizar":** En el `PlannerPage`, junto al indicador de carga de cada técnico, añadir el botón de optimización.
+  - **Llamada a la API:** Implementar la llamada al nuevo endpoint de optimización.
+  - **Actualización del Calendario:** Al recibir la ruta optimizada, reordenar los eventos en la vista de equipo para reflejar la nueva secuencia.
 
 ### **Tareas de Futuras Iteraciones (Post-v2.0)**
 
+- **Selector de Escala de Tiempo (`Día`/`Mes`) y Clustering en el Planning Hub.**
 - **Alertas Proactivas por Umbrales.**
-- **Módulo de Estado de Cuentas por Cliente.**
-- **Optimización de Rutas con API de Mapas.**
 - **Gestión de Inventario.**
+- **Modo Offline (PWA).**
