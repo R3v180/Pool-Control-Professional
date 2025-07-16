@@ -1,11 +1,11 @@
 // filename: packages/client/src/features/admin/pages/planner/components/PendingWorkSidebar.tsx
-// version: 3.0.0 (REFACTOR: Use Zustand store for drag state)
-// description: Se elimina la API Draggable de FullCalendar y se utiliza un store de Zustand para gestionar el estado del elemento arrastrado, preparando el terreno para una gestión manual del drop.
+// version: 4.0.2 (FIX: Restore missing export statement)
+// description: Se vuelve a añadir la palabra clave 'export' a la función principal del componente para que pueda ser importada correctamente en otras partes de la aplicación.
 
 import { useEffect, useState } from 'react';
-import { Stack, Title, Paper, Text, Badge, ScrollArea, Loader, Alert, Accordion, Group } from '@mantine/core';
+import { Stack, Title, Paper, Text, Badge, ScrollArea, Loader, Alert, Accordion, Group, Checkbox } from '@mantine/core';
 import apiClient from '../../../../../api/apiClient';
-import { useDndStore } from '../../../../../stores/dnd.store'; // ✅ 1. Importar el nuevo store.
+import { useDndStore } from '../../../../../stores/dnd.store';
 
 // --- Tipos ---
 interface Visit {
@@ -20,49 +20,90 @@ interface PendingWorkData {
   orphanedVisits: Visit[];
 }
 
+interface VisitItemProps {
+  visit: Visit;
+  isOverdue?: boolean;
+  isSelectionModeActive: boolean;
+  isSelected: boolean;
+  onSelect: (visitId: string) => void;
+}
+
 // --- Componente Interno Simple para la UI ---
-const VisitItem = ({ visit, isOverdue }: { visit: Visit; isOverdue?: boolean }) => {
+const VisitItem = ({ visit, isOverdue, isSelectionModeActive, isSelected, onSelect }: VisitItemProps) => {
   const overdueLabel = isOverdue
     ? `Visita Vencida`
     : `Técnico: ${visit.technician?.name || 'No disponible'}`;
   
-  // ✅ 2. Importar la función para actualizar el store.
   const setDraggingVisit = useDndStore((state) => state.setDraggingVisit);
 
   const handleDragStart = () => {
-    console.log('--- 🔵 [Sidebar] Drag Start:', visit);
-    setDraggingVisit(visit); // Al empezar a arrastrar, guardamos la visita en el store.
+    if (!isSelectionModeActive) {
+      setDraggingVisit(visit);
+    }
   };
 
   const handleDragEnd = () => {
-    console.log('--- 🔵 [Sidebar] Drag End');
-    setDraggingVisit(null); // Al soltar (incluso si es fuera del calendario), limpiamos el store.
+    setDraggingVisit(null);
+  };
+
+  const handleItemClick = () => {
+    if (isSelectionModeActive) {
+      onSelect(visit.id);
+    }
+  };
+
+  const paperStyle: React.CSSProperties = {
+    cursor: isSelectionModeActive ? 'pointer' : 'grab',
+    position: 'relative',
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+    ...(isSelected && {
+      transform: 'scale(0.97)',
+      boxShadow: `0 0 0 2px var(--mantine-color-blue-5)`,
+      backgroundColor: 'var(--mantine-color-blue-0)',
+    }),
   };
 
   return (
-    // ✅ 3. Usamos los eventos nativos de React para el drag & drop.
-    <Paper 
-      draggable
+    <Paper
+      draggable={!isSelectionModeActive}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       withBorder 
       p="xs" 
       radius="sm" 
       mb="xs"
-      style={{ cursor: 'grab' }}
+      style={paperStyle}
+      onClick={handleItemClick}
     >
-      <Text fw={500} size="sm">{visit.pool.name}</Text>
-      <Text c="dimmed" size="xs">{visit.pool.client.name}</Text>
-      <Group justify="space-between" mt={4}>
-        <Text c="red" size="xs" mt={2}>{overdueLabel}</Text>
-        <Badge variant="light" color="gray">Arrastrar</Badge>
-      </Group>
+      {isSelectionModeActive && (
+        <Checkbox
+          checked={isSelected}
+          onChange={() => { /* el onChange se maneja en el onClick del Paper */ }}
+          style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 10 }}
+        />
+      )}
+      <Stack style={{ paddingLeft: isSelectionModeActive ? '30px' : '0' }}>
+        <Text fw={500} size="sm">{visit.pool.name}</Text>
+        <Text c="dimmed" size="xs">{visit.pool.client.name}</Text>
+        <Group justify="space-between" mt={4}>
+          <Text c="red" size="xs" mt={2}>{overdueLabel}</Text>
+          {!isSelectionModeActive && <Badge variant="light" color="gray">Arrastrar</Badge>}
+        </Group>
+      </Stack>
     </Paper>
   );
 };
 
+interface PendingWorkSidebarProps {
+  refreshKey: number;
+  isSelectionModeActive: boolean;
+  selectedVisitIds: Set<string>;
+  onSelectVisit: (visitId: string) => void;
+}
+
 // --- Componente Principal ---
-export function PendingWorkSidebar({ refreshKey }: { refreshKey: number }) {
+// ✅ CORRECCIÓN: Se añade la palabra 'export' que faltaba
+export function PendingWorkSidebar({ refreshKey, isSelectionModeActive, selectedVisitIds, onSelectVisit }: PendingWorkSidebarProps) {
   const [data, setData] = useState<PendingWorkData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,36 +126,49 @@ export function PendingWorkSidebar({ refreshKey }: { refreshKey: number }) {
   if (isLoading) return <Loader />;
   if (error) return <Alert color="red" title="Error">{error}</Alert>;
 
+  const renderVisitList = (visits: Visit[], isOverdue: boolean) => (
+    visits.length > 0 ? (
+      visits.map((visit) => (
+        <VisitItem
+          key={visit.id}
+          visit={visit}
+          isOverdue={isOverdue}
+          isSelectionModeActive={isSelectionModeActive}
+          isSelected={selectedVisitIds.has(visit.id)}
+          onSelect={onSelectVisit}
+        />
+      ))
+    ) : (
+      <Text size="sm" c="dimmed">{isOverdue ? '¡Todo al día!' : 'No hay trabajo sin asignar.'}</Text>
+    )
+  );
+
   return (
     <Stack>
       <Title order={4}>Muelle de Carga</Title>
         <ScrollArea style={{ height: 'calc(100vh - 250px)' }}>
-          <Accordion variant="separated" defaultValue="overdue">
+          <Accordion variant="separated" defaultValue={['overdue', 'orphaned']} multiple>
             <Accordion.Item value="overdue">
               <Accordion.Control>
-                <Text>Deuda Operativa</Text>
-                {data && data.overdueVisits.length > 0 && <Badge color="red">{data.overdueVisits.length}</Badge>}
+                <Group>
+                  <Text>Deuda Operativa</Text>
+                  {data && data.overdueVisits.length > 0 && <Badge color="red">{data.overdueVisits.length}</Badge>}
+                </Group>
               </Accordion.Control>
               <Accordion.Panel>
-                {data?.overdueVisits.length ? (
-                  data.overdueVisits.map((visit) => <VisitItem key={visit.id} visit={visit} isOverdue />)
-                ) : (
-                  <Text size="sm" c="dimmed">¡Todo al día!</Text>
-                )}
+                {renderVisitList(data?.overdueVisits || [], true)}
               </Accordion.Panel>
             </Accordion.Item>
 
             <Accordion.Item value="orphaned">
               <Accordion.Control>
-                <Text>Trabajo Huérfano</Text>
-                {data && data.orphanedVisits.length > 0 && <Badge color="gray">{data.orphanedVisits.length}</Badge>}
+                <Group>
+                  <Text>Trabajo Huérfano</Text>
+                  {data && data.orphanedVisits.length > 0 && <Badge color="gray">{data.orphanedVisits.length}</Badge>}
+                </Group>
               </Accordion.Control>
               <Accordion.Panel>
-                {data?.orphanedVisits.length ? (
-                  data.orphanedVisits.map((visit) => <VisitItem key={visit.id} visit={visit} />)
-                ) : (
-                  <Text size="sm" c="dimmed">No hay trabajo sin asignar.</Text>
-                )}
+                {renderVisitList(data?.orphanedVisits || [], false)}
               </Accordion.Panel>
             </Accordion.Item>
           </Accordion>

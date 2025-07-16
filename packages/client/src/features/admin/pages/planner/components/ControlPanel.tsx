@@ -1,7 +1,8 @@
 // filename: packages/client/src/features/admin/pages/planner/components/ControlPanel.tsx
-// version: 1.1.0 (FEAT: Add view mode switcher)
+// version: 2.0.0 (FEAT: Add selection mode switch)
+// description: Se añade el interruptor (Switch) para activar/desactivar el "Modo Selección" en el Planning Hub.
 
-import { Grid, MultiSelect, SegmentedControl, Group } from '@mantine/core';
+import { Grid, MultiSelect, SegmentedControl, Group, Switch } from '@mantine/core';
 
 // --- Tipos de Datos ---
 interface SelectOption {
@@ -9,17 +10,19 @@ interface SelectOption {
   label: string;
 }
 
+// ✅ 1. Actualizar la interfaz de props para incluir los nuevos controles
 interface ControlPanelProps {
-  // Props existentes
   technicianOptions: SelectOption[];
   zoneOptions: SelectOption[];
   selectedTechnicians: string[];
   selectedZones: string[];
   onTechnicianChange: (selected: string[]) => void;
   onZoneChange: (selected: string[]) => void;
-  // Nuevas props para el cambio de vista
   viewMode: string;
   onViewModeChange: (value: string) => void;
+  // Nuevas props para el modo selección
+  isSelectionModeActive: boolean;
+  onSelectionModeChange: (isActive: boolean) => void;
 }
 
 // --- Componente ---
@@ -32,9 +35,12 @@ export function ControlPanel({
   onZoneChange,
   viewMode,
   onViewModeChange,
+  isSelectionModeActive, // <-- Nueva prop recibida
+  onSelectionModeChange, // <-- Nueva prop recibida
 }: ControlPanelProps) {
   return (
     <Grid align="flex-end" mb="xl" justify="space-between">
+      {/* Grupo de Filtros */}
       <Grid.Col span={{ base: 12, md: 'auto' }}>
         <Group>
           <MultiSelect
@@ -57,15 +63,28 @@ export function ControlPanel({
           />
         </Group>
       </Grid.Col>
+
+      {/* Grupo de Vistas y Acciones */}
       <Grid.Col span={{ base: 12, md: 'auto' }}>
-        <SegmentedControl
-          value={viewMode}
-          onChange={onViewModeChange}
-          data={[
-            { label: 'Semana', value: 'dayGridWeek' },
-            { label: 'Equipo', value: 'resourceTimelineDay' },
-          ]}
-        />
+        <Group>
+          {/* ✅ 2. Añadir el nuevo Switch para el "Modo Selección" */}
+          <Switch
+            label="Modo Selección"
+            checked={isSelectionModeActive}
+            onChange={(event) => onSelectionModeChange(event.currentTarget.checked)}
+            size="lg"
+            onLabel="ON"
+            offLabel="OFF"
+          />
+          <SegmentedControl
+            value={viewMode}
+            onChange={onViewModeChange}
+            data={[
+              { label: 'Semana', value: 'dayGridWeek' },
+              { label: 'Equipo', value: 'resourceTimelineDay' },
+            ]}
+          />
+        </Group>
       </Grid.Col>
     </Grid>
   );
