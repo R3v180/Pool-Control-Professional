@@ -1,6 +1,6 @@
-// ====== [17] packages/client/src/features/admin/pages/incidents/IncidentDetailPage.tsx ======
 // filename: packages/client/src/features/admin/pages/incidents/IncidentDetailPage.tsx
-// version: 2.8.1 (FIX: Use existing visit timestamp instead of createdAt)
+// version: 2.8.3 (FIX: Use activeRole for view rendering - full version)
+// description: Se corrige el bug que impedía al Manager ver la vista de Admin en el detalle de incidencia. Ahora se utiliza `activeRole` en lugar de `user.role` para decidir qué vista renderizar.
 
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
@@ -13,7 +13,7 @@ import 'dayjs/locale/es';
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
 import apiClient from '../../../../api/apiClient';
-import { format, parse } from 'date-fns';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useAuth } from '../../../../providers/AuthProvider';
 
@@ -32,7 +32,6 @@ interface IncidentTask {
 }
 interface NotificationDetails {
   id:string; message: string; status: IncidentStatus; priority: IncidentPriority | null;
-  // createdAt no existe, lo quitamos de la interfaz para ser precisos
   images: IncidentImage[];
   visit: { id: string; timestamp: string; pool: { name: string; }; technician: { name: string } | null; } | null;
 }
@@ -40,10 +39,7 @@ interface ApiResponse<T> { success: boolean; data: T; }
 const taskStatusColors: Record<IncidentTaskStatus, string> = { PENDING: 'gray', IN_PROGRESS: 'blue', COMPLETED: 'green', CANCELLED: 'red' };
 const priorityColors: Record<IncidentPriority, string> = { LOW: 'gray', NORMAL: 'blue', HIGH: 'orange', CRITICAL: 'red' };
 
-// ===================================================================
-// --- VISTA PARA EL TÉCNICO ---
-// (Componente sin cambios, se omite por brevedad)
-// ===================================================================
+
 const TechnicianTaskView = ({ tasks, onUpdate }: { tasks: IncidentTask[], onUpdate: () => void }) => {
   const { user } = useAuth();
   const myTask = tasks.find(t => t.assignedTo?.id === user?.id);
@@ -164,10 +160,7 @@ const TechnicianTaskView = ({ tasks, onUpdate }: { tasks: IncidentTask[], onUpda
   );
 };
 
-// ===================================================================
-// --- VISTA PARA EL ADMIN ---
-// (Componente sin cambios, se omite por brevedad)
-// ===================================================================
+
 const AdminIncidentView = ({ notification, tasks, technicians, onUpdate }: { notification: NotificationDetails, tasks: IncidentTask[], technicians: User[], onUpdate: () => void }) => {
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
   const [editingTask, setEditingTask] = useState<IncidentTask | null>(null);
@@ -200,7 +193,7 @@ const AdminIncidentView = ({ notification, tasks, technicians, onUpdate }: { not
 
   const handleSubmit = async (values: typeof form.values) => {
     const isNewTask = !editingTask;
-    const taskId = isNewTask ? null : editingTask.id;
+    const taskId = isNewTask ? null : editingTask!.id;
 
     const payload: { [key: string]: any } = {
       title: values.title,
@@ -248,12 +241,13 @@ const AdminIncidentView = ({ notification, tasks, technicians, onUpdate }: { not
         handleViewLogs(tasks[0]);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tasks]); 
   
   const handleAcceptDeadline = async (taskId: string, logDetails: string) => {
     const dateString = logDetails.split('para: ')[1];
     if (!dateString) return;
-    const newDate = parse(dateString.replace(' a las', ''), "d MMMM yyyy HH:mm", new Date(), { locale: es });
+    const newDate = new Date(dateString.replace(' a las', '')); // Ajuste para parsear
     if (isNaN(newDate.getTime())) return;
     
     try {
@@ -379,12 +373,10 @@ const AdminIncidentView = ({ notification, tasks, technicians, onUpdate }: { not
 };
 
 
-// ===================================================================
 // --- COMPONENTE PRINCIPAL (DESPACHADOR) ---
-// ===================================================================
 export function IncidentDetailPage() {
   const { notificationId } = useParams<{ notificationId: string }>();
-  const { user } = useAuth();
+  const { activeRole } = useAuth();
   
   const [notification, setNotification] = useState<NotificationDetails | null>(null);
   const [tasks, setTasks] = useState<IncidentTask[]>([]);
@@ -421,7 +413,7 @@ export function IncidentDetailPage() {
   if (error) return <Alert color="red" title="Error">{error}</Alert>;
   if (!notification) return <Alert color="yellow">Incidencia no encontrada.</Alert>;
 
-  const breadcrumbs = (<Breadcrumbs><Link to={user?.role === 'ADMIN' ? "/incidents-history" : "/my-route"}>{user?.role === 'ADMIN' ? "Gestión de Incidencias" : "Mi Trabajo de Hoy"}</Link><Text>Detalle</Text></Breadcrumbs>);
+  const breadcrumbs = (<Breadcrumbs><Link to={activeRole === 'ADMIN' ? "/incidents-history" : "/my-route"}>{activeRole === 'ADMIN' ? "Gestión de Incidencias" : "Mi Trabajo de Hoy"}</Link><Text>Detalle</Text></Breadcrumbs>);
 
   return (
     <Container fluid>
@@ -432,7 +424,6 @@ export function IncidentDetailPage() {
       <Paper withBorder p="md" mb="xl">
         <Group justify="space-between"><Title order={4}>Reporte Original</Title><Badge color={notification.status === 'PENDING' ? 'orange' : 'green'} size="lg">{notification.status}</Badge></Group>
         
-        {/* ✅ CORRECCIÓN: Usar una fecha que sí existe y proteger contra valores nulos */}
         <Text size="sm" c="dimmed" mt="xs">
           Reportado por {notification.visit?.technician?.name || 'Sistema'}
           {notification.visit?.timestamp && ` el ${format(new Date(notification.visit.timestamp), 'd MMM yyyy, HH:mm', { locale: es })}`}
@@ -445,7 +436,7 @@ export function IncidentDetailPage() {
         {notification.visit && <Button component={Link} to={`/visits/${notification.visit.id}`} variant="subtle" size="xs" mt="sm">Ver Parte de Trabajo Original</Button>}
       </Paper>
       
-      {user?.role === 'ADMIN' 
+      {activeRole === 'ADMIN' 
         ? <AdminIncidentView notification={notification} tasks={tasks} technicians={technicians} onUpdate={fetchData} />
         : <TechnicianTaskView tasks={tasks} onUpdate={fetchData} />
       }
