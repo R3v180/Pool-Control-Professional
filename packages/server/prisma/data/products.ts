@@ -1,6 +1,6 @@
 // filename: packages/server/prisma/data/products.ts
-// version: 2.0.0
-// description: Añade PVP, IVA y categoría a cada producto.
+// version: 2.1.0 (FEAT: Add new products for demo)
+// description: Se añaden nuevos productos al catálogo (lámparas, juntas, tapas) para dar soporte a los nuevos escenarios de incidencias y consumos.
 
 export const productData = [
   // --- Químicos Desinfectantes ---
@@ -9,7 +9,7 @@ export const productData = [
     description: 'Cloro líquido para desinfección de choque y mantenimiento.',
     unit: 'L',
     cost: 1.20,
-    salePrice: 2.50, // PVP
+    salePrice: 2.50,
     taxRate: 21,
     categoryName: 'Químicos Desinfectantes',
   },
@@ -81,5 +81,34 @@ export const productData = [
     salePrice: 22.00,
     taxRate: 21,
     categoryName: 'Sal y Electrólisis',
+  },
+
+  // --- NUEVOS PRODUCTOS DE MATERIAL Y RECAMBIOS ---
+  {
+    name: 'Lámpara LED PAR56 Blanca',
+    description: 'Lámpara de repuesto para focos subacuáticos de piscina.',
+    unit: 'Unidad',
+    cost: 45.00,
+    salePrice: 89.90,
+    taxRate: 21,
+    categoryName: 'Recambios y Fontanería',
+  },
+  {
+    name: 'Junta estanca para foco',
+    description: 'Junta de goma para asegurar la estanqueidad al cambiar la lámpara del foco.',
+    unit: 'Unidad',
+    cost: 3.50,
+    salePrice: 7.50,
+    taxRate: 21,
+    categoryName: 'Recambios y Fontanería',
+  },
+  {
+    name: 'Tapa de Skimmer Universal',
+    description: 'Tapa de repuesto circular para skimmers estándar.',
+    unit: 'Unidad',
+    cost: 8.00,
+    salePrice: 15.00,
+    taxRate: 21,
+    categoryName: 'Material de Limpieza',
   },
 ];

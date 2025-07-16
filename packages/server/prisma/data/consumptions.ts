@@ -1,69 +1,122 @@
-// ====== [41] packages/server/prisma/data/consumptions.ts ======
 // filename: packages/server/prisma/data/consumptions.ts
-// version: 2.0.0
-// description: Datos de semilla enriquecidos para los consumos de productos en las visitas, para una demo más visual.
+// version: 3.0.0 (FEAT: Add more varied consumption data)
+// description: Se añaden más datos de consumo asociados a las nuevas incidencias para enriquecer los informes y simular una actividad económica más realista.
 
 /**
  * Define un conjunto de consumos de productos para las visitas de prueba.
- * Se ha aumentado la variedad para asegurar que el dashboard de gerencia
- * muestre un gráfico de "Top 5 Productos" más representativo.
+ * Cada objeto está ligado a una incidencia a través de su mensaje (`visitNotesIdentifier`).
  */
 export const consumptionsData = [
   {
-    // --- VISITA 1: Incidencia CRÍTICA en "El Oasis" (fuga) ---
-    // El pH estaba alto (7.9), así que añadimos reductor.
-    // El cloro se añade para un tratamiento de choque rápido.
-    visitNotesIdentifier: 'Fuga de agua detectada en la tubería principal del skimmer',
+    visitNotesIdentifier: 'Fuga de agua detectada en la tubería principal del skimmer.',
     consumptions: [
       {
         productName: 'Reductor de pH Líquido',
-        quantity: 5, // 5 Litros
+        quantity: 5,
       },
       {
         productName: 'Cloro Granulado (Dicloro 55%)',
-        quantity: 0.5, // 0.5 Kg
+        quantity: 0.5,
       },
     ],
   },
   {
-    // --- VISITA 2: Incidencia CLASIFICADA en el "Gimnasio Fisic-Center" (ruido bomba) ---
-    // La presión del filtro era alta (1.5 bar), es común añadir clarificante tras un lavado.
-    visitNotesIdentifier: 'La bomba de calor hace un ruido metálico',
+    visitNotesIdentifier: 'La bomba de calor hace un ruido metálico muy fuerte al arrancar.',
     consumptions: [
       {
         productName: 'Floculante Líquido Clarificante',
-        quantity: 1.5, // 1.5 Litros
+        quantity: 1.5,
       },
       {
-        productName: 'Incrementador de pH Sólido', // Para ajustar pH después del contralavado
-        quantity: 1, // 1 Kg
+        productName: 'Incrementador de pH Sólido',
+        quantity: 1,
       }
     ],
   },
   {
-    // --- VISITA 3: Visita OK del "Hotel Costa Serena" ---
-    // Esta visita ya tiene 1 saco de sal añadido en el seed.ts. Le añadimos más cosas.
-    visitNotesIdentifier: 'Todo en orden. Valores perfectos.',
+    visitNotesIdentifier: 'El agua está ligeramente turbia a pesar de los parámetros correctos.',
     consumptions: [
         {
-            productName: 'Pastillas Multiacción 250g', // Consumo de mantenimiento rutinario.
-            quantity: 4, // 4 pastillas para una piscina grande
+            productName: 'Pastillas Multiacción 250g',
+            quantity: 4,
         },
         {
-            productName: 'Alguicida Concentrado', // Dosis de mantenimiento para prevenir
-            quantity: 0.75, // 0.75 Litros
+            productName: 'Alguicida Concentrado',
+            quantity: 0.75,
         }
     ]
   },
   {
-    // --- VISITA 4: Incidencia PENDIENTE en "Chalet Villa Sol" (falta de sal) ---
-    // No podemos añadir consumo de sal porque no había, pero sí de otros productos.
     visitNotesIdentifier: 'El nivel de sal es bajo, pero no hay producto en el almacén.',
     consumptions: [
       {
-        productName: 'Reductor de pH Líquido', // Supongamos que el pH también necesitaba ajuste.
-        quantity: 2, // 2 Litros
+        productName: 'Reductor de pH Líquido',
+        quantity: 2,
       },
     ]
-  }
+  },
+
+  // --- NUEVOS CONSUMOS PARA ENRIQUECER LA DEMO ---
+
+  {
+    visitNotesIdentifier: 'El limpiafondos automático se queda atascado en una esquina.',
+    consumptions: [
+      // No hay consumo de producto químico, pero se podría registrar el uso de una pieza.
+      // Por ahora, lo dejamos sin consumo para demostrar el caso.
+    ]
+  },
+  {
+    visitNotesIdentifier: 'Foco subacuático fundido. Urge reparación antes del fin de semana.',
+    consumptions: [
+      {
+        productName: 'Lámpara LED PAR56 Blanca',
+        quantity: 1,
+      },
+      {
+        productName: 'Junta estanca para foco',
+        quantity: 1,
+      }
+    ]
+  },
+  {
+    visitNotesIdentifier: 'Se ha roto la tapa de un skimmer. Dejar una nueva en la próxima visita.',
+    consumptions: [
+      {
+        productName: 'Tapa de Skimmer Universal',
+        quantity: 1,
+      }
+    ]
+  },
+  {
+    // Consumo en una visita rutinaria sin incidencias para el nuevo cliente de lujo
+    visitNotesIdentifier: 'Mantenimiento rutinario en Altos de la Bahía. Todo correcto.',
+    consumptions: [
+       {
+        productName: 'Sal para Piscinas (Saco)',
+        quantity: 2,
+      },
+       {
+        productName: 'Reductor de pH Líquido',
+        quantity: 1.5,
+      },
+    ]
+  },
+  {
+    // Consumo para el Club de Tenis, que necesita más producto por su tamaño
+    visitNotesIdentifier: 'Mantenimiento pre-apertura en Club de Tenis El Break.',
+    consumptions: [
+      {
+        productName: 'Hipoclorito Sódico 15%',
+        quantity: 20, // Cantidad grande por el volumen de la piscina
+      },
+      {
+        productName: 'Alguicida Concentrado',
+        quantity: 5,
+      },
+      {
+        productName: 'Incrementador de pH Sólido',
+        quantity: 3,
+      }
+    ]
+  },
 ];

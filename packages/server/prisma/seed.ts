@@ -1,10 +1,13 @@
 // filename: packages/server/prisma/seed.ts
-// version: 9.1.3 (FINAL & COMPLETE)
+// version: 10.0.5 (FIX: Remove direct tenantId assignment on Visit creation)
+// description: Se corrige un error de tipo de Prisma eliminando la asignación directa de `tenantId` al crear una Visita, ya que esta relación es implícita a través de la Piscina.
+
+/// <reference types="node" />
 
 import { PrismaClient } from '@prisma/client';
 import type { DayOfWeek, User, Pool, Product, Client, ProductCategory, Zone, ParameterTemplate, ScheduledTaskTemplate, Visit, Notification, VisitFrequency } from '@prisma/client';
 import { hashPassword } from '../src/utils/password.utils.js';
-import { addDays, startOfWeek } from 'date-fns';
+import { addDays, startOfWeek, subWeeks, format } from 'date-fns';
 
 import { usersData } from './data/users.js';
 import { parameterData, taskData } from './data/catalogs.js';
@@ -19,213 +22,253 @@ import { routeTemplatesData } from './data/route-templates.js';
 import { consumptionsData } from './data/consumptions.js';
 import { userAvailabilitiesData } from './data/user-availabilities.js';
 
+const prisma = new PrismaClient();
+
+const getRandomItem = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]!;
+
 async function main() {
-  const prisma = new PrismaClient();
+  console.log('🌱 Empezando proceso de seeding v10.5 (Operación Caos Controlado - Corregido)...');
 
-  try {
-    console.log('🌱 Empezando el proceso de seeding v9.1 (Estable + Planificación Avanzada)...');
+  // ... (toda la sección 1 se mantiene igual)
+  const systemTenant = await prisma.tenant.create({ data: { companyName: 'SYSTEM_INTERNAL', subdomain: 'system', subscriptionStatus: 'ACTIVE' } });
+  const superAdminPassword = await hashPassword('superadmin123');
+  await prisma.user.create({ data: { email: 'super@admin.com', name: 'Super Admin', password: superAdminPassword, role: 'SUPER_ADMIN', tenantId: systemTenant.id } });
+  
+  const mainTenant = await prisma.tenant.create({ data: { companyName: 'Piscival S.L.', subdomain: 'piscival', subscriptionStatus: 'ACTIVE' } });
+  console.log(`\n🏢 Tenant de prueba creado: ${mainTenant.companyName}`);
 
-    const systemTenant = await prisma.tenant.create({ data: { companyName: 'SYSTEM_INTERNAL', subdomain: 'system', subscriptionStatus: 'ACTIVE' } });
-    const superAdminPassword = await hashPassword('superadmin123');
-    await prisma.user.create({ data: { email: 'super@admin.com', name: 'Super Admin', password: superAdminPassword, role: 'SUPER_ADMIN', tenantId: systemTenant.id } });
-    console.log('👑 SuperAdmin y Tenant del sistema creados.');
+  const createdUsers: User[] = [];
+  for (const userData of usersData) {
+    const hashedPassword = await hashPassword(userData.password);
+    const user = await prisma.user.create({ data: { ...userData, password: hashedPassword, tenantId: mainTenant.id } });
+    createdUsers.push(user);
+  }
+  const adminUser = createdUsers.find(u => u.role === 'ADMIN');
+  const managerUser = createdUsers.find(u => u.role === 'MANAGER');
+  const technicians = createdUsers.filter(u => u.role === 'TECHNICIAN');
+  if (!adminUser || !managerUser || technicians.length === 0) throw new Error('Seeding fallido: No se encontraron suficientes usuarios con los roles necesarios.');
+  console.log(`   👤 Creados ${createdUsers.length} usuarios.`);
 
-    const mainTenant = await prisma.tenant.create({ data: { companyName: 'Piscival S.L.', subdomain: 'piscival', subscriptionStatus: 'ACTIVE' } });
-    console.log(`\n🏢 Tenant de prueba creado: ${mainTenant.companyName}`);
+  const createdParams: ParameterTemplate[] = [];
+  for (const p of parameterData) { createdParams.push(await prisma.parameterTemplate.create({ data: { ...p, tenantId: mainTenant.id } })); }
+  console.log(`   📊 Creados ${createdParams.length} parámetros.`);
+
+  const createdTasks: ScheduledTaskTemplate[] = [];
+  for (const t of taskData) { createdTasks.push(await prisma.scheduledTaskTemplate.create({ data: { ...t, tenantId: mainTenant.id } })); }
+  console.log(`   📋 Creadas ${createdTasks.length} tareas.`);
+
+  const createdCategories: ProductCategory[] = [];
+  for (const catData of productCategoriesData) { createdCategories.push(await prisma.productCategory.create({ data: { ...catData, tenantId: mainTenant.id } })); }
+  console.log(`   📁 Creadas ${createdCategories.length} categorías de productos.`);
+
+  const createdProducts: Product[] = [];
+  for (const prodData of productData) {
+    const { categoryName, ...restOfProdData } = prodData;
+    const category = createdCategories.find(c => c.name === categoryName);
+    createdProducts.push(await prisma.product.create({ data: { ...restOfProdData, tenantId: mainTenant.id, categoryId: category?.id } }));
+  }
+  console.log(`   📦 Creados ${createdProducts.length} productos.`);
     
-    const createdUsers: User[] = [];
-    for (const userData of usersData) {
-      const hashedPassword = await hashPassword(userData.password);
-      const user = await prisma.user.create({ data: { ...userData, password: hashedPassword, tenantId: mainTenant.id } });
-      createdUsers.push(user);
+  const createdZones: Zone[] = [];
+  for(const zone of zonesData) { createdZones.push(await prisma.zone.create({ data: { ...zone, tenantId: mainTenant.id }})); }
+  console.log(`   🌍 Creadas ${createdZones.length} zonas geográficas.`);
+
+  const allPools: Pool[] = [];
+  const createdClients: Client[] = [];
+  for (const data of clientsData) {
+    const client = await prisma.client.create({ data: { ...data.client, tenantId: mainTenant.id } });
+    createdClients.push(client);
+    for (const poolData of data.pools) {
+      const zone = createdZones.find(z => z.name === poolData.zoneName);
+      const { zoneName, ...restOfPoolData } = poolData;
+      const pool = await prisma.pool.create({ data: { ...restOfPoolData, clientId: client.id, tenantId: mainTenant.id, zoneId: zone?.id } });
+      allPools.push(pool);
     }
-    const adminUser = createdUsers.find(u => u.role === 'ADMIN');
-    const technicians = createdUsers.filter(u => u.role === 'TECHNICIAN');
-    if (!adminUser || technicians.length === 0) throw new Error('Seeding fallido: No se encontraron suficientes usuarios admin o técnicos.');
-    console.log(`   👤 Creados ${createdUsers.length} usuarios.`);
-
-    console.log('\n- Fase de creación de catálogos y finanzas -');
-
-    const createdParams: ParameterTemplate[] = [];
-    for (const p of parameterData) { createdParams.push(await prisma.parameterTemplate.create({ data: { ...p, tenantId: mainTenant.id } })); }
-    console.log(`📊 Creados ${createdParams.length} parámetros en el catálogo.`);
-
-    const createdTasks: ScheduledTaskTemplate[] = [];
-    for (const t of taskData) { createdTasks.push(await prisma.scheduledTaskTemplate.create({ data: { ...t, tenantId: mainTenant.id } })); }
-    console.log(`📋 Creadas ${createdTasks.length} tareas en el catálogo.`);
-
-    const createdCategories: ProductCategory[] = [];
-    for (const catData of productCategoriesData) { createdCategories.push(await prisma.productCategory.create({ data: { ...catData, tenantId: mainTenant.id } })); }
-    console.log(`📁 Creadas ${createdCategories.length} categorías de productos.`);
-
-    const createdProducts: Product[] = [];
-    for (const prodData of productData) {
-      const { categoryName, ...restOfProdData } = prodData;
-      const category = createdCategories.find(c => c.name === categoryName);
-      createdProducts.push(await prisma.product.create({ data: { ...restOfProdData, tenantId: mainTenant.id, categoryId: category?.id } }));
-    }
-    console.log(`📦 Creados ${createdProducts.length} productos en el catálogo.`);
-    
-    const createdZones: Zone[] = [];
-    for(const zone of zonesData) { createdZones.push(await prisma.zone.create({ data: { ...zone, tenantId: mainTenant.id }})); }
-    console.log(`🌍 Creadas ${createdZones.length} zonas geográficas.`);
-
-    console.log('\n- Fase de creación de clientes y piscinas -');
-    const allPools: Pool[] = [];
-    const createdClients: Client[] = [];
-    for (const data of clientsData) {
-      const client = await prisma.client.create({ data: { ...data.client, tenantId: mainTenant.id } });
-      createdClients.push(client);
-      console.log(`\n👨‍💼 Cliente creado: ${client.name}`);
-      for (const poolData of data.pools) {
-        const zone = createdZones.find(z => z.name === poolData.zoneName);
-        const { zoneName, ...restOfPoolData } = poolData;
-        const pool = await prisma.pool.create({ data: { ...restOfPoolData, clientId: client.id, tenantId: mainTenant.id, zoneId: zone?.id } });
-        allPools.push(pool);
-        console.log(`   🏊 Piscina creada: ${pool.name} en Zona: ${zone?.name}`);
-        
-        for(let i = 0; i < 5 && i < createdParams.length; i++) {
-          await prisma.poolConfiguration.create({data: {poolId: pool.id, parameterTemplateId: createdParams[i]!.id }});
-        }
-        for(let i = 0; i < 3 && i < createdTasks.length; i++) {
-          await prisma.poolConfiguration.create({data: {poolId: pool.id, taskTemplateId: createdTasks[i]!.id }});
-        }
-        console.log(`      📝 Ficha de mantenimiento creada para ${pool.name}.`);
-      }
-    }
-    if (allPools.length < 5) throw new Error('Seeding fallido: No se crearon suficientes piscinas.');
-
-    console.log('\n- Fase de creación de Rutas, Ausencias y Finanzas -');
-    
-    for (const rt of routeTemplatesData) {
-      const technician = createdUsers.find(u => u.name === rt.technicianName);
-      const zonesToConnect = createdZones.filter(z => rt.zoneNames.includes(z.name));
+  }
+  console.log(`   👨‍💼 Creados ${createdClients.length} clientes y ${allPools.length} piscinas.`);
+  
+  for (const rtData of routeTemplatesData) {
+      const technician = createdUsers.find(u => u.name === rtData.technicianName);
+      const zonesToConnect = createdZones.filter(z => rtData.zoneNames.includes(z.name));
       await prisma.routeTemplate.create({
         data: {
-          name: rt.name,
-          dayOfWeek: rt.dayOfWeek as DayOfWeek,
+          name: rtData.name,
+          dayOfWeek: rtData.dayOfWeek as DayOfWeek,
           technicianId: technician?.id,
           tenantId: mainTenant.id,
           zones: { connect: zonesToConnect.map(z => ({ id: z.id })) },
-          seasons: {
-            create: rt.seasons.map(season => ({
-              ...season,
-              frequency: season.frequency as VisitFrequency,
-            })),
-          },
+          seasons: { create: rtData.seasons.map(s => ({...s, frequency: s.frequency as VisitFrequency})) },
         },
       });
-    }
-    console.log(`🗺️  Creadas ${routeTemplatesData.length} rutas maestras.`);
-    
-    for (const availability of userAvailabilitiesData) {
-        const user = createdUsers.find(u => u.name === availability.userName);
-        if (user) {
-            await prisma.userAvailability.create({
+  }
+  console.log(`   🗺️  Creadas ${routeTemplatesData.length} rutas maestras.`);
+  
+  for (const rule of clientPricingRulesData) {
+    const client = createdClients.find(c => c.name === rule.clientName);
+    if (!client) continue;
+    const product = rule.productName ? createdProducts.find(p => p.name === rule.productName) : null;
+    const category = rule.categoryName ? createdCategories.find(c => c.name === rule.categoryName) : null;
+    await prisma.clientProductPricing.create({ data: { clientId: client.id, productId: product?.id, productCategoryId: category?.id, discountPercentage: rule.discountPercentage } });
+  }
+  console.log(`   💰 Creadas ${clientPricingRulesData.length} reglas de precios.`);
+  
+  const paymentsToCreate = paymentsData.map(p => {
+      const client = createdClients.find(c => c.name === p.clientName);
+      return { amount: p.amount, paymentDate: p.paymentDate, method: p.method, notes: p.notes, clientId: client!.id, }
+  });
+  await prisma.payment.createMany({ data: paymentsToCreate });
+  console.log(`   💳 Creados ${paymentsData.length} registros de pagos.`);
+
+  await prisma.expense.createMany({ data: expensesData.map(e => ({ ...e, tenantId: mainTenant.id })) });
+  console.log(`   💸 Creados ${expensesData.length} registros de gastos.`);
+  
+
+  console.log('\n🔄 Simulando historial operativo de 4 semanas...');
+  const allVisits: Visit[] = [];
+  const templates = await prisma.routeTemplate.findMany({ include: { zones: true, technician: true } });
+
+  for (let weekIndex = 3; weekIndex >= 0; weekIndex--) {
+    const targetWeekStart = startOfWeek(subWeeks(new Date(), weekIndex), { weekStartsOn: 1 });
+    console.log(`   - Procesando semana del ${format(targetWeekStart, 'dd/MM/yyyy')}...`);
+
+    for (const template of templates) {
+        const dayIndex = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'].indexOf(template.dayOfWeek);
+        if (dayIndex === -1) continue;
+
+        const visitDate = addDays(targetWeekStart, dayIndex);
+        const zoneIds = template.zones.map(z => z.id);
+
+        const poolsInRoute = await prisma.pool.findMany({
+            where: {
+                tenantId: mainTenant.id,
+                zoneId: { in: zoneIds }
+            }
+        });
+
+        for (const pool of poolsInRoute) {
+            // ✅ CORRECCIÓN: Se elimina la asignación directa de tenantId
+            const visit = await prisma.visit.create({
                 data: {
-                    startDate: availability.startDate,
-                    endDate: availability.endDate,
-                    reason: availability.reason,
-                    userId: user.id,
-                    tenantId: mainTenant.id,
+                    poolId: pool.id,
+                    timestamp: visitDate,
+                    technicianId: template.technicianId,
                 }
             });
+            allVisits.push(visit);
         }
     }
-    console.log(`🗓️  Creadas ${userAvailabilitiesData.length} ausencias planificadas.`);
-    
-    for (const rule of clientPricingRulesData) {
-      const client = createdClients.find(c => c.name === rule.clientName);
-      if (!client) continue;
-      const product = rule.productName ? createdProducts.find(p => p.name === rule.productName) : null;
-      const category = rule.categoryName ? createdCategories.find(c => c.name === rule.categoryName) : null;
-      await prisma.clientProductPricing.create({ data: { clientId: client.id, productId: product?.id, productCategoryId: category?.id, discountPercentage: rule.discountPercentage } });
-    }
-    console.log(`💰 Creadas ${clientPricingRulesData.length} reglas de precios personalizadas.`);
-    
-    const paymentsToCreate = paymentsData.map(p => {
-        const client = createdClients.find(c => c.name === p.clientName);
-        return {
-            amount: p.amount,
-            paymentDate: p.paymentDate,
-            method: p.method,
-            notes: p.notes,
-            clientId: client!.id,
-        }
-    });
-    await prisma.payment.createMany({ data: paymentsToCreate });
-    console.log(`💳 Creados ${paymentsData.length} registros de pagos.`);
+  }
+  console.log(`   ✅ Generadas ${allVisits.length} visitas en total para el último mes.`);
+  
+  console.log('   - Procesando visitas para simular actividad...');
+  let completedCount = 0;
+  const createdNotifications: Notification[] = [];
 
-    await prisma.expense.createMany({ data: expensesData.map(e => ({ ...e, tenantId: mainTenant.id })) });
-    console.log(`💸 Creados ${expensesData.length} registros de gastos.`);
+  for (const visit of allVisits) {
+    // Si la visita no es de la semana actual
+    if (visit.timestamp < startOfWeek(new Date(), { weekStartsOn: 1 })) {
+      if (Math.random() < 0.9) { // 90% de probabilidad de completarla
+        const hasIncident = Math.random() < 0.2; // 20% de las visitas completadas tienen incidencia
+        const consumptionSeed = getRandomItem(consumptionsData);
+        
+        await prisma.visit.update({
+          where: { id: visit.id },
+          data: {
+            status: 'COMPLETED',
+            notes: hasIncident ? consumptionSeed.visitNotesIdentifier : 'Mantenimiento rutinario completado sin novedad.',
+            hasIncident,
+          }
+        });
 
-    console.log('\n- Fase de simulación de actividad operativa -');
-    const allRouteTemplates = await prisma.routeTemplate.findMany({ include: { zones: true } });
-    const today = new Date();
-    const startOfThisWeek = startOfWeek(today, { weekStartsOn: 1 });
-    const createdVisits: Visit[] = [];
-    const dayOfWeekStrings: DayOfWeek[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
-
-    for (let i = 0; i < 5; i++) {
-        const dayToSimulate = addDays(startOfThisWeek, i);
-        const dayOfWeekStr = dayOfWeekStrings[i]!;
-        const routesForDay = allRouteTemplates.filter(rt => rt.dayOfWeek === dayOfWeekStr);
-        for (const route of routesForDay) {
-            const poolsInRoute = await prisma.pool.findMany({ where: { zoneId: { in: route.zones.map(z => z.id) } } });
-            const techData = routeTemplatesData.find(rtd => rtd.name === route.name);
-            const tech = techData ? createdUsers.find(u => u.name === techData.technicianName) : null;
-            for (const pool of poolsInRoute) {
-                createdVisits.push(await prisma.visit.create({ data: { poolId: pool.id, timestamp: dayToSimulate, technicianId: tech?.id } }));
+        if(hasIncident && consumptionSeed.consumptions.length > 0) {
+            for(const cons of consumptionSeed.consumptions) {
+                const product = createdProducts.find(p => p.name === cons.productName);
+                if (product) {
+                    await prisma.consumption.create({
+                        data: { visitId: visit.id, productId: product.id, quantity: cons.quantity }
+                    });
+                }
             }
         }
-    }
-    console.log(`   ✅ Generadas ${createdVisits.length} visitas para la semana actual a partir de Rutas Maestras.`);
 
-    const allNotifications: Notification[] = [];
-    for(let i=0; i < consumptionsData.length && i < createdVisits.length; i++){
-        const visit = createdVisits[i]!;
-        const cSeed = consumptionsData[i]!;
-
-        await prisma.visit.update({ where: { id: visit.id }, data: { status: 'COMPLETED', notes: cSeed.visitNotesIdentifier, hasIncident: true }});
-        
-        const notification = await prisma.notification.create({ data: { message: cSeed.visitNotesIdentifier, visitId: visit.id, tenantId: mainTenant.id, userId: adminUser.id, priority: 'HIGH' }});
-        allNotifications.push(notification);
-
-        for(const cons of cSeed.consumptions) {
-            const p = createdProducts.find(pr => pr.name === cons.productName);
-            if(p) await prisma.consumption.create({ data: { visitId: visit.id, productId: p.id, quantity: cons.quantity }});
+        if (hasIncident) {
+          createdNotifications.push(await prisma.notification.create({
+            data: {
+              message: consumptionSeed.visitNotesIdentifier,
+              visitId: visit.id,
+              tenantId: mainTenant.id,
+              userId: adminUser.id,
+              priority: 'NORMAL',
+            }
+          }));
         }
-    }
-    console.log(`   - Marcadas ${allNotifications.length} visitas como completadas con datos de demo.`);
-
-    let taskCount = 0;
-    for (const tSeed of incidentTasksData) {
-      const pNotification = allNotifications.find(n => n.message.includes(tSeed.notificationMessage));
-      if (!pNotification) continue;
-      
-      const aUser = tSeed.task.title.includes('Contactar') ? adminUser : technicians.find(t => t.isAvailable);
-      if (aUser) {
-        await prisma.incidentTask.create({ data: { ...tSeed.task, notificationId: pNotification.id, assignedToId: aUser.id, tenantId: mainTenant.id, createdById: adminUser.id } });
-        taskCount++;
+        completedCount++;
       }
     }
-    console.log(`   - Creadas ${taskCount} tareas de incidencia.`);
-
-
-    console.log('\n\n✅ Seeding de demostración v9.1 completado con éxito!');
-    console.log('--- Credenciales de prueba ---');
-    console.log('SuperAdmin: super@admin.com / superadmin123');
-    console.log('Admin:      admin@piscival.com / password123');
-    console.log('Técnicos:   carlos.t@piscival.com, ana.t@piscival.com, leo.a@piscival.com (pass: password123)');
-    console.log('Manager:    manager@piscival.com / password123');
-
-  } catch (e) {
-    console.error('❌ Error fatal durante el proceso de seeding:', e);
-    await prisma.$disconnect();
-    return;
-  } finally {
-    await prisma.$disconnect();
   }
+  console.log(`   - Marcadas ${completedCount} visitas como completadas.`);
+  console.log(`   - Creadas ${createdNotifications.length} incidencias a partir de visitas.`);
+
+  let taskCount = 0;
+  for (const tSeed of incidentTasksData) {
+      const targetNotification = createdNotifications.find(n => n.message.includes(tSeed.notificationMessage.substring(0, 20)));
+      if (!targetNotification) {
+          const randomVisit = getRandomItem(allVisits.filter(v => v.hasIncident));
+          if (randomVisit) {
+             const newNotification = await prisma.notification.create({data: {message: tSeed.notificationMessage, visitId: randomVisit.id, tenantId: mainTenant.id, userId: adminUser.id, priority: tSeed.task.priority}});
+             createdNotifications.push(newNotification);
+          }
+      }
+      const finalNotification = createdNotifications.find(n => n.message.includes(tSeed.notificationMessage.substring(0, 20)));
+      if (!finalNotification) continue;
+
+      let assignee: User | undefined;
+      if (tSeed.task.title.includes('Llamar al cliente')) {
+        assignee = managerUser;
+      } else {
+        assignee = getRandomItem(technicians);
+      }
+
+      if (assignee) {
+        await prisma.incidentTask.create({ 
+            data: { 
+                ...tSeed.task, 
+                notificationId: finalNotification.id, 
+                assignedToId: assignee.id, 
+                tenantId: mainTenant.id, 
+                createdById: adminUser.id 
+            }
+        });
+        taskCount++;
+      }
+  }
+  console.log(`   - Asignadas ${taskCount} tareas de seguimiento.`);
+  
+  for (const availability of userAvailabilitiesData) {
+      const { userName, ...restOfAvailabilityData } = availability; 
+      const user = createdUsers.find(u => u.name === userName);
+      if (user) {
+          await prisma.userAvailability.create({ 
+              data: { 
+                  ...restOfAvailabilityData, 
+                  userId: user.id, 
+                  tenantId: mainTenant.id 
+                } 
+            });
+      }
+  }
+  console.log(`   - Creadas ${userAvailabilitiesData.length} ausencias planificadas.`);
+
+  console.log('\n\n✅ Seeding de "Caos Controlado" completado con éxito!');
+  console.log('--- La base de datos ahora simula un entorno operativo mucho más realista. ---');
+
 }
 
-main();
+main()
+  .catch((e) => {
+    console.error('❌ Error fatal durante el proceso de seeding:', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
