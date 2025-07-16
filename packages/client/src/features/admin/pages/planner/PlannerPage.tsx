@@ -1,6 +1,6 @@
 // filename: packages/client/src/features/admin/pages/planner/PlannerPage.tsx
-// version: 9.0.2 (FIX: Add missing date-fns import)
-// description: Se vuelve a añadir la importación de `endOfWeek` que se había perdido durante la refactorización.
+// version: 9.0.3 (FIX: Simplify event rendering)
+// description: Se simplifica la prop `eventContent` para que solo renderice el componente EventCard, dejando que FullCalendar maneje la renderización nativa de los eventos de fondo.
 
 import { useEffect, useState, useMemo, useRef } from 'react';
 import {
@@ -15,7 +15,6 @@ import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import esLocale from '@fullcalendar/core/locales/es'; 
 import type { EventDropArg, CalendarApi } from '@fullcalendar/core';
 
-// ✅ CORRECCIÓN: Añadir 'endOfWeek' a la importación
 import { startOfWeek, addDays, subDays, format, endOfWeek } from 'date-fns';
 import apiClient from '../../../../api/apiClient';
 import './planner-styles.css';
@@ -283,6 +282,8 @@ export function PlannerPage() {
                       editable={!isSelectionModeActive} 
                       droppable={false} 
                       eventDrop={handleEventDrop}
+                      // ✅ Se simplifica el renderizado de contenido.
+                      // FullCalendar no usará este renderizador para los eventos de fondo.
                       eventContent={(arg) => (
                         <EventCard 
                           eventArg={arg}

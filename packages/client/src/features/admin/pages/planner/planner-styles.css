@@ -15,3 +15,31 @@
 .fc-daygrid-event-harness {
     margin-bottom: 4px;
 }
+
+/* --- ESTILOS PARA EVENTOS DE AUSENCIA --- */
+
+/* ✅ REGLA CSS MÁS ESPECÍFICA Y POTENTE */
+
+/* Seleccionamos el contenedor del evento de fondo en la vista de timeline */
+.fc-timeline-lane-frame .fc-bg-event {
+    background-image: repeating-linear-gradient(
+        45deg,
+        #e9ecef,
+        #e9ecef 10px,
+        #f8f9fa 10px,
+        #f8f9fa 20px
+    ) !important; /* !important para asegurar que anule otros estilos */
+    opacity: 0.8 !important; 
+    cursor: not-allowed !important;
+}
+
+/* Aplicamos el estilo al título del evento de fondo */
+.fc-bg-event .fc-event-title {
+    color: #495057 !important; /* Un gris más oscuro para mejor contraste */
+    font-style: italic !important;
+    font-size: 11px !important;
+    padding: 2px 5px !important;
+    font-weight: 600 !important;
+    text-align: center;
+    width: 100%;
+}

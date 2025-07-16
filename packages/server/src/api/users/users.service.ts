@@ -1,5 +1,6 @@
 // filename: packages/server/src/api/users/users.service.ts
-// version: 2.3.1 (FEAT: Format users as FullCalendar resources)
+// version: 2.4.0 (FEAT: Include availabilities in technician list)
+// description: Se modifica el servicio para que, al obtener la lista de técnicos, se incluyan sus periodos de ausencia (`availabilities`). Esto es fundamental para poder visualizarlos en el Planning Hub.
 
 import { PrismaClient } from '@prisma/client';
 import type { User, UserAvailability } from '@prisma/client';
@@ -16,34 +17,29 @@ export type SetUserAvailabilityInput = {
 
 /**
  * Obtiene todos los usuarios a los que se les puede asignar trabajo (Técnicos y Gerentes),
- * formateados como recursos para FullCalendar.
+ * incluyendo sus ausencias planificadas.
  * @param tenantId - El ID del tenant.
- * @returns Un array de usuarios formateados.
+ * @returns Un array de objetos de usuario, cada uno con su lista de ausencias.
  */
 export const getAssignableUsersByTenant = async (
   tenantId: string
-): Promise<any[]> => { // Devolvemos 'any' para flexibilidad, el frontend validará
+): Promise<(User & { availabilities: UserAvailability[] })[]> => {
+  // ✅ Se modifica la consulta para incluir la relación 'availabilities'
   const users = await prisma.user.findMany({
     where: {
       tenantId,
       role: { in: ['TECHNICIAN', 'MANAGER'] },
-      // Solo incluimos técnicos que no estén marcados como permanentemente inactivos
-      isAvailable: true, 
     },
-    select: {
-      id: true,
-      name: true,
+    include: {
+      availabilities: true, // Incluimos los periodos de ausencia
     },
     orderBy: {
       name: 'asc',
     },
   });
 
-  // Mapeamos al formato que FullCalendar espera para los 'resources'
-  return users.map(user => ({
-    id: user.id,
-    title: user.name, // FullCalendar usa 'title' para mostrar el nombre en la fila
-  }));
+  // ✅ Ya no mapeamos a 'title', devolvemos el objeto completo para que el frontend tenga toda la información
+  return users;
 };
 
 /**

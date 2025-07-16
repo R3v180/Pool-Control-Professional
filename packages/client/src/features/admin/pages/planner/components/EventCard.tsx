@@ -1,6 +1,6 @@
 // filename: packages/client/src/features/admin/pages/planner/components/EventCard.tsx
-// version: 1.0.0 (NEW)
-// description: Componente extraído para renderizar una tarjeta de visita individual en el calendario del Planning Hub.
+// version: 1.0.0 (REVERTED)
+// description: Se revierte el componente a su estado original, dedicado exclusivamente a renderizar visitas, eliminando la lógica para eventos de fondo.
 
 import { Paper, Text, Badge, Checkbox, Tooltip, Stack, Divider } from '@mantine/core';
 import type { EventContentArg } from '@fullcalendar/core';

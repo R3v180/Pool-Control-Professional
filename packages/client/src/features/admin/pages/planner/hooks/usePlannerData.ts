@@ -1,12 +1,12 @@
 // filename: packages/client/src/features/admin/pages/planner/hooks/usePlannerData.ts
-// version: 1.0.1 (FIX: Add missing date-fns import)
-// description: Se añade la importación de `endOfWeek` que faltaba.
+// version: 1.1.1 (FIX: Correct data access based on updated types)
+// description: Se corrige el acceso a los datos para que coincida con las nuevas interfaces de tipos, eliminando los errores de compilación.
 
 import { useState, useEffect } from 'react';
-// ✅ CORRECCIÓN: Añadir 'endOfWeek' a la importación
-import { format, getDayOfYear, isBefore, setHours, startOfToday, addHours, startOfWeek, endOfWeek } from 'date-fns';
+import { format, getDayOfYear, isBefore, setHours, startOfToday, addHours, startOfWeek, endOfWeek, addDays as addDaysFn } from 'date-fns';
 import apiClient from '../../../../../api/apiClient';
-import type { CalendarEvent, TechnicianResource, Zone, Visit } from '../types';
+// ✅ Se actualiza la importación para usar la nueva interfaz Technician
+import type { CalendarEvent, TechnicianResource, Zone, Visit, Technician } from '../types';
 
 interface UsePlannerDataParams {
   week: Date;
@@ -16,6 +16,7 @@ interface UsePlannerDataParams {
 }
 
 const techColors = ['#228be6', '#15aabf', '#82c91e', '#fab005', '#fd7e14', '#e64980'];
+const UNAVAILABLE_COLOR = '#f8f9fa';
 
 export function usePlannerData({ week, selectedTechnicians, selectedZones, sidebarVersion }: UsePlannerDataParams) {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -39,25 +40,30 @@ export function usePlannerData({ week, selectedTechnicians, selectedZones, sideb
         technicianIds: selectedTechnicians,
         zoneIds: selectedZones,
       };
-
+      
+      // ✅ La API ahora devuelve un objeto con una propiedad 'data'
       const [visitsRes, techsRes, zonesRes, clientsRes] = await Promise.all([
         apiClient.get('/visits/scheduled', { params }),
-        apiClient.get('/users/technicians'),
-        apiClient.get('/zones'),
+        apiClient.get<{data: Technician[]}>('/users/technicians'),
+        apiClient.get<{data: Zone[]}>('/zones'),
         apiClient.get('/clients')
       ]);
-
+      
       const allVisits: Visit[] = visitsRes.data.data;
-      const allResources: TechnicianResource[] = techsRes.data.data;
+      const allTechnicians: Technician[] = techsRes.data.data;
       const allZones: Zone[] = zonesRes.data.data;
 
-      setResources(allResources);
+      const resourcesFormatted = allTechnicians.map(tech => ({
+        id: tech.id,
+        // ✅ Se accede a 'name' en lugar de 'title'
+        title: tech.name,
+      }));
+      setResources(resourcesFormatted);
       setZones(allZones);
       
       const poolOptions = clientsRes.data.data.flatMap((client: any) => client.pools.map((pool: any) => ({ value: pool.id, label: `${client.name} - ${pool.name}` })));
       setPools(poolOptions);
 
-      // Calcular la carga de trabajo
       const newWorkloadMap = new Map<string, { visitCount: number }>();
       for (const visit of allVisits) {
         if (!visit.technician?.id || visit.status === 'CANCELLED') continue;
@@ -68,18 +74,17 @@ export function usePlannerData({ week, selectedTechnicians, selectedZones, sideb
       }
       setWorkloadMap(newWorkloadMap);
 
-      // Procesar los eventos para el calendario
       const dailyCounters: Record<string, number> = {};
       const WORK_DAY_START_HOUR = 8;
 
-      const calendarEvents = allVisits.map((visit): CalendarEvent => {
+      const visitEvents = allVisits.map((visit): CalendarEvent => {
         let visitDate = new Date(visit.timestamp);
         const techIdForCounter = visit.technician?.id || 'unassigned';
         const dayKey = `${techIdForCounter}-${getDayOfYear(visitDate)}`;
         if (dailyCounters[dayKey] === undefined) { dailyCounters[dayKey] = 0; } else { dailyCounters[dayKey]++; }
         if (visitDate.getHours() === 0 && visitDate.getMinutes() === 0) { visitDate = setHours(visitDate, WORK_DAY_START_HOUR + dailyCounters[dayKey]); }
         
-        const techIndex = allResources.findIndex(t => t.id === visit.technician?.id);
+        const techIndex = allTechnicians.findIndex(t => t.id === visit.technician?.id);
         const borderColor = techColors[techIndex % techColors.length] || '#ced4da';
         let backgroundColor = 'white';
         if (visit.status === 'COMPLETED') { backgroundColor = '#e6fcf5'; } 
@@ -87,21 +92,51 @@ export function usePlannerData({ week, selectedTechnicians, selectedZones, sideb
         
         return {
             id: visit.id, title: visit.pool.name, start: visitDate, end: addHours(visitDate, 1),
-            allDay: false, // For timeline view, allDay should be false
+            allDay: false, 
             backgroundColor, borderColor, resourceId: visit.technician?.id || undefined,
             extendedProps: {
                 clientName: visit.pool.client.name,
                 poolAddress: visit.pool.address,
                 technicianId: visit.technician?.id || null,
-                technicianName: visit.technician?.title || 'Sin Asignar', 
+                 // ✅ Se accede a 'name' en lugar de 'title'
+                technicianName: visit.technician?.name || 'Sin Asignar', 
                 status: visit.status
             }
         };
       });
-      setEvents(calendarEvents);
+
+      const availabilityEvents: CalendarEvent[] = [];
+      allTechnicians.forEach(tech => {
+        if (!tech.isAvailable) {
+          availabilityEvents.push({
+            id: `unavail-${tech.id}`,
+            resourceId: tech.id,
+            start: weekStart,
+            end: weekEnd,
+            display: 'background',
+            backgroundColor: UNAVAILABLE_COLOR,
+            title: 'No disponible',
+          } as CalendarEvent); // Forzamos el tipo aquí
+        }
+        
+        tech.availabilities.forEach(avail => {
+          availabilityEvents.push({
+            id: `avail-${avail.id}`, // ✅ Se accede a la propiedad 'id' que ya existe
+            resourceId: tech.id,
+            start: new Date(avail.startDate),
+            end: addDaysFn(new Date(avail.endDate), 1),
+            display: 'background',
+            backgroundColor: UNAVAILABLE_COLOR,
+            title: avail.reason || 'Ausencia', // ✅ Se accede a la propiedad 'reason'
+          } as CalendarEvent); // Forzamos el tipo aquí
+        });
+      });
+
+      setEvents([...visitEvents, ...availabilityEvents]);
 
     } catch (err) {
       setError('No se pudo cargar la planificación.');
+      console.error(err);
     } finally {
       setLoading(false);
     }
