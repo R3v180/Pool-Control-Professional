@@ -1,5 +1,6 @@
 // filename: packages/client/src/router/components.tsx
-// version: 2.6.0 (FEAT: Add Master Routes link to Admin navigation)
+// version: 2.6.2 (FEAT: Add AvailabilityPage to navigation)
+// description: Se añade el enlace a la nueva página de Gestión de Disponibilidad en el menú de navegación del ADMIN.
 
 import { AppShell, Burger, Group, NavLink, Title, Button, Indicator, ActionIcon, Popover, Text, Stack, SegmentedControl } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
@@ -165,7 +166,9 @@ export const AppLayout = () => {
             <NavLink label="Planificación" defaultOpened>
                 <NavLink component={Link} to="/planning/zones" label="Gestión de Zonas" onClick={toggle}/>
                 <NavLink component={Link} to="/planning/routes" label="Gestión de Rutas" onClick={toggle}/>
-                <NavLink component={Link} to="/planner" label="Planificador Semanal" onClick={toggle} />
+                {/* ✅ NUEVO ENLACE AÑADIDO */}
+                <NavLink component={Link} to="/planning/availability" label="Gestión de Disponibilidad" onClick={toggle}/>
+                <NavLink component={Link} to="/planner" label="Planificador" onClick={toggle} /> 
             </NavLink>
 
             <NavLink component={Link} to="/clients" label="Clientes" onClick={toggle} />
@@ -230,11 +233,9 @@ export const TechnicianRoute = () => {
   }
   return <Outlet />;
 };
-// Renombrado de ManagerRoute -> FinancialAdminRoute
 export const FinancialAdminRoute = () => {
     const { activeRole, isLoading } = useAuth();
     if (isLoading) return <div>Cargando...</div>;
-    // Ahora permite el acceso a MANAGER o ADMIN
     if (activeRole !== 'MANAGER' && activeRole !== 'ADMIN') {
       return <Navigate to="/" replace />;
     }

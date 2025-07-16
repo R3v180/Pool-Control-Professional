@@ -1,0 +1,17 @@
+/* filename: packages/client/src/features/admin/pages/planner/planner-styles.css */
+
+/* Mejora la legibilidad y el aspecto de los eventos en el calendario */
+.fc-event {
+    cursor: grab;
+    border-width: 2px !important;
+    font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;
+}
+
+/* Elimina el punto que FullCalendar añade por defecto */
+.fc-event-dot {
+    display: none;
+}
+
+.fc-daygrid-event-harness {
+    margin-bottom: 4px;
+}

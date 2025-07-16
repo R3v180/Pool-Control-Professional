@@ -1,15 +1,17 @@
 // filename: packages/server/src/api/pool-configurations/pool-configurations.service.ts
-// Version: 2.0.0 (FEAT: Add tenantId validation for CUD operations)
+// version: 2.0.3 (FIXED)
+// description: Se importan y utilizan los tipos Enum de Prisma para 'frequency', solucionando los errores de tipo.
 
 import { PrismaClient } from '@prisma/client';
-import type { PoolConfiguration, Frequency } from '@prisma/client';
+// ✅ CORRECCIÓN: Importar los tipos Enum necesarios
+import type { PoolConfiguration, VisitFrequency } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 // --- Tipos de Entrada (DTOs) ---
 export type CreatePoolConfigurationInput = {
   poolId: string;
-  frequency: Frequency;
+  frequency: VisitFrequency; // ✅ CORRECCIÓN: Usar el tipo Enum
   minThreshold?: number;
   maxThreshold?: number;
   parameterTemplateId?: string;
@@ -17,9 +19,6 @@ export type CreatePoolConfigurationInput = {
 };
 
 export type UpdatePoolConfigurationInput = Partial<Omit<CreatePoolConfigurationInput, 'poolId' | 'parameterTemplateId' | 'taskTemplateId'>>;
-
-
-// --- Funciones del Servicio ---
 
 /**
  * Crea una nueva configuración de mantenimiento para una piscina.
@@ -33,8 +32,6 @@ export const createPoolConfiguration = async (
   if (!data.parameterTemplateId && !data.taskTemplateId) {
     throw new Error('La configuración debe estar asociada a un parámetro o a una tarea.');
   }
-
-  // TODO: Añadir validación para asegurar que poolId pertenece al tenant del usuario.
   return prisma.poolConfiguration.create({
     data,
   });
@@ -55,10 +52,6 @@ export const getConfigurationsByPool = async (poolId: string): Promise<PoolConfi
 
 /**
  * Actualiza una configuración de mantenimiento existente, verificando la pertenencia al tenant.
- * @param id - El ID de la configuración a actualizar.
- * @param tenantId - El ID del tenant del usuario que realiza la acción.
- * @param data - Los datos a actualizar.
- * @returns La configuración actualizada.
  */
 export const updatePoolConfiguration = async (
   id: string,
@@ -68,7 +61,6 @@ export const updatePoolConfiguration = async (
   const { count } = await prisma.poolConfiguration.updateMany({
     where: {
       id,
-      // Verificamos la pertenencia a través de la relación con la piscina
       pool: {
         tenantId: tenantId,
       },
@@ -86,14 +78,11 @@ export const updatePoolConfiguration = async (
 
 /**
  * Elimina una configuración de mantenimiento de una piscina, verificando la pertenencia al tenant.
- * @param id - El ID de la configuración a eliminar.
- * @param tenantId - El ID del tenant del usuario que realiza la acción.
  */
 export const deletePoolConfiguration = async (id: string, tenantId: string): Promise<void> => {
   const { count } = await prisma.poolConfiguration.deleteMany({
     where: {
       id,
-      // Verificamos la pertenencia a través de la relación con la piscina
       pool: {
         tenantId: tenantId,
       },

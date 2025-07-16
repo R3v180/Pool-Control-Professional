@@ -1,58 +1,59 @@
 // filename: packages/server/src/api/users/users.service.ts
-// Version: 2.2.0 (FEAT: Add updateUserAvailability function)
-// description: Adds logic to update a user's availability status.
+// version: 2.3.1 (FEAT: Format users as FullCalendar resources)
 
 import { PrismaClient } from '@prisma/client';
-import type { User } from '@prisma/client';
+import type { User, UserAvailability } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// --- Funciones del Servicio ---
+export type SetUserAvailabilityInput = {
+  userId: string;
+  tenantId: string;
+  startDate: string;
+  endDate: string;
+  reason?: string;
+};
 
 /**
- * Obtiene todos los usuarios a los que se les puede asignar trabajo (Técnicos y Gerentes).
+ * Obtiene todos los usuarios a los que se les puede asignar trabajo (Técnicos y Gerentes),
+ * formateados como recursos para FullCalendar.
  * @param tenantId - El ID del tenant.
- * @returns Un array de usuarios (sin la contraseña).
+ * @returns Un array de usuarios formateados.
  */
 export const getAssignableUsersByTenant = async (
   tenantId: string
-): Promise<Omit<User, 'password'>[]> => {
-  return prisma.user.findMany({
+): Promise<any[]> => { // Devolvemos 'any' para flexibilidad, el frontend validará
+  const users = await prisma.user.findMany({
     where: {
       tenantId,
-      // Se incluyen ambos roles en el filtro
       role: { in: ['TECHNICIAN', 'MANAGER'] },
+      // Solo incluimos técnicos que no estén marcados como permanentemente inactivos
+      isAvailable: true, 
     },
     select: {
       id: true,
-      email: true,
       name: true,
-      role: true,
-      tenantId: true,
-      createdAt: true,
-      updatedAt: true,
-      isAvailable: true, 
     },
     orderBy: {
       name: 'asc',
     },
   });
+
+  // Mapeamos al formato que FullCalendar espera para los 'resources'
+  return users.map(user => ({
+    id: user.id,
+    title: user.name, // FullCalendar usa 'title' para mostrar el nombre en la fila
+  }));
 };
 
 /**
- * Actualiza el estado de disponibilidad de un usuario.
- * @param userId - El ID del usuario a actualizar.
- * @param tenantId - El ID del tenant para validación.
- * @param isAvailable - El nuevo estado de disponibilidad.
- * @returns El objeto del usuario actualizado.
+ * Actualiza el estado de disponibilidad inmediata de un usuario.
  */
 export const updateUserAvailability = async (
   userId: string,
   tenantId: string,
   isAvailable: boolean
 ): Promise<User> => {
-  // Se usa updateMany para asegurar que solo se actualice si el usuario
-  // pertenece al tenant correcto, evitando la modificación de datos ajenos.
   const { count } = await prisma.user.updateMany({
     where: {
       id: userId,
@@ -67,6 +68,35 @@ export const updateUserAvailability = async (
     throw new Error('Usuario no encontrado o sin permisos para modificar.');
   }
 
-  // Devolvemos el usuario actualizado completo para la respuesta de la API.
   return prisma.user.findUniqueOrThrow({ where: { id: userId } });
+};
+
+/**
+ * Obtiene todos los registros de ausencia para un usuario específico.
+ */
+export const getAvailabilitiesForUser = async (userId: string, tenantId: string): Promise<UserAvailability[]> => {
+  return prisma.userAvailability.findMany({
+    where: {
+      userId,
+      tenantId,
+    },
+    orderBy: {
+      startDate: 'desc',
+    },
+  });
+};
+
+/**
+ * Crea un nuevo registro de ausencia planificada para un usuario.
+ */
+export const setUserAvailability = async (data: SetUserAvailabilityInput): Promise<UserAvailability> => {
+  return prisma.userAvailability.create({
+    data: {
+      userId: data.userId,
+      tenantId: data.tenantId,
+      startDate: new Date(data.startDate),
+      endDate: new Date(data.endDate),
+      reason: data.reason,
+    },
+  });
 };

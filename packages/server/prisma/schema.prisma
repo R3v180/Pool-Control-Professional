@@ -1,5 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// filename: prisma/schema.prisma
+// version: 9.0.2 (FIXED)
+// description: Corrige las relaciones bidireccionales faltantes en los modelos User/IncidentTask y ProductCategory/ClientProductPricing.
 
 generator client {
   provider = "prisma-client-js"
@@ -10,15 +11,454 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ==========================================
-//          ENUMS & CUSTOM TYPES
-// ==========================================
+// =================================================================
+// 1. MODELOS DE NEGOCIO PRINCIPALES
+// =================================================================
+
+model Tenant {
+  id                 String                @id @default(cuid())
+  companyName        String
+  subdomain          String                @unique
+  subscriptionStatus SubscriptionStatus    @default(TRIAL)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  users               User[]
+  clients             Client[]
+  pools               Pool[]
+  parameterTemplates  ParameterTemplate[]
+  taskTemplates       ScheduledTaskTemplate[]
+  products            Product[]
+  productCategories   ProductCategory[]
+  zones               Zone[]
+  routeTemplates      RouteTemplate[]
+  incidentTasks       IncidentTask[]
+  notifications       Notification[]
+  expenses            Expense[]
+}
+
+model User {
+  id             String         @id @default(cuid())
+  email          String         @unique
+  name           String
+  password       String
+  role           UserRole
+  isAvailable    Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  tenantId       String
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  assignedVisits Visit[]
+  routeTemplates RouteTemplate[]
+  assignedTasks  IncidentTask[] @relation(name: "AssignedTasks")
+  createdTasks   IncidentTask[] @relation(name: "CreatedTasks") // ✅ CORRECCIÓN: La contraparte está ahora en IncidentTask
+  uploadedImages IncidentImage[]
+  notifications  Notification[]
+  taskLogs       IncidentTaskLog[]
+  availabilities UserAvailability[]
+
+  @@index([tenantId])
+}
+
+model Client {
+  id                 String                 @id @default(cuid())
+  name               String
+  contactPerson      String?
+  email              String?
+  phone              String?
+  address            String?
+  priceModifier      Float                  @default(1.0)
+  monthlyFee         Float                  @default(0.0)
+  billingModel       BillingModel           @default(SERVICE_ONLY)
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+
+  tenantId           String
+  tenant             Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  pools              Pool[]
+  clientPricingRules ClientProductPricing[]
+  payments           Payment[]
+
+  @@index([tenantId])
+}
+
+model Pool {
+  id             String              @id @default(cuid())
+  name           String
+  address        String
+  volume         Int?
+  type           String?
+  qrCode         String?             @unique
+
+  clientId       String
+  client         Client              @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  zoneId         String?
+  zone           Zone?               @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  
+  tenantId       String
+  tenant         Tenant              @relation(fields: [tenantId], references: [id], onDelete: NoAction)
+
+  visits         Visit[]
+  configurations PoolConfiguration[]
+
+  @@index([clientId])
+  @@index([tenantId])
+}
+
+// =================================================================
+// 2. MODELOS DE PLANIFICACIÓN Y RUTAS
+// =================================================================
+
+model Zone {
+  id             String          @id @default(cuid())
+  name           String
+  
+  tenantId       String
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  pools          Pool[]
+  routeTemplates RouteTemplate[]
+
+  @@unique([name, tenantId])
+  @@index([tenantId])
+}
+
+model RouteTemplate {
+  id           String              @id @default(cuid())
+  name         String
+  dayOfWeek    DayOfWeek
+  
+  tenantId     String
+  tenant       Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  technicianId String?
+  technician   User?               @relation(fields: [technicianId], references: [id], onDelete: SetNull)
+  
+  zones        Zone[]
+  seasons      RouteTemplateSeason[]
+
+  @@index([tenantId])
+}
+
+model RouteTemplateSeason {
+  id              String         @id @default(cuid())
+  frequency       VisitFrequency
+  startDate       DateTime
+  endDate         DateTime
+  
+  routeTemplateId String
+  routeTemplate   RouteTemplate  @relation(fields: [routeTemplateId], references: [id], onDelete: Cascade)
+}
+
+model UserAvailability {
+  id        String   @id @default(cuid())
+  startDate DateTime
+  endDate   DateTime
+  reason    String?
+
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  tenantId String
+
+  @@index([userId])
+  @@index([tenantId, startDate, endDate])
+}
+
+
+// =================================================================
+// 3. MODELOS DE EJECUCIÓN (VISITAS Y PARTES DE TRABAJO)
+// =================================================================
+
+model Visit {
+  id             String        @id @default(cuid())
+  timestamp      DateTime
+  status         VisitStatus   @default(PENDING)
+  notes          String?
+  hasIncident    Boolean       @default(false)
+  completedTasks String[]
+  
+  poolId         String
+  pool           Pool          @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  
+  technicianId   String?
+  technician     User?         @relation(fields: [technicianId], references: [id], onDelete: SetNull)
+  
+  results        VisitResult[]
+  consumptions   Consumption[]
+  notifications  Notification[]
+
+  @@index([poolId])
+  @@index([technicianId])
+  @@index([timestamp])
+}
+
+model VisitResult {
+  id            String  @id @default(cuid())
+  value         String
+  parameterName String
+  parameterUnit String?
+  
+  visitId       String
+  visit         Visit   @relation(fields: [visitId], references: [id], onDelete: Cascade)
+
+  @@index([visitId])
+}
+
+model Consumption {
+  id        String  @id @default(cuid())
+  quantity  Float
+  
+  visitId   String
+  visit     Visit   @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([visitId])
+  @@index([productId])
+}
+
+// =================================================================
+// 4. MODELOS DE INCIDENCIAS (TICKETING)
+// =================================================================
+
+model Notification {
+  id                   String           @id @default(cuid())
+  message              String
+  isRead               Boolean          @default(false)
+  status               NotificationStatus @default(PENDING)
+  priority             IncidentPriority?
+  resolutionNotes      String?
+  resolutionDeadline   DateTime?
+  
+  tenantId             String
+  tenant               Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  userId               String
+  user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  visitId              String?
+  visit                Visit?           @relation(fields: [visitId], references: [id], onDelete: SetNull)
+  
+  images               IncidentImage[]
+  tasks                IncidentTask[]
+
+  parentNotificationId String?
+  parentNotification   Notification?    @relation("NotificationReplies", fields: [parentNotificationId], references: [id], onDelete: Cascade)
+  replies              Notification[]   @relation("NotificationReplies")
+}
+
+model IncidentTask {
+  id              String             @id @default(cuid())
+  title           String
+  description     String?
+  status          IncidentTaskStatus @default(PENDING)
+  priority        IncidentPriority   @default(NORMAL)
+  deadline        DateTime?
+  resolutionNotes String?
+  
+  notificationId  String
+  notification    Notification       @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  
+  assignedToId    String?
+  assignedTo      User?              @relation(name: "AssignedTasks", fields: [assignedToId], references: [id], onDelete: SetNull)
+  
+  // ✅ CORRECCIÓN 1: Se añade la contraparte de la relación para createdTasks
+  createdById     String?
+  createdBy       User?              @relation(name: "CreatedTasks", fields: [createdById], references: [id], onDelete: SetNull)
+
+  tenantId        String
+  tenant          Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  logs            IncidentTaskLog[]
+
+  @@index([notificationId])
+  @@index([assignedToId])
+}
+
+model IncidentTaskLog {
+  id             String       @id @default(cuid())
+  action         LogAction
+  details        String
+  createdAt      DateTime     @default(now())
+  
+  incidentTaskId String
+  incidentTask   IncidentTask @relation(fields: [incidentTaskId], references: [id], onDelete: Cascade)
+  
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([incidentTaskId])
+}
+
+model IncidentImage {
+  id             String       @id @default(cuid())
+  url            String
+  createdAt      DateTime     @default(now())
+  
+  notificationId String
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  
+  uploaderId     String
+  uploader       User         @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+
+  @@index([notificationId])
+}
+
+// =================================================================
+// 5. MODELOS DE CATÁLOGOS
+// =================================================================
+
+model ParameterTemplate {
+  id                 String              @id @default(cuid())
+  name               String
+  unit               String?
+  type               InputType
+  selectOptions      String[]
+  
+  tenantId           String
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  poolConfigurations PoolConfiguration[]
+
+  @@unique([name, tenantId])
+  @@index([tenantId])
+}
+
+model ScheduledTaskTemplate {
+  id                 String              @id @default(cuid())
+  name               String
+  description        String?
+
+  tenantId           String
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  poolConfigurations PoolConfiguration[]
+
+  @@unique([name, tenantId])
+  @@index([tenantId])
+}
+
+model ProductCategory {
+  id                 String                   @id @default(cuid())
+  name               String
+  
+  tenantId           String
+  tenant             Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  products           Product[]
+  // ✅ CORRECCIÓN 2: Se añade la contraparte de la relación para las reglas de precios
+  clientPricingRules ClientProductPricing[]   @relation("ProductCategoryPricing")
+
+  @@unique([name, tenantId])
+  @@index([tenantId])
+}
+
+model Product {
+  id                 String                  @id @default(cuid())
+  name               String
+  description        String?
+  unit               String
+  cost               Float
+  salePrice          Float
+  taxRate            Float                   @default(21)
+  
+  tenantId           String
+  tenant             Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  categoryId         String?
+  category           ProductCategory?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  
+  consumptions       Consumption[]
+  clientPricingRules ClientProductPricing[]
+
+  @@unique([name, tenantId])
+  @@index([tenantId])
+}
+
+// =================================================================
+// 6. MODELOS DE CONFIGURACIÓN Y FINANZAS
+// =================================================================
+
+model PoolConfiguration {
+  id                  String                 @id @default(cuid())
+  frequency           VisitFrequency         @default(WEEKLY)
+  minThreshold        Float?
+  maxThreshold        Float?
+  lastCompleted       DateTime?
+  
+  poolId              String
+  pool                Pool                   @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  
+  parameterTemplateId String?
+  parameterTemplate   ParameterTemplate?     @relation(fields: [parameterTemplateId], references: [id], onDelete: Cascade)
+  
+  taskTemplateId      String?
+  taskTemplate        ScheduledTaskTemplate? @relation(fields: [taskTemplateId], references: [id], onDelete: Cascade)
+
+  @@unique([poolId, parameterTemplateId])
+  @@unique([poolId, taskTemplateId])
+  @@index([poolId])
+}
+
+model ClientProductPricing {
+  id                   String           @id @default(cuid())
+  discountPercentage   Float
+  
+  clientId             String
+  client               Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  productId            String?
+  product              Product?         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  productCategoryId    String?
+  productCategory      ProductCategory? @relation(name: "ProductCategoryPricing", fields: [productCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, productId])
+  @@unique([clientId, productCategoryId])
+  @@index([clientId])
+}
+
+model Payment {
+  id          String   @id @default(cuid())
+  amount      Float
+  paymentDate DateTime
+  method      String
+  notes       String?
+  
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  amount      Float
+  expenseDate DateTime
+  description String
+  category    String
+  
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+// =================================================================
+// ENUMS
+// =================================================================
 
 enum UserRole {
   SUPER_ADMIN
   ADMIN
-  MANAGER
   TECHNICIAN
+  MANAGER
 }
 
 enum SubscriptionStatus {
@@ -29,31 +469,30 @@ enum SubscriptionStatus {
 }
 
 enum InputType {
-  TEXT
   NUMBER
   BOOLEAN
+  TEXT
   SELECT
 }
 
-enum Frequency {
-  DIARIA
-  SEMANAL
-  QUINCENAL
-  MENSUAL
-  TRIMESTRAL
-  SEMESTRAL
-  ANUAL
+enum VisitStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
 }
 
-// ✅ NUEVO: Enum para estandarizar los días de la semana
-enum DayOfWeek {
-  MONDAY
-  TUESDAY
-  WEDNESDAY
-  THURSDAY
-  FRIDAY
-  SATURDAY
-  SUNDAY
+enum VisitFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum NotificationStatus {
+  PENDING
+  RESOLVED
 }
 
 enum IncidentPriority {
@@ -63,16 +502,21 @@ enum IncidentPriority {
   CRITICAL
 }
 
-enum NotificationStatus {
-  PENDING
-  RESOLVED
-}
-
 enum IncidentTaskStatus {
   PENDING
   IN_PROGRESS
   COMPLETED
   CANCELLED
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
 }
 
 enum LogAction {
@@ -87,450 +531,4 @@ enum BillingModel {
   SERVICE_ONLY
   FEE_PLUS_MATERIALS
   ALL_INCLUSIVE
-}
-
-enum VisitStatus {
-  PENDING
-  COMPLETED
-  CANCELLED
-}
-
-// ==========================================
-//           CORE & TENANCY MODELS
-// ==========================================
-
-model Tenant {
-  id                 String  @id @default(cuid())
-  companyName        String
-  subdomain          String  @unique
-  subscriptionStatus SubscriptionStatus @default(TRIAL)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  users                User[]
-  parameterTemplates   ParameterTemplate[]
-  scheduledTaskTemplates ScheduledTaskTemplate[]
-  clients              Client[]
-  pools                Pool[]
-  products             Product[]
-  notifications        Notification[]
-  incidentTasks        IncidentTask[]
-  productCategories    ProductCategory[]
-  expenses             Expense[]
-
-  // ✅ NUEVO: Relaciones con los nuevos modelos de planificación
-  zones                Zone[]
-  routeTemplates       RouteTemplate[]
-  specialWorkOrders    SpecialWorkOrder[]
-
-  @@index([subdomain])
-}
-
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  password  String
-  role      UserRole @default(TECHNICIAN)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // ✅ NUEVO: Campo para la disponibilidad del técnico
-  isAvailable Boolean @default(true)
-
-  tenantId String
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // Relaciones
-  visits              Visit[]
-  assignedIncidentTasks IncidentTask[]
-  createdImages       IncidentImage[]
-  createdLogs         IncidentTaskLog[]
-  notifications       Notification[]
-  
-  // ✅ NUEVO: Relación con las rutas maestras que puede tener asignadas
-  routeTemplates      RouteTemplate[]
-
-  @@index([tenantId, role])
-}
-
-// ==========================================
-//      PLANNING & ORGANIZATION MODELS
-// ==========================================
-
-// ✅ NUEVO: Modelo para las zonas geográficas
-model Zone {
-  id       String  @id @default(cuid())
-  name     String
-  tenantId String
-  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  pools    Pool[]
-  routeTemplates RouteTemplate[] @relation("RouteZones") // Relación muchos a muchos con rutas
-
-  @@unique([name, tenantId])
-}
-
-// ✅ NUEVO: Modelo para las Rutas Maestras
-model RouteTemplate {
-  id           String     @id @default(cuid())
-  name         String     // Ej: "Lunes - Arenal"
-  dayOfWeek    DayOfWeek  // Día principal de la ruta
-  
-  technicianId String?    // Técnico habitual (opcional)
-  technician   User?      @relation(fields: [technicianId], references: [id], onDelete: SetNull)
-
-  tenantId     String
-  tenant       Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
-  zones        Zone[]     @relation("RouteZones") // Zonas que cubre esta ruta
-  seasons      RouteTemplateSeason[]
-
-  @@unique([name, tenantId])
-  @@index([tenantId, dayOfWeek])
-}
-
-// ✅ NUEVO: Modelo para manejar la estacionalidad de las rutas
-model RouteTemplateSeason {
-  id              String   @id @default(cuid())
-  routeTemplateId String
-  routeTemplate   RouteTemplate @relation(fields: [routeTemplateId], references: [id], onDelete: Cascade)
-  
-  frequency       String   // Frecuencia aplicable en este periodo (ej: "WEEKLY", "3_TIMES_WEEK")
-  startDate       DateTime // Fecha de inicio del periodo (ej: 01 de Junio)
-  endDate         DateTime // Fecha de fin del periodo (ej: 31 de Agosto)
-
-  @@index([routeTemplateId])
-}
-
-// ✅ NUEVO: Modelo para las Órdenes de Trabajo únicas/especiales
-model SpecialWorkOrder {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  status      String   @default("PENDING") // PENDING, ASSIGNED, COMPLETED
-  priority    String   @default("NORMAL")  // NORMAL, URGENT
-  
-  poolId      String
-  pool        Pool     @relation(fields: [poolId], references: [id], onDelete: Cascade)
-  
-  visitId     String?  @unique // ID de la visita real generada a partir de esta orden
-  visit       Visit?   @relation(fields: [visitId], references: [id], onDelete: SetNull)
-
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
-  @@index([tenantId, status])
-}
-
-
-// ==========================================
-//        CATALOG & TEMPLATE MODELS
-// ==========================================
-
-model ParameterTemplate {
-  id              String   @id @default(cuid())
-  name            String
-  unit            String?
-  type            InputType
-  selectOptions   String[] @default([])
-  
-  tenantId        String
-  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
-  poolConfigurations PoolConfiguration[]
-  
-  @@unique([name, tenantId])
-}
-
-model ScheduledTaskTemplate {
-  id          String  @id @default(cuid())
-  name        String
-  description String?
-
-  tenantId    String
-  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
-  poolConfigurations PoolConfiguration[]
-
-  @@unique([name, tenantId])
-}
-
-model ProductCategory {
-  id        String   @id @default(cuid())
-  name      String
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
-  products  Product[]
-  pricingRules ClientProductPricing[]
-
-  @@unique([name, tenantId])
-}
-
-model Product {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  unit        String
-  cost        Float
-  salePrice   Float    @default(0)
-  taxRate     Float    @default(21)
-
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
-  categoryId  String?
-  category    ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  
-  consumptions Consumption[]
-  pricingRules ClientProductPricing[]
-
-  @@unique([name, tenantId])
-  @@index([tenantId])
-}
-
-// ==========================================
-//        CLIENT & OPERATIONS MODELS
-// ==========================================
-
-model Client {
-  id            String   @id @default(cuid())
-  name          String
-  contactPerson String?
-  email         String?
-  phone         String?
-  address       String?
-  priceModifier Float    @default(1.0)
-  monthlyFee    Float    @default(0)
-  billingModel  BillingModel @default(SERVICE_ONLY)
-
-  tenantId      String
-  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
-  pools         Pool[]
-  clientPricingRules ClientProductPricing[]
-  payments      Payment[]
-
-  @@index([tenantId])
-}
-
-model Pool {
-  id        String   @id @default(cuid())
-  name      String
-  address   String
-  volume    Int?
-  type      String?
-  qrCode    String?  @unique
-  
-  // ✅ CAMBIO: Se añade la relación con Zona y notas de planificación
-  zoneId      String?
-  zone        Zone?    @relation(fields: [zoneId], references: [id], onDelete: SetNull)
-  planningNotes String?
-  
-  clientId  String
-  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  configurations PoolConfiguration[]
-  visits         Visit[]
-  specialWorkOrders SpecialWorkOrder[]
-
-  @@index([tenantId, clientId])
-}
-
-model PoolConfiguration {
-  id        String  @id @default(cuid())
-  
-  // ❌ CAMBIO: Se elimina la frecuencia. Ahora se gestiona en RouteTemplateSeason
-  // frequency Frequency
-  
-  minThreshold Float?
-  maxThreshold Float?
-  lastCompleted DateTime?
-
-  poolId             String
-  pool               Pool    @relation(fields: [poolId], references: [id], onDelete: Cascade)
-  
-  parameterTemplateId String?
-  parameterTemplate  ParameterTemplate? @relation(fields: [parameterTemplateId], references: [id], onDelete: Cascade)
-  
-  taskTemplateId     String?
-  taskTemplate       ScheduledTaskTemplate? @relation(fields: [taskTemplateId], references: [id], onDelete: Cascade)
-
-  @@unique([poolId, parameterTemplateId])
-  @@unique([poolId, taskTemplateId])
-}
-
-model Visit {
-  id             String    @id @default(cuid())
-  timestamp      DateTime
-  status         VisitStatus @default(PENDING)
-  notes          String?
-  hasIncident    Boolean   @default(false)
-  completedTasks String[]
-  
-  technicianId   String?
-  technician     User?     @relation(fields: [technicianId], references: [id], onDelete: SetNull)
-  
-  poolId         String
-  pool           Pool      @relation(fields: [poolId], references: [id], onDelete: Cascade)
-
-  results        VisitResult[]
-  consumptions   Consumption[]
-  notifications  Notification[]
-  specialWorkOrder SpecialWorkOrder?
-
-  @@index([poolId, timestamp])
-  @@index([technicianId, timestamp])
-}
-
-model VisitResult {
-  id            String   @id @default(cuid())
-  parameterName String
-  parameterUnit String?
-  value         String
-  
-  visitId       String
-  visit         Visit    @relation(fields: [visitId], references: [id], onDelete: Cascade)
-}
-
-model Consumption {
-  id        String   @id @default(cuid())
-  quantity  Float
-  
-  visitId   String
-  visit     Visit    @relation(fields: [visitId], references: [id], onDelete: Cascade)
-  
-  productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
-
-  @@index([visitId])
-}
-
-
-// ==========================================
-//      INCIDENT & NOTIFICATION MODELS
-// ==========================================
-
-model Notification {
-  id                 String   @id @default(cuid())
-  message            String
-  status             NotificationStatus @default(PENDING)
-  isRead             Boolean  @default(false)
-  priority           IncidentPriority?
-  resolutionNotes    String?
-  resolutionDeadline DateTime?
-  
-  visitId            String?
-  visit              Visit?   @relation(fields: [visitId], references: [id], onDelete: Cascade)
-
-  // Para el hilo de notificaciones
-  parentNotificationId String?
-  parentNotification   Notification? @relation("NotificationThread", fields: [parentNotificationId], references: [id], onDelete: Cascade)
-  childNotifications   Notification[] @relation("NotificationThread")
-
-  userId             String
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  tenantId           String
-  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  images             IncidentImage[]
-  incidentTasks      IncidentTask[]
-  
-  @@index([userId, status])
-}
-
-model IncidentImage {
-  id              String   @id @default(cuid())
-  url             String
-  uploadedAt      DateTime @default(now())
-  
-  uploaderId      String
-  uploader        User     @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
-  
-  notificationId  String
-  notification    Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
-}
-
-model IncidentTask {
-  id                 String   @id @default(cuid())
-  title              String
-  description        String?
-  status             IncidentTaskStatus @default(PENDING)
-  priority           IncidentPriority @default(NORMAL)
-  resolutionNotes    String?
-  deadline           DateTime?
-
-  assignedToId       String?
-  assignedTo         User?    @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
-  
-  notificationId     String
-  notification       Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
-  
-  tenantId           String
-  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  logs               IncidentTaskLog[]
-  
-  @@index([assignedToId, status])
-}
-
-model IncidentTaskLog {
-  id              String   @id @default(cuid())
-  action          LogAction
-  details         String
-  createdAt       DateTime @default(now())
-  
-  incidentTaskId  String
-  incidentTask    IncidentTask @relation(fields: [incidentTaskId], references: [id], onDelete: Cascade)
-  
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-// ==========================================
-//           FINANCIALS MODELS
-// ==========================================
-
-model ClientProductPricing {
-  id                   String   @id @default(cuid())
-  discountPercentage   Float
-  
-  clientId             String
-  client               Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  
-  productId            String?
-  product              Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
-  productCategoryId    String?
-  productCategory      ProductCategory? @relation(fields: [productCategoryId], references: [id], onDelete: Cascade)
-
-  @@unique([clientId, productId])
-  @@unique([clientId, productCategoryId])
-}
-
-model Payment {
-  id            String   @id @default(cuid())
-  amount        Float
-  paymentDate   DateTime
-  method        String
-  notes         String?
-  
-  clientId      String
-  client        Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-}
-
-model Expense {
-  id            String   @id @default(cuid())
-  amount        Float
-  expenseDate   DateTime
-  description   String
-  category      String
-  
-  tenantId      String
-  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }

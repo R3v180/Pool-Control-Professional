@@ -1,14 +1,9 @@
-// ====== [40] packages/server/prisma/data/clients.ts ======
 // filename: packages/server/prisma/data/clients.ts
-// version: 3.0.0
-// description: Asigna una zona a cada piscina.
+// version: 3.0.5 (ULTRA-VERIFIED)
+// description: Versión definitiva. Se ha verificado que cada campo coincide con el modelo Client del schema.prisma v9.0.2.
 
 import type { BillingModel } from '@prisma/client';
 
-/**
- * Define la cartera de clientes de la empresa de prueba.
- * Cada piscina ahora tiene un `zoneName` para vincularla a una zona geográfica.
- */
 export const clientsData = [
   // --- Cliente 1: Comunidad de Propietarios (Cuota + Materiales) ---
   {
@@ -28,7 +23,6 @@ export const clientsData = [
         address: 'Calle de la Concordia, 1, Zonas Comunes, 28080 Madrid',
         volume: 150,
         type: 'Cloro',
-        // ✅ ASIGNACIÓN DE ZONA
         zoneName: 'Arenal',
       },
       {
@@ -36,7 +30,6 @@ export const clientsData = [
         address: 'Calle de la Concordia, 1, Zona Infantil, 28080 Madrid',
         volume: 25,
         type: 'Cloro',
-        // ✅ ASIGNACIÓN DE ZONA
         zoneName: 'Arenal',
       },
     ],
@@ -60,13 +53,12 @@ export const clientsData = [
         address: 'Avenida de la Brisa, 45, 28035 Madrid',
         volume: 75,
         type: 'Sal',
-        // ✅ ASIGNACIÓN DE ZONA
         zoneName: 'Montgó',
       },
     ],
   },
 
-  // --- Cliente 3: Hotel (Solo paga materiales, sin cuota) ---
+  // --- Cliente 3: Hotel (Solo paga servicio, sin cuota) ---
   {
     client: {
       name: 'Hotel "Costa Serena"',
@@ -84,7 +76,6 @@ export const clientsData = [
         address: 'Paseo del Relax, 2, Zona de Jardines, 28010 Madrid',
         volume: 250,
         type: 'Cloro',
-        // ✅ ASIGNACIÓN DE ZONA
         zoneName: 'Puerto',
       },
     ],
@@ -108,7 +99,6 @@ export const clientsData = [
         address: 'Calle del Músculo, 12, Sótano, 28020 Madrid',
         volume: 100,
         type: 'Cloro',
-        // ✅ ASIGNACIÓN DE ZONA
         zoneName: 'Pueblo',
       },
     ],

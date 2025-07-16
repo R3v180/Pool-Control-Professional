@@ -1,15 +1,19 @@
 // filename: packages/server/src/api/users/users.routes.ts
-// Version: 2.2.0 (FEAT: Add route to update user availability)
-// description: Adds a PATCH route for an admin to update a user's availability status.
+// version: 2.3.0 (FEAT: Add routes for managing UserAvailability)
 
 import { Router } from 'express';
-import { getAssignableUsersHandler, updateUserAvailabilityHandler } from './users.controller.js';
+// ✅ CORRECCIÓN: Importar los nuevos manejadores
+import { 
+  getAssignableUsersHandler, 
+  updateUserAvailabilityHandler,
+  getUserAvailabilitiesHandler,
+  setUserAvailabilityHandler,
+} from './users.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
 import { authorize } from '../../middleware/authorize.middleware.js';
 
 const usersRouter = Router();
 
-// Aplicamos el middleware 'protect' a TODAS las rutas de este enrutador.
 usersRouter.use(protect);
 
 /**
@@ -21,10 +25,27 @@ usersRouter.get('/technicians', authorize('ADMIN', 'MANAGER'), getAssignableUser
 
 /**
  * @route   PATCH /api/users/:id/availability
- * @desc    Actualiza el estado de disponibilidad de un usuario.
+ * @desc    Actualiza el estado de disponibilidad INMEDIATA de un usuario.
  * @access  Private (Admin)
  */
 usersRouter.patch('/:id/availability', authorize('ADMIN'), updateUserAvailabilityHandler);
+
+
+// --- ✅ NUEVAS RUTAS PARA GESTIONAR AUSENCIAS PLANIFICADAS ---
+
+/**
+ * @route   GET /api/users/:id/availabilities
+ * @desc    Obtiene todos los periodos de ausencia planificados para un usuario.
+ * @access  Private (Admin)
+ */
+usersRouter.get('/:id/availabilities', authorize('ADMIN'), getUserAvailabilitiesHandler);
+
+/**
+ * @route   POST /api/users/availability
+ * @desc    Crea un nuevo periodo de ausencia para un usuario.
+ * @access  Private (Admin)
+ */
+usersRouter.post('/availability', authorize('ADMIN'), setUserAvailabilityHandler);
 
 
 export default usersRouter;

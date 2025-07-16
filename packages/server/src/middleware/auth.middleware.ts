@@ -1,5 +1,6 @@
 // filename: packages/server/src/middleware/auth.middleware.ts
-// version: 2.0.0 (FEAT: Implement 'View As' logic for Manager role)
+// version: 2.0.1 (FIXED)
+// description: Se añade 'isAvailable' a la consulta del usuario para que el objeto 'user' esté completo.
 
 import type { Request, Response, NextFunction } from 'express';
 import { PrismaClient, UserRole } from '@prisma/client';
@@ -45,6 +46,7 @@ export const protect = async (
         tenantId: true,
         createdAt: true,
         updatedAt: true,
+        isAvailable: true, // ✅ CORRECCIÓN: Añadido el campo que faltaba.
       },
     });
 
@@ -52,23 +54,15 @@ export const protect = async (
       return res.status(401).json({ message: 'No autenticado: usuario no encontrado.' });
     }
     
-    // --- ✅ INICIO DE LA LÓGICA DEL "ROL CAMALEÓN" ---
-    
     const viewAsRoleHeader = req.headers['x-view-as-role'] as UserRole | undefined;
 
-    // Solo un MANAGER puede cambiar de vista.
     if (user.role === 'MANAGER' && viewAsRoleHeader) {
-      // Validamos que el rol que se quiere simular sea uno de los permitidos.
       const allowedViews: UserRole[] = ['ADMIN', 'TECHNICIAN'];
       if (allowedViews.includes(viewAsRoleHeader)) {
-        // Modificamos el rol del usuario EN LA REQUEST ACTUAL.
-        // La base de datos no se altera.
         user.role = viewAsRoleHeader;
       }
     }
     
-    // --- ✅ FIN DE LA LÓGICA ---
-
     req.user = user;
     next();
   } catch (error) {

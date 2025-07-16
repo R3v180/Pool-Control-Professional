@@ -1,11 +1,12 @@
 // filename: packages/client/src/features/admin/pages/AdminDashboard.tsx
-// version: 2.0.0 (FEAT: Clickable visits and critical incident highlighting)
+// version: 2.0.1 (FIX: Align with new visits API)
 
 import { useEffect, useState } from 'react';
 import { Container, Title, Grid, Paper, Text, Badge, Loader, Alert, Stack } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../../../api/apiClient';
-import { format } from 'date-fns';
+// ✅ 1. Importar las funciones de fecha necesarias
+import { format, startOfDay, endOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 // --- Tipos de Datos ---
@@ -17,7 +18,6 @@ interface Visit {
   technician: { name: string } | null;
 }
 
-// ✅ Se añade isCritical al tipo de notificación del frontend
 interface Notification {
   id: string;
   message: string;
@@ -38,20 +38,25 @@ export function AdminDashboard() {
       setIsLoading(true);
       setError(null);
       try {
+        // ✅ 2. Definir el rango de fechas para hoy
+        const todayStart = startOfDay(new Date());
+        const todayEnd = endOfDay(new Date());
+
+        // ✅ 3. Actualizar la llamada a la API para usar startDate y endDate
         const [visitsResponse, notificationsResponse] = await Promise.all([
-          apiClient.get('/visits/scheduled', { params: { date: new Date().toISOString() } }),
-          // Usamos el endpoint de historial para obtener el flag 'isCritical'
+          apiClient.get('/visits/scheduled', { 
+            params: { 
+              startDate: todayStart.toISOString(),
+              endDate: todayEnd.toISOString(),
+            } 
+          }),
           apiClient.get('/notifications/history') 
         ]);
         
-        const today = new Date().toDateString();
-        const todayVisits = visitsResponse.data.data.filter((v: Visit) => 
-            new Date(v.timestamp).toDateString() === today
-        );
+        // ✅ 4. La respuesta ya viene filtrada por el backend, no necesitamos filtrar de nuevo en el cliente.
+        const todayVisits = visitsResponse.data.data;
         
-        // El endpoint de historial ya nos da las notificaciones con el flag 'isCritical'
         const allNotifications = notificationsResponse.data.data.notifications;
-        // Mostramos solo las que están pendientes en el dashboard
         const pendingNotifications = allNotifications.filter((n: any) => n.status === 'PENDING');
 
         setVisits(todayVisits);
@@ -91,7 +96,6 @@ export function AdminDashboard() {
                   <Paper 
                     key={visit.id} 
                     withBorder p="sm" radius="md"
-                    // ✅ Se añade el manejador de click y estilos para indicar que es interactivo
                     onClick={() => handleCardClick(`/visits/${visit.id}`)}
                     style={{ 
                       cursor: 'pointer',
@@ -137,7 +141,6 @@ export function AdminDashboard() {
                     onClick={() => notification.visitId && handleCardClick(`/incidents/${notification.id}`)}
                     style={{ 
                       cursor: notification.visitId ? 'pointer' : 'default',
-                      // ✅ Se añade el borde rojo si la incidencia es crítica
                       borderLeft: notification.isCritical ? '4px solid var(--mantine-color-red-7)' : undefined,
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.boxShadow = 'var(--mantine-shadow-md)'}

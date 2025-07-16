@@ -1,281 +1,329 @@
 // filename: packages/client/src/features/admin/pages/planner/PlannerPage.tsx
-// version: 2.3.1 (FIXED)
-// description: Provides the complete and final code for the v2 planner, including special order creation.
+// version: 6.1.0 (FIX: Correct native drop info retrieval)
+// description: Se corrige la forma de obtener la información de la celda en el drop nativo, leyendo los atributos 'data-date' del DOM en lugar de usar métodos inexistentes de la API.
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import {
-  Container, Title, Loader, Alert, Paper, Text, Grid, Card, Group, ActionIcon,
-  Stack, Badge, Switch, Box, Button, Modal, Select, Textarea,
+  Container, Title, Loader, Alert, Group, Button, Stack, Text, Modal, Select, Paper, Badge, Grid
 } from '@mantine/core';
-import { DateTimePicker } from '@mantine/dates';
-import { useDisclosure } from '@mantine/hooks';
+import { DatePickerInput } from '@mantine/dates';
 import { useForm } from '@mantine/form';
-import { useAuth } from '../../../../providers/AuthProvider.js';
-import apiClient from '../../../../api/apiClient.js';
-import { startOfWeek, endOfWeek, format, addDays, subDays, startOfDay } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { DndContext, useDraggable, useDroppable } from '@dnd-kit/core';
-import type { DragEndEvent } from '@dnd-kit/core';
-import { useNavigate } from 'react-router-dom';
+import { useDisclosure } from '@mantine/hooks';
+
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
+import esLocale from '@fullcalendar/core/locales/es'; 
+import type { EventContentArg, EventDropArg, CalendarApi } from '@fullcalendar/core';
+
+import { startOfWeek, endOfWeek, addDays, subDays, isBefore, startOfToday, setHours, addHours, getDayOfYear } from 'date-fns';
+import apiClient from '../../../../api/apiClient';
+import './planner-styles.css';
+import { ControlPanel } from './components/ControlPanel';
+import { PendingWorkSidebar } from './components/PendingWorkSidebar';
+import { useDndStore } from '../../../../stores/dnd.store';
 
 // --- Tipos ---
-interface Visit {
-  id: string; timestamp: string; status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
-  hasIncident: boolean; pool: { name: string; client: { name: string; }; };
-  technicianId: string | null;
+interface TechnicianResource { id: string; title: string; }
+interface Technician extends TechnicianResource {
+  isAvailable: boolean;
+  availabilities: { startDate: string; endDate: string }[];
 }
-interface Technician { id: string; name: string; isAvailable: boolean; }
-interface ClientWithPools { id: string; name: string; pools: { id: string; name: string }[]; }
-interface ApiResponse<T> { success: boolean; data: T; }
+interface Zone { id: string; name: string; }
+interface Pool { id: string; name: string; client: { name: string }; }
+interface Visit { id: string; timestamp: string; status: 'PENDING' | 'COMPLETED' | 'CANCELLED'; pool: Pool; technician: Technician | null; }
+interface CalendarEvent {
+    id: string;
+    title: string;
+    start: Date;
+    end?: Date;
+    allDay: boolean;
+    backgroundColor: string;
+    borderColor: string;
+    resourceId?: string;
+    extendedProps: {
+        clientName: string;
+        technicianId: string | null;
+        technicianName: string;
+        status: Visit['status'];
+    }
+}
+const techColors = ['#228be6', '#15aabf', '#82c91e', '#fab005', '#fd7e14', '#e64980'];
 
-// --- Componentes D&D ---
-function DraggableVisit({ visit }: { visit: Visit }) {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: visit.id, data: visit });
-  const navigate = useNavigate();
-  
-  const isCompleted = visit.status === 'COMPLETED';
-  const dndStyle = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 100 } : undefined;
-  
-  const customCardStyles: React.CSSProperties = {
-    cursor: 'pointer', borderLeft: '4px solid transparent',
-  };
 
-  if (isCompleted) {
-    customCardStyles.opacity = 0.65;
-    customCardStyles.borderLeftColor = visit.hasIncident ? 'var(--mantine-color-red-6)' : 'var(--mantine-color-green-6)';
-  } else if (startOfDay(new Date(visit.timestamp)) < startOfDay(new Date())) {
-    customCardStyles.borderLeftColor = 'var(--mantine-color-orange-6)';
-  }
-
-  const combinedDivStyle = { ...dndStyle, ...customCardStyles };
-  const titleStyle = isCompleted ? { textDecoration: 'line-through' } : {};
-  const handleCardClick = () => navigate(`/visits/${visit.id}`);
-
-  return (
-    <div ref={setNodeRef} style={combinedDivStyle} {...attributes} {...listeners} onClick={handleCardClick}>
-      <Card shadow="sm" p="xs" withBorder style={{ width: '100%', height: '100%' }}>
-        <Group justify="space-between">
-          <Text fw={500} style={titleStyle}>{visit.pool.name}</Text>
-          {isCompleted && (visit.hasIncident ? <Badge size="sm" color="red" variant="light">⚠️ Incidencia</Badge> : <Badge size="sm" color="green" variant="light">OK</Badge>)}
-        </Group>
-        <Text size="sm" c="dimmed">{visit.pool.client.name}</Text>
-        <Text size="xs" mt={4}>{format(new Date(visit.timestamp), 'eeee, d MMM', { locale: es })}</Text>
-      </Card>
-    </div>
-  );
+// --- Componente EventCard ---
+const EventCard = ({ event }: { event: EventContentArg }) => {
+    const { extendedProps } = event.event;
+    return (
+        <Paper p={4} radius="sm" withBorder style={{ overflow: 'hidden', height: '100%', borderLeft: `4px solid ${event.borderColor}`, backgroundColor: event.backgroundColor }}>
+            <Text size="xs" fw={700} truncate>{event.event.title}</Text>
+            <Text size="xs" c="dimmed" truncate>{extendedProps.clientName}</Text>
+            {extendedProps.technicianName && ( <Badge variant="light" color="gray" size="xs" mt={4} style={{ textTransform: 'none' }}> {extendedProps.technicianName} </Badge> )}
+        </Paper>
+    )
 }
 
-function DroppableArea({ id, children, title, bgColor, disabled }: { id: string; children: React.ReactNode; title: React.ReactNode; bgColor?: string; disabled?: boolean }) {
-  const { setNodeRef, isOver } = useDroppable({ id, disabled });
-  return (
-    <Paper ref={setNodeRef} withBorder p="sm" style={{ height: '100%', minHeight: 400, backgroundColor: isOver && !disabled ? '#e7f5ff' : (bgColor || '#f1f3f5'), transition: 'background-color 0.2s ease', opacity: disabled ? 0.5 : 1 }}>
-      <Box h="100%">
-        <Title order={5} ta="center" mb="md">{title}</Title>
-        <Stack>{children}</Stack>
-      </Box>
-    </Paper>
-  );
-}
-
-// --- Componente Principal ---
 export function PlannerPage() {
-  const { user } = useAuth();
-  const [visits, setVisits] = useState<Visit[]>([]);
-  const [technicians, setTechnicians] = useState<Technician[]>([]);
-  const [clients, setClients] = useState<ClientWithPools[]>([]);
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [isLoading, setIsLoading] = useState(true);
+  const calendarRef = useRef<FullCalendar>(null);
+  const [calendarApi, setCalendarApi] = useState<CalendarApi | null>(null);
+  const [week, setWeek] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [resources, setResources] = useState<TechnicianResource[]>([]);
+  const [zones, setZones] = useState<Zone[]>([]);
+  const [pools, setPools] = useState<{ value: string; label: string; }[]>([]);
+
+  const [selectedTechnicians, setSelectedTechnicians] = useState<string[]>([]);
+  const [selectedZones, setSelectedZones] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState('dayGridWeek');
+  
+  const [sidebarVersion, setSidebarVersion] = useState(0);
+
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
-
-  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
-
   const specialVisitForm = useForm({
-    initialValues: {
-      poolId: '',
-      timestamp: new Date(),
-      technicianId: null as string | null,
-      notes: '',
-    },
+    initialValues: { poolId: '', technicianId: '', timestamp: new Date() },
     validate: {
       poolId: (value) => !value ? 'Debe seleccionar una piscina' : null,
-      timestamp: (value) => !value ? 'Debe seleccionar una fecha' : null,
-    },
+      technicianId: (value) => !value ? 'Debe asignar un técnico' : null,
+      timestamp: (value) => !value ? 'La fecha es obligatoria' : null,
+    }
   });
 
-  const fetchData = async () => {
-    if (!user) return;
-    setIsLoading(true);
-    try {
-      const [visitsRes, techsRes, clientsRes] = await Promise.all([
-        apiClient.get<ApiResponse<Visit[]>>('/visits/scheduled', { params: { date: currentDate.toISOString(), includeOverdue: 'true' } }),
-        apiClient.get<ApiResponse<Technician[]>>('/users/technicians'),
-        apiClient.get<ApiResponse<ClientWithPools[]>>('/clients'),
-      ]);
-      setVisits(visitsRes.data.data);
-      setTechnicians(techsRes.data.data);
-      setClients(clientsRes.data.data);
-    } catch (err) { setError('No se pudo cargar la planificación.'); } finally { setIsLoading(false); }
-  };
-
-  useEffect(() => { fetchData(); // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentDate, user]);
-
-  const handleAvailabilityChange = async (techId: string, newAvailability: boolean) => {
-    const originalTechnicians = [...technicians];
-    setTechnicians(current => current.map(t => t.id === techId ? { ...t, isAvailable: newAvailability } : t));
-    
-    if (!newAvailability) {
-        setVisits(current => current.map(v => v.technicianId === techId ? { ...v, technicianId: null } : v));
-    }
-
-    try {
-      await apiClient.patch(`/users/${techId}/availability`, { isAvailable: newAvailability });
-    } catch (err) {
-      setError('No se pudo actualizar la disponibilidad del técnico.');
-      setTechnicians(originalTechnicians);
-    }
-  };
-
-  const { overdueVisits, weekVisits, orphanVisits } = useMemo(() => {
-    const startOfCurrentWeek = startOfDay(weekStart);
-    
-    const allOverdue = visits.filter(v => startOfDay(new Date(v.timestamp)) < startOfCurrentWeek && v.status === 'PENDING');
-    const allWeek = visits.filter(v => !allOverdue.find(ov => ov.id === v.id));
-    
-    const unavailableTechIds = technicians.filter(t => !t.isAvailable).map(t => t.id);
-    const orphans = allWeek.filter(v => v.technicianId && unavailableTechIds.includes(v.technicianId));
-    
-    return {
-      overdueVisits: allOverdue,
-      weekVisits: allWeek,
-      orphanVisits: orphans,
-    };
-  }, [visits, technicians, weekStart]);
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { over, active } = event;
-    if (!over || over.disabled) return;
-
-    const visitId = active.id as string;
-    const targetContainerId = String(over.id);
-    
-    const technicianId = targetContainerId.startsWith('tech-') ? targetContainerId.split('-')[1] || null : null;
-    
-    const originalVisits = [...visits];
-    const visitToUpdate = visits.find(v => v.id === visitId);
-    if (!visitToUpdate || (visitToUpdate.technicianId === technicianId && targetContainerId !== 'tech-null')) return;
-
-    setVisits(prev => prev.map(v => v.id === visitId ? { ...v, technicianId } : v));
-    try {
-      await apiClient.post('/visits/assign', { visitId, technicianId });
-    } catch (err) {
-      setError('No se pudo asignar la visita.');
-      setVisits(originalVisits);
-    }
-  };
-
-  const handleSpecialVisitSubmit = async (values: typeof specialVisitForm.values) => {
-    try {
-        await apiClient.post('/visits/special', values);
-        closeModal();
-        specialVisitForm.reset();
-        await fetchData();
-    } catch (err) {
-        specialVisitForm.setErrors({ notes: 'No se pudo crear la visita especial.' });
-    }
-  };
-
-  const poolOptions = useMemo(() => {
-    return clients.flatMap(client => 
-        client.pools.map(pool => ({
-            value: pool.id,
-            label: `${client.name} - ${pool.name}`,
-            group: client.name,
-        }))
-    );
-  }, [clients]);
-  const techOptions = useMemo(() => technicians.map(t => ({ value: t.id, label: t.name })), [technicians]);
-
-  if (isLoading) return <Loader size="xl" />;
-  const weekRange = `${format(weekStart, 'd')} - ${format(weekEnd, 'd MMMM yyyy', { locale: es })}`;
+  const { draggingVisit, setDraggingVisit } = useDndStore();
   
+  useEffect(() => {
+    if (calendarRef.current) {
+        setCalendarApi(calendarRef.current.getApi());
+    }
+  }, []);
+
+  const fetchAndProcessData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const weekStart = week;
+      const weekEnd = endOfWeek(week, { weekStartsOn: 1 });
+
+      const params = {
+        startDate: weekStart.toISOString(),
+        endDate: weekEnd.toISOString(),
+        technicianIds: selectedTechnicians,
+        zoneIds: selectedZones,
+      };
+
+      const [visitsRes, techsRes, zonesRes, clientsRes] = await Promise.all([
+        apiClient.get('/visits/scheduled', { params }),
+        apiClient.get('/users/technicians'),
+        apiClient.get('/zones'),
+        apiClient.get('/clients')
+      ]);
+
+      const allVisits: Visit[] = visitsRes.data.data;
+      const allResources: TechnicianResource[] = techsRes.data.data;
+      const allZones: Zone[] = zonesRes.data.data;
+
+      setResources(allResources);
+      setZones(allZones);
+      
+      const poolOptions = clientsRes.data.data.flatMap((client: any) => client.pools.map((pool: any) => ({ value: pool.id, label: `${client.name} - ${pool.name}` })));
+      setPools(poolOptions);
+
+      const dailyCounters: Record<string, number> = {};
+      const WORK_DAY_START_HOUR = 8;
+
+      const calendarEvents = allVisits.map((visit): CalendarEvent => {
+        let visitDate = new Date(visit.timestamp);
+        const techIdForCounter = visit.technician?.id || 'unassigned';
+        const dayKey = `${techIdForCounter}-${getDayOfYear(visitDate)}`;
+        if (dailyCounters[dayKey] === undefined) { dailyCounters[dayKey] = 0; } else { dailyCounters[dayKey]++; }
+        if (visitDate.getHours() === 0 && visitDate.getMinutes() === 0) { visitDate = setHours(visitDate, WORK_DAY_START_HOUR + dailyCounters[dayKey]); }
+        const techIndex = allResources.findIndex(t => t.id === visit.technician?.id);
+        const borderColor = techColors[techIndex % techColors.length] || '#ced4da';
+        let backgroundColor = 'white';
+        if (visit.status === 'COMPLETED') { backgroundColor = '#e6fcf5'; } 
+        else if (isBefore(visitDate, startOfToday())) { backgroundColor = '#fff5f5'; }
+        
+        return {
+            id: visit.id, title: visit.pool.name, start: visitDate, end: addHours(visitDate, 1),
+            allDay: viewMode === 'dayGridWeek', backgroundColor, borderColor, resourceId: visit.technician?.id || undefined,
+            extendedProps: {
+                clientName: visit.pool.client.name, technicianId: visit.technician?.id || null,
+                technicianName: visit.technician?.title || 'Sin Asignar', status: visit.status
+            }
+        };
+      });
+      setEvents(calendarEvents);
+    } catch (err) {
+      setError('No se pudo cargar la planificación.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAndProcessData();
+  }, [week, selectedTechnicians, selectedZones, viewMode, sidebarVersion]);
+
+  const handleEventDrop = (info: EventDropArg) => {
+    const { event, newResource } = info;
+    const newDate = event.start;
+    if (!newDate) return;
+    const newTechnicianId = newResource ? newResource.id : event.extendedProps.technicianId;
+    apiClient.patch(`/visits/${event.id}/reschedule`, {
+      timestamp: newDate.toISOString(),
+      technicianId: newTechnicianId,
+    }).catch(() => {
+      setError('Error al reprogramar la visita. Recargando...');
+      info.revert();
+    });
+  };
+  
+  // ✅ CORRECCIÓN DE LA LÓGICA DE DROP
+  const handleNativeDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (!draggingVisit) return;
+
+    const target = e.target as HTMLElement;
+    // Buscamos hacia arriba en el DOM hasta encontrar la celda con la fecha.
+    const cell = target.closest('[data-date]') as HTMLElement | null;
+
+    if (!cell) {
+        setDraggingVisit(null);
+        return; // No se soltó en una celda válida
+    }
+
+    const dateStr = cell.getAttribute('data-date');
+    if (!dateStr) {
+        setDraggingVisit(null);
+        return; // La celda no tiene fecha
+    }
+
+    // En la vista de timeline, la celda también tiene el ID del recurso (técnico)
+    const resourceId = cell.getAttribute('data-resource-id') || null;
+
+    const newDate = new Date(dateStr);
+    
+    console.log('--- 🟢 [Planner Page] NATIVE DROP Detectado! Soltando visita:', draggingVisit.id);
+    console.log('--- 🟢 [Planner Page] Nueva Fecha:', newDate, 'Nuevo Técnico ID:', resourceId);
+
+    const visitToReschedule = draggingVisit;
+    setDraggingVisit(null);
+
+    try {
+      await apiClient.patch(`/visits/${visitToReschedule.id}/reschedule`, {
+        timestamp: newDate.toISOString(),
+        technicianId: resourceId,
+      });
+      setSidebarVersion(v => v + 1);
+    } catch (err) {
+      setError('Error al reasignar la visita.');
+    }
+  };
+  
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
+  const handleCreateSpecialVisit = async () => {
+    try {
+      await apiClient.post('/visits/special', specialVisitForm.values);
+      closeModal();
+      specialVisitForm.reset();
+      await fetchAndProcessData();
+    } catch (err) {
+      specialVisitForm.setErrors({ poolId: 'Error al crear la orden especial.' });
+    }
+  };
+  
+  const technicianOptions = useMemo(() => resources.map(t => ({ value: t.id, label: t.title })), [resources]);
+  const zoneOptions = useMemo(() => zones.map(z => ({ value: z.id, label: z.name })), [zones]);
+  
+  if (loading) return <Container p="xl" style={{display: 'flex', justifyContent: 'center'}}><Loader size="xl" /></Container>;
+  if (error) return <Alert color="red" title="Error">{error}</Alert>;
+
   return (
-    <>
-      <Modal opened={modalOpened} onClose={closeModal} title="Crear Visita Especial" centered>
-        <form onSubmit={specialVisitForm.onSubmit(handleSpecialVisitSubmit)}>
+    <Container fluid>
+      <Modal opened={modalOpened} onClose={closeModal} title="Crear Orden de Trabajo Especial" centered>
+        <form onSubmit={specialVisitForm.onSubmit(handleCreateSpecialVisit)}>
             <Stack>
-                <Select label="Piscina" placeholder="Seleccione una piscina" data={poolOptions} searchable required {...specialVisitForm.getInputProps('poolId')} />
-                <DateTimePicker label="Fecha y Hora de la Visita" placeholder="Seleccione fecha y hora" required locale="es" {...specialVisitForm.getInputProps('timestamp')} />
-                <Select label="Asignar a Técnico (opcional)" placeholder="Sin asignar" data={techOptions} clearable {...specialVisitForm.getInputProps('technicianId')} />
-                <Textarea label="Motivo de la visita / Notas" placeholder="Ej: Revisión de urgencia por agua turbia" {...specialVisitForm.getInputProps('notes')} />
+                <Select data={pools} label="Piscina" placeholder='Busca o selecciona una piscina' searchable required {...specialVisitForm.getInputProps('poolId')} />
+                <Select data={technicianOptions} label="Asignar a" placeholder='Selecciona un técnico' searchable required {...specialVisitForm.getInputProps('technicianId')} />
+                <DatePickerInput label="Fecha y Hora" valueFormat="DD/MM/YYYY HH:mm" required {...specialVisitForm.getInputProps('timestamp')} />
                 <Button type="submit" mt="md">Crear Visita</Button>
             </Stack>
         </form>
       </Modal>
 
-      <DndContext onDragEnd={handleDragEnd}>
-        <Container fluid>
-          {error && <Alert color="red" title="Error" mb="md" withCloseButton onClose={() => setError(null)}>{error}</Alert>}
-          <Group justify="space-between" align="center">
-            <Title order={2} my="lg">Planificador Semanal v2</Title>
-            <Group>
-              <Button onClick={openModal} variant="light" leftSection="+">Crear Visita Especial</Button>
-              <ActionIcon variant="default" onClick={() => setCurrentDate(subDays(currentDate, 7))}>{'<'}</ActionIcon>
-              <Text size="lg" fw={500}>{weekRange}</Text>
-              <ActionIcon variant="default" onClick={() => setCurrentDate(addDays(currentDate, 7))}>{'>'}</ActionIcon>
-            </Group>
-          </Group>
-          
-          <Grid grow>
-            <Grid.Col span={{ base: 12, lg: 2 }}>
-              <DroppableArea id="overdue-column" title={`Deuda (${overdueVisits.length})`} bgColor="var(--mantine-color-red-0)">
-                {overdueVisits.map(visit => <DraggableVisit key={visit.id} visit={visit} />)}
-              </DroppableArea>
-            </Grid.Col>
-
-            <Grid.Col span={{ base: 12, lg: 2 }}>
-              <DroppableArea id="tech-null" title="Sin Asignar / Huérfanas">
-                {[
-                  ...weekVisits.filter(v => !v.technicianId),
-                  ...orphanVisits
-                ].map(visit => <DraggableVisit key={visit.id} visit={visit} />)}
-              </DroppableArea>
-            </Grid.Col>
-
-            <Grid.Col span={{ base: 12, lg: 8 }}>
-              <Grid>
-                {technicians.map(tech => (
-                  <Grid.Col key={tech.id} span={{ base: 12, md: 6, xl: 4 }}>
-                     <DroppableArea 
-                        id={`tech-${tech.id}`}
-                        disabled={!tech.isAvailable}
-                        bgColor={!tech.isAvailable ? 'var(--mantine-color-gray-2)' : undefined}
-                        title={
-                          <Group justify="center" gap="xs">
-                            <Text fw={500}>{tech.name}</Text>
-                            <Switch
-                              size="xs"
-                              checked={tech.isAvailable}
-                              onChange={(e) => handleAvailabilityChange(tech.id, e.currentTarget.checked)}
-                            />
-                          </Group>
-                        }
-                      >
-                        {tech.isAvailable && weekVisits
-                          .filter(v => v.technicianId === tech.id)
-                          .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-                          .map(visit => <DraggableVisit key={visit.id} visit={visit} />)
-                        }
-                     </DroppableArea>
-                  </Grid.Col>
-                ))}
-              </Grid>
-            </Grid.Col>
-          </Grid>
-        </Container>
-      </DndContext>
-    </>
+      <Group justify="space-between" align="center" my="lg">
+        <Title order={2}>Planning Hub</Title>
+        <Group>
+          <Button onClick={openModal} variant="light">Crear Orden Especial</Button>
+          <Button.Group>
+            <Button variant="default" onClick={() => setWeek(subDays(week, 7))}>{'< Semana Anterior'}</Button>
+            <Button variant="default" onClick={() => setWeek(addDays(week, 7))}>{'Semana Siguiente >'}</Button>
+          </Button.Group>
+        </Group>
+      </Group>
+      
+      <ControlPanel
+        technicianOptions={technicianOptions}
+        zoneOptions={zoneOptions}
+        selectedTechnicians={selectedTechnicians}
+        selectedZones={selectedZones}
+        onTechnicianChange={setSelectedTechnicians}
+        onZoneChange={setSelectedZones}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+      />
+      
+      <Grid>
+          <Grid.Col span={{ base: 12, lg: 3 }}>
+              <PendingWorkSidebar refreshKey={sidebarVersion} />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, lg: 9 }}>
+              <Text size="lg" fw={500} mb="xl">
+                  {calendarApi?.formatRange(
+                      startOfWeek(week, { weekStartsOn: 1 }),
+                      endOfWeek(week, { weekStartsOn: 1 }),
+                      { month: 'long', day: 'numeric', year: 'numeric', separator: ' - ' }
+                  ) || ''}
+              </Text>
+              
+              <Paper 
+                withBorder p="md" shadow="sm"
+                onDrop={handleNativeDrop}
+                onDragOver={handleDragOver}
+                style={draggingVisit ? { border: '2px dashed var(--mantine-color-blue-5)', backgroundColor: 'var(--mantine-color-blue-0)' } : {}}
+              >
+                  <FullCalendar
+                      key={viewMode} 
+                      ref={calendarRef}
+                      plugins={[dayGridPlugin, interactionPlugin, resourceTimelinePlugin]}
+                      schedulerLicenseKey="GPL-My-Project-Is-Open-Source"
+                      initialView={viewMode}
+                      locales={[esLocale]}
+                      locale="es"
+                      firstDay={1}
+                      headerToolbar={false}
+                      events={events}
+                      resources={resources}
+                      resourceAreaHeaderContent="Equipo"
+                      slotMinTime="08:00:00"
+                      slotMaxTime="19:00:00"
+                      slotDuration="01:00:00"
+                      editable={true}
+                      droppable={false} 
+                      eventDrop={handleEventDrop}
+                      eventContent={(arg) => <EventCard event={arg} />}
+                      height="auto"
+                  />
+              </Paper>
+          </Grid.Col>
+      </Grid>
+    </Container>
   );
 }

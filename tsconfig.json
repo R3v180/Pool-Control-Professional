@@ -1,3 +1,7 @@
+// filename: tsconfig.json
+// version: 2.0.0 (FIXED)
+// description: Convierte el tsconfig a un "solution-style" para monorepos, delegando la compilación a los paquetes.
+
 {
   "compilerOptions": {
     /* Base Options */
@@ -25,5 +29,13 @@
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true
   },
-  "exclude": ["node_modules"]
+  
+  // ✅ CORRECCIÓN: Se elimina "exclude" y se añaden estas dos propiedades
+  "files": [], // Le decimos a TS que no compile ningún archivo desde la raíz.
+  "references": [
+    // Le decimos a TS que este es un proyecto compuesto y que debe buscar
+    // la configuración específica dentro de estas carpetas.
+    { "path": "./packages/client" },
+    { "path": "./packages/server" }
+  ]
 }

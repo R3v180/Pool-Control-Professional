@@ -1,5 +1,7 @@
 // filename: packages/server/src/api/visits/visits.controller.ts
-// Version: 1.8.0 (FEAT: Add handler for special visit creation)
+// version: 1.9.3 (FIXED)
+// description: Se corrige el manejador getScheduledVisitsForWeekHandler para procesar correctamente los arrays de filtros desde req.query.
+
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
 import { 
@@ -8,11 +10,12 @@ import {
   getVisitsForTechnicianOnDate,
   getVisitDetails,
   submitWorkOrder,
-  createSpecialVisit, // Importamos la nueva función del servicio
+  createSpecialVisit,
+  rescheduleVisit,
 } from './visits.service.js';
 
 /**
- * Maneja la obtención de las visitas programadas para una semana.
+ * Maneja la obtención de las visitas programadas para un rango de fechas.
  */
 export const getScheduledVisitsForWeekHandler = async (
   req: AuthRequest,
@@ -25,13 +28,27 @@ export const getScheduledVisitsForWeekHandler = async (
       return res.status(403).json({ message: 'Acción no permitida.' });
     }
 
-    const { date } = req.query;
-    if (!date || typeof date !== 'string') {
-      return res.status(400).json({ message: 'Se requiere un parámetro de fecha válido.' });
+    // ✅ CORRECCIÓN: Procesar correctamente los parámetros de la query
+    const { startDate: startDateStr, endDate: endDateStr, technicianIds, zoneIds } = req.query;
+
+    if (!startDateStr || !endDateStr || typeof startDateStr !== 'string' || typeof endDateStr !== 'string') {
+      return res.status(400).json({ message: 'Los parámetros startDate y endDate son obligatorios.' });
     }
 
-    const weekDate = new Date(date);
-    const visits = await getScheduledVisitsForWeek(tenantId, weekDate);
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
+
+    // Asegurarse de que los filtros de ID son arrays, incluso si solo llega uno.
+    const techIdsArray = Array.isArray(technicianIds) ? technicianIds : (typeof technicianIds === 'string' ? [technicianIds] : undefined);
+    const zoneIdsArray = Array.isArray(zoneIds) ? zoneIds : (typeof zoneIds === 'string' ? [zoneIds] : undefined);
+
+    const visits = await getScheduledVisitsForWeek(
+      tenantId, 
+      startDate, 
+      endDate,
+      techIdsArray as string[] | undefined,
+      zoneIdsArray as string[] | undefined
+    );
     res.status(200).json({ success: true, data: visits });
   } catch (error) {
     next(error);
@@ -60,6 +77,32 @@ export const assignTechnicianHandler = async (
 };
 
 /**
+ * Maneja la reprogramación de una visita (fecha y/o técnico).
+ */
+export const rescheduleVisitHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+    try {
+        const { id } = req.params;
+        const { timestamp, technicianId } = req.body;
+
+        if (!id) {
+            return res.status(400).json({ success: false, message: 'El ID de la visita es requerido.'});
+        }
+        if (!timestamp) {
+            return res.status(400).json({ success: false, message: 'El campo timestamp es obligatorio.'});
+        }
+
+        const updatedVisit = await rescheduleVisit(id, { timestamp, technicianId });
+        res.status(200).json({ success: true, data: updatedVisit });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
  * Maneja la obtención de la ruta diaria para el técnico autenticado.
  */
 export const getMyRouteHandler = async (
@@ -69,7 +112,7 @@ export const getMyRouteHandler = async (
 ) => {
   try {
     const technicianId = req.user?.id;
-    if (!technicianId || req.user?.role !== 'TECHNICIAN') {
+    if (!technicianId || (req.user?.role !== 'TECHNICIAN' && req.user?.role !== 'MANAGER')) {
       return res.status(403).json({ message: 'Acceso denegado.' });
     }
     
@@ -128,7 +171,6 @@ export const submitWorkOrderHandler = async (
   }
 };
 
-// ✅ --- FUNCIÓN AÑADIDA Y EXPORTADA ---
 /**
  * Maneja la creación de una visita especial (Orden de Trabajo Especial).
  */
@@ -145,7 +187,6 @@ export const createSpecialVisitHandler = async (
 
         const newVisit = await createSpecialVisit(req.body);
         res.status(201).json({ success: true, data: newVisit });
-
     } catch (error) {
         next(error);
     }

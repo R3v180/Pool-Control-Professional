@@ -1,11 +1,11 @@
 // filename: packages/server/src/api/visits/visits.service.ts
-// version: 2.2.1 (FIXED)
-// description: Removes obsolete on-the-fly visit generation logic from getScheduledVisitsForWeek.
+// version: 2.5.1 (COMPLETE & FIXED)
+// description: Modifica getScheduledVisitsForWeek para que acepte y aplique filtros por ID de técnico y de zona.
 
 import { PrismaClient } from '@prisma/client';
 import type { Visit } from '@prisma/client';
 import { 
-  startOfWeek, endOfWeek, startOfDay, endOfDay,
+  startOfDay, endOfDay,
 } from 'date-fns';
 
 const prisma = new PrismaClient();
@@ -19,29 +19,48 @@ export type WorkOrderInput = {
   hasIncident?: boolean;
   imageUrls?: string[]; 
 };
-
 export type CreateSpecialVisitInput = {
   poolId: string;
   timestamp: Date;
   notes?: string;
   technicianId?: string | null;
 }
+export type RescheduleVisitInput = {
+  timestamp: Date;
+  technicianId: string | null;
+}
 
-// ✅ CORRECCIÓN: Esta función ahora solo recupera las visitas existentes, no las crea.
-export const getScheduledVisitsForWeek = async (tenantId: string, weekDate: Date): Promise<Visit[]> => {
-  const start = startOfWeek(weekDate, { weekStartsOn: 1 });
-  const end = endOfWeek(weekDate, { weekStartsOn: 1 });
+// --- Funciones del Servicio ---
 
-  // La lógica de creación de visitas ha sido eliminada.
-  // Ahora solo se consultan las visitas que ya fueron generadas por el job.
+export const getScheduledVisitsForWeek = async (
+  tenantId: string, 
+  startDate: Date, 
+  endDate: Date,
+  technicianIds?: string[],
+  zoneIds?: string[]
+): Promise<Visit[]> => {
   return prisma.visit.findMany({
     where: { 
-      pool: { tenantId }, 
-      timestamp: { gte: start, lte: end } 
+      pool: { 
+        tenantId,
+        zoneId: zoneIds && zoneIds.length > 0 ? { in: zoneIds } : undefined,
+      }, 
+      timestamp: { 
+        gte: startDate, 
+        lte: endDate 
+      },
+      technicianId: technicianIds && technicianIds.length > 0 ? { in: technicianIds } : undefined,
     },
     include: { 
-      pool: { include: { client: true } },
-      technician: { select: { name: true } },
+      pool: { include: { client: true, zone: true } },
+      technician: { 
+        select: { 
+          id: true, 
+          name: true, 
+          isAvailable: true,
+          availabilities: true,
+        } 
+      },
     },
     orderBy: { timestamp: 'asc' },
   });
@@ -52,6 +71,16 @@ export const assignTechnicianToVisit = async (visitId: string, technicianId: str
         where: { id: visitId },
         data: { technicianId },
     });
+};
+
+export const rescheduleVisit = async (visitId: string, data: RescheduleVisitInput) => {
+  return prisma.visit.update({
+    where: { id: visitId },
+    data: {
+      timestamp: data.timestamp,
+      technicianId: data.technicianId,
+    },
+  });
 };
 
 export const getVisitsForTechnicianOnDate = async (
@@ -75,6 +104,14 @@ export const getVisitsForTechnicianOnDate = async (
         include: {
           client: true,
         },
+      },
+      technician: { 
+        select: { 
+          id: true, 
+          name: true, 
+          isAvailable: true,
+          availabilities: true,
+        } 
       },
     },
     orderBy: {
@@ -109,6 +146,7 @@ export const getVisitDetails = async (visitId: string) => {
           },
         },
       },
+      technician: true,
     },
   });
 };
@@ -140,7 +178,7 @@ export const submitWorkOrder = async (visitId: string, data: WorkOrderInput) => 
             }));
 
         if (validConsumptions.length > 0) {
-           await tx.consumption.createMany({
+          await tx.consumption.createMany({
                 data: validConsumptions,
             });
         }
@@ -244,11 +282,6 @@ export const submitWorkOrder = async (visitId: string, data: WorkOrderInput) => 
   });
 };
 
-/**
- * Crea una única visita no recurrente (Orden de Trabajo Especial).
- * @param data - Los datos de la visita a crear.
- * @returns La visita recién creada.
- */
 export const createSpecialVisit = async (data: CreateSpecialVisitInput): Promise<Visit> => {
   return prisma.visit.create({
     data: {

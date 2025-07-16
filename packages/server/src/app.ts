@@ -1,5 +1,6 @@
 // filename: packages/server/src/app.ts
-// version: 2.9.0 (FEAT: Mount routeTemplatesRouter)
+// version: 3.0.0 (FEAT: Mount planningRouter)
+
 import express from 'express';
 import type { Request, Response } from 'express';
 import cors from 'cors';
@@ -25,12 +26,12 @@ import expensesRouter from './api/expenses/expenses.routes.js';
 import dashboardRouter from './api/dashboard/dashboard.routes.js';
 import reportsRouter from './api/reports/reports.routes.js';
 import zonesRouter from './api/zones/zones.routes.js';
-import routeTemplatesRouter from './api/route-templates/route-templates.routes.js'; // ✅ NUEVA IMPORTACIÓN
+import routeTemplatesRouter from './api/route-templates/route-templates.routes.js';
+// ✅ 1. Importar el nuevo router
+import planningRouter from './api/planning/planning.routes.js';
 
-// --- Instancia de la App ---
 const app = express();
 
-// --- Middlewares Esenciales ---
 app.use(cors({
   origin: 'http://localhost:5173',
   credentials: true,
@@ -38,7 +39,6 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json());
 
-// --- Rutas de la API ---
 
 app.get('/api/health', (_req: Request, res: Response) => {
   res.status(200).json({ status: 'UP' });
@@ -64,10 +64,10 @@ app.use('/api/expenses', expensesRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/zones', zonesRouter);
-app.use('/api/route-templates', routeTemplatesRouter); // ✅ NUEVA RUTA MONTADA
+app.use('/api/route-templates', routeTemplatesRouter);
+// ✅ 2. Montar el nuevo router
+app.use('/api/planning', planningRouter);
 
-
-// --- Gestor de Errores ---
 app.use(errorHandler);
 
 export default app;

@@ -1,14 +1,11 @@
-// ====== [48] packages/server/prisma/seed.ts ======
 // filename: packages/server/prisma/seed.ts
-// version: 9.0.1 (FIX: Correctly map payment data for createMany)
+// version: 9.1.3 (FINAL & COMPLETE)
 
 import { PrismaClient } from '@prisma/client';
-// Se importan los tipos necesarios, incluyendo los nuevos
-import type { DayOfWeek, User, Pool, Product, Client, ProductCategory, Zone, ParameterTemplate, ScheduledTaskTemplate, Visit, Notification } from '@prisma/client';
+import type { DayOfWeek, User, Pool, Product, Client, ProductCategory, Zone, ParameterTemplate, ScheduledTaskTemplate, Visit, Notification, VisitFrequency } from '@prisma/client';
 import { hashPassword } from '../src/utils/password.utils.js';
 import { addDays, startOfWeek } from 'date-fns';
 
-// --- Importación de todos los datos modulares, incluyendo los nuevos ---
 import { usersData } from './data/users.js';
 import { parameterData, taskData } from './data/catalogs.js';
 import { clientsData } from './data/clients.js';
@@ -20,22 +17,19 @@ import { paymentsData, expensesData } from './data/transactions.js';
 import { zonesData } from './data/zones.js';
 import { routeTemplatesData } from './data/route-templates.js';
 import { consumptionsData } from './data/consumptions.js';
+import { userAvailabilitiesData } from './data/user-availabilities.js';
 
-
-// --- Script Principal ---
 async function main() {
   const prisma = new PrismaClient();
 
   try {
     console.log('🌱 Empezando el proceso de seeding v9.1 (Estable + Planificación Avanzada)...');
 
-    // 1. --- CREACIÓN DE ENTIDADES DEL SISTEMA ---
     const systemTenant = await prisma.tenant.create({ data: { companyName: 'SYSTEM_INTERNAL', subdomain: 'system', subscriptionStatus: 'ACTIVE' } });
     const superAdminPassword = await hashPassword('superadmin123');
     await prisma.user.create({ data: { email: 'super@admin.com', name: 'Super Admin', password: superAdminPassword, role: 'SUPER_ADMIN', tenantId: systemTenant.id } });
     console.log('👑 SuperAdmin y Tenant del sistema creados.');
 
-    // 2. --- CREACIÓN DEL TENANT DE PRUEBA Y USUARIOS ---
     const mainTenant = await prisma.tenant.create({ data: { companyName: 'Piscival S.L.', subdomain: 'piscival', subscriptionStatus: 'ACTIVE' } });
     console.log(`\n🏢 Tenant de prueba creado: ${mainTenant.companyName}`);
     
@@ -50,8 +44,6 @@ async function main() {
     if (!adminUser || technicians.length === 0) throw new Error('Seeding fallido: No se encontraron suficientes usuarios admin o técnicos.');
     console.log(`   👤 Creados ${createdUsers.length} usuarios.`);
 
-
-    // 3. --- CREACIÓN DE CATÁLOGOS, ZONAS Y ENTIDADES FINANCIERAS BASE ---
     console.log('\n- Fase de creación de catálogos y finanzas -');
 
     const createdParams: ParameterTemplate[] = [];
@@ -78,7 +70,6 @@ async function main() {
     for(const zone of zonesData) { createdZones.push(await prisma.zone.create({ data: { ...zone, tenantId: mainTenant.id }})); }
     console.log(`🌍 Creadas ${createdZones.length} zonas geográficas.`);
 
-    // 4. --- CREACIÓN DE CLIENTES Y PISCINAS ---
     console.log('\n- Fase de creación de clientes y piscinas -');
     const allPools: Pool[] = [];
     const createdClients: Client[] = [];
@@ -104,8 +95,7 @@ async function main() {
     }
     if (allPools.length < 5) throw new Error('Seeding fallido: No se crearon suficientes piscinas.');
 
-    // 5. --- CREACIÓN DE RUTAS MAESTRAS, REGLAS DE PRECIOS Y TRANSACCIONES ---
-    console.log('\n- Fase de creación de Rutas Maestras y Finanzas -');
+    console.log('\n- Fase de creación de Rutas, Ausencias y Finanzas -');
     
     for (const rt of routeTemplatesData) {
       const technician = createdUsers.find(u => u.name === rt.technicianName);
@@ -117,11 +107,32 @@ async function main() {
           technicianId: technician?.id,
           tenantId: mainTenant.id,
           zones: { connect: zonesToConnect.map(z => ({ id: z.id })) },
-          seasons: { create: rt.seasons }
-        }
+          seasons: {
+            create: rt.seasons.map(season => ({
+              ...season,
+              frequency: season.frequency as VisitFrequency,
+            })),
+          },
+        },
       });
     }
     console.log(`🗺️  Creadas ${routeTemplatesData.length} rutas maestras.`);
+    
+    for (const availability of userAvailabilitiesData) {
+        const user = createdUsers.find(u => u.name === availability.userName);
+        if (user) {
+            await prisma.userAvailability.create({
+                data: {
+                    startDate: availability.startDate,
+                    endDate: availability.endDate,
+                    reason: availability.reason,
+                    userId: user.id,
+                    tenantId: mainTenant.id,
+                }
+            });
+        }
+    }
+    console.log(`🗓️  Creadas ${userAvailabilitiesData.length} ausencias planificadas.`);
     
     for (const rule of clientPricingRulesData) {
       const client = createdClients.find(c => c.name === rule.clientName);
@@ -132,7 +143,6 @@ async function main() {
     }
     console.log(`💰 Creadas ${clientPricingRulesData.length} reglas de precios personalizadas.`);
     
-    // ✅ CORRECCIÓN: Construir el objeto de datos para createMany explícitamente.
     const paymentsToCreate = paymentsData.map(p => {
         const client = createdClients.find(c => c.name === p.clientName);
         return {
@@ -149,7 +159,6 @@ async function main() {
     await prisma.expense.createMany({ data: expensesData.map(e => ({ ...e, tenantId: mainTenant.id })) });
     console.log(`💸 Creados ${expensesData.length} registros de gastos.`);
 
-    // 6. --- SIMULACIÓN DE GENERACIÓN DE VISITAS Y ACTIVIDAD ---
     console.log('\n- Fase de simulación de actividad operativa -');
     const allRouteTemplates = await prisma.routeTemplate.findMany({ include: { zones: true } });
     const today = new Date();
@@ -157,7 +166,7 @@ async function main() {
     const createdVisits: Visit[] = [];
     const dayOfWeekStrings: DayOfWeek[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 
-    for (let i = 0; i < 5; i++) { // L-V
+    for (let i = 0; i < 5; i++) {
         const dayToSimulate = addDays(startOfThisWeek, i);
         const dayOfWeekStr = dayOfWeekStrings[i]!;
         const routesForDay = allRouteTemplates.filter(rt => rt.dayOfWeek === dayOfWeekStr);
@@ -172,7 +181,6 @@ async function main() {
     }
     console.log(`   ✅ Generadas ${createdVisits.length} visitas para la semana actual a partir de Rutas Maestras.`);
 
-    // 7. --- SIMULACIÓN DE ACTIVIDAD (INCIDENCIAS, CONSUMOS, TAREAS) SOBRE LAS VISITAS GENERADAS ---
     const allNotifications: Notification[] = [];
     for(let i=0; i < consumptionsData.length && i < createdVisits.length; i++){
         const visit = createdVisits[i]!;
@@ -197,11 +205,12 @@ async function main() {
       
       const aUser = tSeed.task.title.includes('Contactar') ? adminUser : technicians.find(t => t.isAvailable);
       if (aUser) {
-        await prisma.incidentTask.create({ data: { ...tSeed.task, notificationId: pNotification.id, assignedToId: aUser.id, tenantId: mainTenant.id } });
+        await prisma.incidentTask.create({ data: { ...tSeed.task, notificationId: pNotification.id, assignedToId: aUser.id, tenantId: mainTenant.id, createdById: adminUser.id } });
         taskCount++;
       }
     }
     console.log(`   - Creadas ${taskCount} tareas de incidencia.`);
+
 
     console.log('\n\n✅ Seeding de demostración v9.1 completado con éxito!');
     console.log('--- Credenciales de prueba ---');
@@ -213,7 +222,7 @@ async function main() {
   } catch (e) {
     console.error('❌ Error fatal durante el proceso de seeding:', e);
     await prisma.$disconnect();
-    process.exit(1);
+    return;
   } finally {
     await prisma.$disconnect();
   }

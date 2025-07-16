@@ -1,17 +1,16 @@
 // filename: packages/server/src/api/route-templates/route-templates.service.ts
-// version: 1.0.1 (FIXED)
-// description: Servicio para la lógica de negocio (CRUD) de las Rutas Maestras.
+// version: 1.0.3 (FIXED)
+// description: Se importan y utilizan los tipos Enum de Prisma, solucionando los errores de tipo en la definición de SeasonInput.
 
 import { PrismaClient } from '@prisma/client';
-// ✅ CORRECCIÓN: Eliminado 'VisitFrequency' de la importación.
-import type { RouteTemplate, DayOfWeek } from '@prisma/client';
+// ✅ CORRECCIÓN: Importar los tipos Enum necesarios
+import type { RouteTemplate, DayOfWeek, VisitFrequency } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 // --- Tipos de Entrada (DTOs) ---
 interface SeasonInput {
-  // ✅ CORRECCIÓN: El tipo es string, no un enum de Prisma.
-  frequency: string;
+  frequency: VisitFrequency; // ✅ CORRECCIÓN: Usar el tipo Enum
   startDate: Date;
   endDate: Date;
 }
@@ -42,7 +41,6 @@ export const createRouteTemplate = async (data: CreateRouteTemplateInput): Promi
       name,
       dayOfWeek,
       tenantId,
-      // ✅ CORRECCIÓN: Se asigna el ID del técnico directamente.
       technicianId: technicianId,
       zones: {
         connect: zoneIds.map(id => ({ id })),
@@ -99,8 +97,6 @@ export const updateRouteTemplate = async (id: string, tenantId: string, data: Up
   const { name, dayOfWeek, technicianId, zoneIds, seasons } = data;
 
   return prisma.$transaction(async (tx) => {
-    // ✅ CORRECCIÓN: Se elimina la variable 'routeExists' no utilizada.
-    // La validación de existencia y pertenencia la realiza la propia query.
     await tx.routeTemplate.findFirstOrThrow({
         where: { id, tenantId }
     });

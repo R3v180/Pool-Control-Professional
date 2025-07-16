@@ -1,7 +1,6 @@
-// ====== [66] packages/server/src/api/incident-tasks/incident-tasks.service.ts ======
 // filename: packages/server/src/api/incident-tasks/incident-tasks.service.ts
-// version: 1.6.0 (FIX: Use existing fields for query)
-// description: Corrected the getTasksByNotificationId function to select and order by fields that exist in the current schema.
+// version: 1.6.2 (FIXED)
+// description: Se corrige la función createIncidentTask para que asigne el 'createdById' al crear una nueva tarea, solucionando el error de tipo de TypeScript.
 
 import { PrismaClient } from '@prisma/client';
 import type { IncidentTask, IncidentPriority, IncidentTaskStatus, IncidentTaskLog } from '@prisma/client';
@@ -19,6 +18,7 @@ export type CreateIncidentTaskInput = {
   priority?: IncidentPriority;
   assignedToId?: string;
 };
+
 export type UpdateIncidentTaskInput = {
   title?: string;
   description?: string;
@@ -28,6 +28,7 @@ export type UpdateIncidentTaskInput = {
   resolutionNotes?: string;
   deadline?: string | null;
 };
+
 export type AddLogInput = {
   details: string;
   newDeadline?: string;
@@ -44,6 +45,7 @@ export const createIncidentTask = async (data: CreateIncidentTaskInput, actorId:
       notificationId: data.notificationId,
       assignedToId: data.assignedToId,
       tenantId: data.tenantId,
+      createdById: actorId, // ✅ CORRECCIÓN APLICADA AQUÍ
     },
   });
   await prisma.incidentTaskLog.create({
@@ -58,7 +60,6 @@ export const createIncidentTask = async (data: CreateIncidentTaskInput, actorId:
 };
 
 export const getTasksByNotificationId = async (notificationId: string, tenantId: string): Promise<IncidentTask[]> => {
-  // ✅ CORRECCIÓN: Se ajusta la consulta para usar campos existentes.
   return prisma.incidentTask.findMany({
     where: { notificationId, tenantId },
     select: {
@@ -75,14 +76,12 @@ export const getTasksByNotificationId = async (notificationId: string, tenantId:
           name: true,
         },
       },
-      // Los campos createdAt y updatedAt no existen en el modelo IncidentTask,
-      // por lo tanto, no se pueden seleccionar.
       notificationId: true, 
       assignedToId: true,
       tenantId: true,
-      logs: false, // No incluimos los logs en esta consulta por rendimiento
+      createdById: true, // Incluir el campo para futuras referencias
+      logs: false, 
     },
-    // Se ordena por prioridad y luego por id.
     orderBy: [{ priority: 'desc' }, { id: 'asc' }],
   });
 };

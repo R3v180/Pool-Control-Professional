@@ -1,14 +1,15 @@
 // filename: packages/server/src/api/users/users.controller.ts
-// Version: 2.1.3 (BULLETPROOF FIX)
-// description: Restructures guards to be unmistakable for the TS compiler.
+// version: 2.3.1 (Cleaned)
 
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
-import { getAssignableUsersByTenant, updateUserAvailability } from './users.service.js';
+import { 
+  getAssignableUsersByTenant, 
+  updateUserAvailability,
+  getAvailabilitiesForUser,
+  setUserAvailability,
+} from './users.service.js';
 
-/**
- * Maneja la obtención de todos los usuarios asignables (técnicos y gerentes) de un tenant.
- */
 export const getAssignableUsersHandler = async (
   req: AuthRequest,
   res: Response,
@@ -27,9 +28,6 @@ export const getAssignableUsersHandler = async (
   }
 };
 
-/**
- * Maneja la actualización del estado de disponibilidad de un usuario.
- */
 export const updateUserAvailabilityHandler = async (
   req: AuthRequest,
   res: Response,
@@ -40,7 +38,6 @@ export const updateUserAvailabilityHandler = async (
     const { isAvailable } = req.body;
     const tenantId = req.user?.tenantId;
 
-    // ✅ CORRECCIÓN A PRUEBA DE BALAS: Se valida cada variable requerida de forma individual y explícita.
     if (!userId || !tenantId) {
         return res.status(400).json({ success: false, message: 'Falta el ID de usuario o de tenant.' });
     }
@@ -49,10 +46,50 @@ export const updateUserAvailabilityHandler = async (
         return res.status(400).json({ success: false, message: 'El campo isAvailable es requerido y debe ser un booleano.' });
     }
 
-    // En este punto, TypeScript sabe con 100% de certeza que userId y tenantId son strings.
     const updatedUser = await updateUserAvailability(userId, tenantId, isAvailable);
     res.status(200).json({ success: true, data: updatedUser });
 
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getUserAvailabilitiesHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id: userId } = req.params;
+    const tenantId = req.user?.tenantId;
+
+    if (!userId || !tenantId) {
+      return res.status(400).json({ success: false, message: 'Falta el ID de usuario o de tenant.' });
+    }
+
+    const availabilities = await getAvailabilitiesForUser(userId, tenantId);
+    res.status(200).json({ success: true, data: availabilities });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const setUserAvailabilityHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    const { userId, startDate, endDate, reason } = req.body;
+
+    if (!userId || !tenantId || !startDate || !endDate) {
+      return res.status(400).json({ success: false, message: 'Faltan campos requeridos (userId, tenantId, startDate, endDate).' });
+    }
+    
+    const newAvailability = await setUserAvailability({ userId, tenantId, startDate, endDate, reason });
+    res.status(201).json({ success: true, data: newAvailability });
   } catch (error) {
     next(error);
   }

@@ -1,6 +1,6 @@
 // filename: packages/client/src/router/index.tsx
-// Version: 2.8.0 (FEAT: Add routes for RouteTemplate list and form pages)
-// description: Registers all routes for the Route Master feature.
+// Version: 2.9.3 (FEAT: Add route for AvailabilityPage)
+// description: Se importa y se añade la ruta para la nueva página de Gestión de Disponibilidad.
 
 import { createBrowserRouter } from 'react-router-dom';
 import { LoginPage } from '../features/auth/pages/LoginPage.js';
@@ -16,6 +16,8 @@ import { PlannerPage } from '../features/admin/pages/planner/PlannerPage.js';
 import { ZoneManagementPage } from '../features/admin/pages/zones/ZoneManagementPage.js';
 import { RouteTemplatesPage } from '../features/admin/pages/planning/RouteTemplatesPage.js';
 import { RouteTemplateFormPage } from '../features/admin/pages/planning/RouteTemplateFormPage.js';
+// ✅ 1. Importar el nuevo componente de página
+import { AvailabilityPage } from '../features/admin/pages/planning/AvailabilityPage.js';
 import { MyRoutePage } from '../features/technician/pages/MyRoutePage.js';
 import { WorkOrderPage } from '../features/technician/pages/WorkOrderPage.js';
 import { AdminDashboard } from '../features/admin/pages/AdminDashboard.js';
@@ -74,7 +76,9 @@ export const router = createBrowserRouter([
                   { path: 'new', element: <RouteTemplateFormPage /> },
                   { path: ':id', element: <RouteTemplateFormPage /> },
                 ]
-              }
+              },
+              // ✅ 2. Añadir la nueva ruta
+              { path: 'availability', element: <AvailabilityPage /> },
             ]
           },
           
@@ -83,6 +87,7 @@ export const router = createBrowserRouter([
             element: <AdminRoute />,
             children: [ { index: true, element: <PlannerPage /> } ],
           },
+
           {
             path: 'clients',
             element: <AdminRoute />,
