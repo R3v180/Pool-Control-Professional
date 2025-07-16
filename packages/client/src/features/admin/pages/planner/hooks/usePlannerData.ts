@@ -1,11 +1,11 @@
 // filename: packages/client/src/features/admin/pages/planner/hooks/usePlannerData.ts
-// version: 1.1.1 (FIX: Correct data access based on updated types)
-// description: Se corrige el acceso a los datos para que coincida con las nuevas interfaces de tipos, eliminando los errores de compilación.
+// version: 1.2.0 (FEAT: Detect and flag overlaps with absences)
+// description: Se añade lógica para detectar si una visita se superpone con un periodo de ausencia del técnico asignado, añadiendo un flag `isOverlappingAbsence` a las props del evento.
 
 import { useState, useEffect } from 'react';
-import { format, getDayOfYear, isBefore, setHours, startOfToday, addHours, startOfWeek, endOfWeek, addDays as addDaysFn } from 'date-fns';
+// ✅ Se importa isWithinInterval
+import { format, getDayOfYear, isBefore, setHours, startOfToday, addHours, startOfWeek, endOfWeek, addDays as addDaysFn, isWithinInterval } from 'date-fns';
 import apiClient from '../../../../../api/apiClient';
-// ✅ Se actualiza la importación para usar la nueva interfaz Technician
 import type { CalendarEvent, TechnicianResource, Zone, Visit, Technician } from '../types';
 
 interface UsePlannerDataParams {
@@ -16,7 +16,7 @@ interface UsePlannerDataParams {
 }
 
 const techColors = ['#228be6', '#15aabf', '#82c91e', '#fab005', '#fd7e14', '#e64980'];
-const UNAVAILABLE_COLOR = '#f8f9fa';
+const UNAVAILABLE_COLOR = '#f1f3f5'; 
 
 export function usePlannerData({ week, selectedTechnicians, selectedZones, sidebarVersion }: UsePlannerDataParams) {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -41,7 +41,6 @@ export function usePlannerData({ week, selectedTechnicians, selectedZones, sideb
         zoneIds: selectedZones,
       };
       
-      // ✅ La API ahora devuelve un objeto con una propiedad 'data'
       const [visitsRes, techsRes, zonesRes, clientsRes] = await Promise.all([
         apiClient.get('/visits/scheduled', { params }),
         apiClient.get<{data: Technician[]}>('/users/technicians'),
@@ -55,7 +54,6 @@ export function usePlannerData({ week, selectedTechnicians, selectedZones, sideb
 
       const resourcesFormatted = allTechnicians.map(tech => ({
         id: tech.id,
-        // ✅ Se accede a 'name' en lugar de 'title'
         title: tech.name,
       }));
       setResources(resourcesFormatted);
@@ -90,6 +88,20 @@ export function usePlannerData({ week, selectedTechnicians, selectedZones, sideb
         if (visit.status === 'COMPLETED') { backgroundColor = '#e6fcf5'; } 
         else if (isBefore(visitDate, startOfToday())) { backgroundColor = '#fff5f5'; }
         
+        // ✅ Lógica de detección de superposición
+        let isOverlapping = false;
+        if (visit.technician) {
+            const techData = allTechnicians.find(t => t.id === visit.technician!.id);
+            if (techData) {
+                isOverlapping = techData.availabilities.some(avail => 
+                    isWithinInterval(visitDate, { 
+                        start: new Date(avail.startDate), 
+                        end: new Date(avail.endDate) 
+                    })
+                );
+            }
+        }
+        
         return {
             id: visit.id, title: visit.pool.name, start: visitDate, end: addHours(visitDate, 1),
             allDay: false, 
@@ -98,9 +110,9 @@ export function usePlannerData({ week, selectedTechnicians, selectedZones, sideb
                 clientName: visit.pool.client.name,
                 poolAddress: visit.pool.address,
                 technicianId: visit.technician?.id || null,
-                 // ✅ Se accede a 'name' en lugar de 'title'
                 technicianName: visit.technician?.name || 'Sin Asignar', 
-                status: visit.status
+                status: visit.status,
+                isOverlappingAbsence: isOverlapping, // ✅ Se añade el flag
             }
         };
       });
@@ -116,19 +128,19 @@ export function usePlannerData({ week, selectedTechnicians, selectedZones, sideb
             display: 'background',
             backgroundColor: UNAVAILABLE_COLOR,
             title: 'No disponible',
-          } as CalendarEvent); // Forzamos el tipo aquí
+          } as CalendarEvent);
         }
         
         tech.availabilities.forEach(avail => {
           availabilityEvents.push({
-            id: `avail-${avail.id}`, // ✅ Se accede a la propiedad 'id' que ya existe
+            id: `avail-${avail.id}`,
             resourceId: tech.id,
             start: new Date(avail.startDate),
             end: addDaysFn(new Date(avail.endDate), 1),
             display: 'background',
             backgroundColor: UNAVAILABLE_COLOR,
-            title: avail.reason || 'Ausencia', // ✅ Se accede a la propiedad 'reason'
-          } as CalendarEvent); // Forzamos el tipo aquí
+            title: avail.reason || 'Ausencia',
+          } as CalendarEvent);
         });
       });
 

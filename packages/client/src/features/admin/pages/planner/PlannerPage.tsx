@@ -1,8 +1,8 @@
 // filename: packages/client/src/features/admin/pages/planner/PlannerPage.tsx
-// version: 9.0.3 (FIX: Simplify event rendering)
-// description: Se simplifica la prop `eventContent` para que solo renderice el componente EventCard, dejando que FullCalendar maneje la renderización nativa de los eventos de fondo.
+// version: 9.0.9 (REFINED: Implement context-aware calendar title)
+// description: Se refina el título del calendario para que sea contextual. Muestra el rango de la semana en la vista semanal y la fecha del día en la vista de equipo.
 
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import {
   Container, Title, Loader, Alert, Group, Button, Paper, Badge, Grid, Text
 } from '@mantine/core';
@@ -13,9 +13,9 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import esLocale from '@fullcalendar/core/locales/es'; 
-import type { EventDropArg, CalendarApi } from '@fullcalendar/core';
+import type { EventDropArg } from '@fullcalendar/core';
 
-import { startOfWeek, addDays, subDays, format, endOfWeek } from 'date-fns';
+import { startOfWeek, addDays, subDays, format, getISOWeek } from 'date-fns';
 import apiClient from '../../../../api/apiClient';
 import './planner-styles.css';
 import { ControlPanel } from './components/ControlPanel';
@@ -30,7 +30,6 @@ import { EventCard } from './components/EventCard';
 
 export function PlannerPage() {
   const calendarRef = useRef<FullCalendar>(null);
-  const [calendarApi, setCalendarApi] = useState<CalendarApi | null>(null);
   const [week, setWeek] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
   
   const [selectedTechnicians, setSelectedTechnicians] = useState<string[]>([]);
@@ -61,12 +60,6 @@ export function PlannerPage() {
 
   const technicianOptions = useMemo(() => resources.map(t => ({ value: t.id, label: t.title })), [resources]);
   const zoneOptions = useMemo(() => zones.map(z => ({ value: z.id, label: z.name })), [zones]);
-
-  useEffect(() => {
-    if (calendarRef.current) {
-        setCalendarApi(calendarRef.current.getApi());
-    }
-  }, []);
   
   const handleToggleSelectionMode = (isActive: boolean) => {
     setSelectionModeActive(isActive);
@@ -226,14 +219,6 @@ export function PlannerPage() {
               />
           </Grid.Col>
           <Grid.Col span={{ base: 12, lg: 9 }}>
-              <Text size="lg" fw={500} mb="xl">
-                  {calendarApi?.formatRange(
-                      startOfWeek(week, { weekStartsOn: 1 }),
-                      endOfWeek(week, { weekStartsOn: 1 }),
-                      { month: 'long', day: 'numeric', year: 'numeric', separator: ' - ' }
-                  ) || ''}
-              </Text>
-              
               <Paper 
                 withBorder p="md" shadow="sm"
                 onDrop={handleNativeDrop}
@@ -241,15 +226,26 @@ export function PlannerPage() {
                 style={draggingVisit ? { border: '2px dashed var(--mantine-color-blue-5)', backgroundColor: 'var(--mantine-color-blue-0)' } : {}}
               >
                   <FullCalendar
-                      key={viewMode} 
+                      key={`${getISOWeek(week)}-${viewMode}`} 
                       ref={calendarRef}
                       plugins={[dayGridPlugin, interactionPlugin, resourceTimelinePlugin]}
                       schedulerLicenseKey="GPL-My-Project-Is-Open-Source"
                       initialView={viewMode}
+                      initialDate={week}
                       locales={[esLocale]}
                       locale="es"
                       firstDay={1}
-                      headerToolbar={false}
+                      // ✅ Configuración del título contextual
+                      headerToolbar={{
+                        left: '',
+                        center: 'title',
+                        right: ''
+                      }}
+                      titleFormat={ // Formato del título principal
+                        viewMode === 'dayGridWeek' 
+                          ? { year: 'numeric', month: 'short', day: 'numeric' }
+                          : { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
+                      }
                       events={events}
                       resources={resources}
                       resourceLabelContent={(arg) => {
@@ -282,8 +278,6 @@ export function PlannerPage() {
                       editable={!isSelectionModeActive} 
                       droppable={false} 
                       eventDrop={handleEventDrop}
-                      // ✅ Se simplifica el renderizado de contenido.
-                      // FullCalendar no usará este renderizador para los eventos de fondo.
                       eventContent={(arg) => (
                         <EventCard 
                           eventArg={arg}

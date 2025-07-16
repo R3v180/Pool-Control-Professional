@@ -1,8 +1,9 @@
 // filename: packages/client/src/features/admin/pages/planner/components/EventCard.tsx
-// version: 1.0.0 (REVERTED)
-// description: Se revierte el componente a su estado original, dedicado exclusivamente a renderizar visitas, eliminando la lógica para eventos de fondo.
+// version: 1.2.0 (FEAT: Visually flag events that overlap with absences)
+// description: La tarjeta ahora cambia su estilo (borde rojo, icono de advertencia) si detecta que la visita se ha asignado durante un periodo de ausencia del técnico.
 
-import { Paper, Text, Badge, Checkbox, Tooltip, Stack, Divider } from '@mantine/core';
+import { Paper, Text, Badge, Checkbox, Tooltip, Stack, Divider, Group } from '@mantine/core';
+import { IconAlertTriangleFilled } from '@tabler/icons-react';
 import type { EventContentArg } from '@fullcalendar/core';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -16,7 +17,10 @@ interface EventCardProps {
 
 export function EventCard({ eventArg, isSelectionModeActive, isSelected, onSelect }: EventCardProps) {
   const { event } = eventArg;
-  const { extendedProps, start } = event;
+  const { extendedProps, start, title } = event;
+
+  // ✅ 1. Leer el nuevo flag de las props
+  const isOverlapping = extendedProps.isOverlappingAbsence || false;
 
   const handleCardClick = (e: React.MouseEvent) => {
     if (isSelectionModeActive) {
@@ -39,11 +43,16 @@ export function EventCard({ eventArg, isSelectionModeActive, isSelected, onSelec
       boxShadow: `0 0 0 2px var(--mantine-color-blue-5)`,
       backgroundColor: 'var(--mantine-color-blue-0)',
     }),
+    // ✅ 2. Aplicar estilos de advertencia si hay superposición
+    ...(isOverlapping && {
+        border: `2px solid var(--mantine-color-red-7)`,
+        opacity: 0.75,
+    }),
   };
 
   const tooltipLabel = (
     <Stack gap="xs">
-      <Text fw={700}>{event.title}</Text>
+      <Text fw={700}>{title}</Text>
       <Text size="sm">Cliente: {extendedProps.clientName}</Text>
       <Text size="sm">Dirección: {extendedProps.poolAddress}</Text>
       <Divider />
@@ -52,6 +61,11 @@ export function EventCard({ eventArg, isSelectionModeActive, isSelected, onSelec
       <Badge size="sm" variant="light" color={extendedProps.status === 'COMPLETED' ? 'green' : 'blue'}>
         Estado: {extendedProps.status}
       </Badge>
+      {isOverlapping && (
+        <Badge color="red" leftSection={<IconAlertTriangleFilled size={14} />} mt="xs">
+            Conflicto de Horario
+        </Badge>
+      )}
     </Stack>
   );
 
@@ -73,7 +87,13 @@ export function EventCard({ eventArg, isSelectionModeActive, isSelected, onSelec
             aria-label="Seleccionar visita"
           />
         )}
-        <Text size="xs" fw={700} truncate>{event.title}</Text>
+        
+        {/* ✅ 3. Añadir un icono de advertencia visible en la tarjeta */}
+        <Group justify="space-between" wrap="nowrap" gap="xs">
+            <Text size="xs" fw={700} truncate>{title}</Text>
+            {isOverlapping && <IconAlertTriangleFilled size={14} style={{ color: 'var(--mantine-color-red-7)', flexShrink: 0 }} />}
+        </Group>
+
         <Text size="xs" c="dimmed" truncate>{extendedProps.clientName}</Text>
         {extendedProps.technicianName && ( 
           <Badge variant="light" color="gray" size="xs" mt={4} style={{ textTransform: 'none' }}> 
