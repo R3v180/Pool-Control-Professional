@@ -1,21 +1,19 @@
 // filename: packages/client/src/features/admin/pages/planner/components/BatchActionsToolbar.tsx
-// version: 1.2.0 (FEAT: Enable reschedule action button)
-// description: Se habilita el botón "Cambiar Fecha" y se le conecta una nueva prop `onRescheduleClick` para invocar la acción desde el componente padre.
+// version: 2.0.0 (REFACTOR: Unify action buttons)
+// description: Se unifican los botones de acción en uno solo, "Reprogramar Visitas", que abrirá un modal unificado para gestionar tanto el técnico como la fecha.
 
 import { Paper, Text, Group, Button } from '@mantine/core';
 
 interface BatchActionsToolbarProps {
   selectedCount: number;
   onClearSelection: () => void;
-  onReassignClick: () => void;
-  onRescheduleClick: () => void; // ✅ Nueva prop para la acción de cambiar fecha
+  onReprogramClick: () => void; // ✅ Prop unificada para la acción principal
 }
 
 export function BatchActionsToolbar({
   selectedCount,
   onClearSelection,
-  onReassignClick,
-  onRescheduleClick, // ✅ Prop recibida
+  onReprogramClick,
 }: BatchActionsToolbarProps) {
   if (selectedCount === 0) {
     return null;
@@ -39,10 +37,12 @@ export function BatchActionsToolbar({
           {selectedCount} {selectedCount > 1 ? 'visitas seleccionadas' : 'visita seleccionada'}
         </Text>
         
+        {/* ✅ Grupo de acciones ahora tiene un único botón principal */}
         <Group>
-          <Button variant="light" onClick={onReassignClick}>Reasignar Técnico</Button>
-          {/* ✅ Botón habilitado y conectado a la nueva prop */}
-          <Button variant="light" onClick={onRescheduleClick}>Cambiar Fecha</Button>
+          <Button variant="light" onClick={onReprogramClick}>
+            Reprogramar Visitas
+          </Button>
+          {/* Aquí se podrían añadir más acciones en el futuro, como "Eliminar en Lote" */}
         </Group>
 
         <Button variant="subtle" color="gray" onClick={onClearSelection}>

@@ -1,10 +1,9 @@
 // filename: packages/client/src/features/admin/pages/planner/hooks/usePlannerData.ts
-// version: 1.2.0 (FEAT: Detect and flag overlaps with absences)
-// description: Se añade lógica para detectar si una visita se superpone con un periodo de ausencia del técnico asignado, añadiendo un flag `isOverlappingAbsence` a las props del evento.
+// version: 1.2.1 (FIX: Ensure all visits for a day are visible in timeline)
+// description: Se refactoriza la lógica de asignación de horas para garantizar que todas las visitas de un día, incluidas las arrastradas desde la deuda, se rendericen dentro del horario visible de la vista de Equipo.
 
 import { useState, useEffect } from 'react';
-// ✅ Se importa isWithinInterval
-import { format, getDayOfYear, isBefore, setHours, startOfToday, addHours, startOfWeek, endOfWeek, addDays as addDaysFn, isWithinInterval } from 'date-fns';
+import { format, isBefore, setHours, startOfToday, addHours, startOfWeek, endOfWeek, addDays as addDaysFn, isWithinInterval } from 'date-fns';
 import apiClient from '../../../../../api/apiClient';
 import type { CalendarEvent, TechnicianResource, Zone, Visit, Technician } from '../types';
 
@@ -71,16 +70,22 @@ export function usePlannerData({ week, selectedTechnicians, selectedZones, sideb
         newWorkloadMap.set(dayKey, currentWorkload);
       }
       setWorkloadMap(newWorkloadMap);
-
-      const dailyCounters: Record<string, number> = {};
+      
+      // ✅ Lógica de asignación de hora refactorizada y unificada
+      const dailyCounters = new Map<string, number>();
       const WORK_DAY_START_HOUR = 8;
 
       const visitEvents = allVisits.map((visit): CalendarEvent => {
         let visitDate = new Date(visit.timestamp);
-        const techIdForCounter = visit.technician?.id || 'unassigned';
-        const dayKey = `${techIdForCounter}-${getDayOfYear(visitDate)}`;
-        if (dailyCounters[dayKey] === undefined) { dailyCounters[dayKey] = 0; } else { dailyCounters[dayKey]++; }
-        if (visitDate.getHours() === 0 && visitDate.getMinutes() === 0) { visitDate = setHours(visitDate, WORK_DAY_START_HOUR + dailyCounters[dayKey]); }
+        
+        // Si la visita no tiene una hora específica (es a medianoche), la asignamos secuencialmente.
+        if (visitDate.getHours() === 0 && visitDate.getMinutes() === 0) {
+            const techId = visit.technician?.id || 'unassigned';
+            const dayKey = `${techId}-${format(visitDate, 'yyyy-MM-dd')}`;
+            const counter = dailyCounters.get(dayKey) || 0;
+            visitDate = setHours(visitDate, WORK_DAY_START_HOUR + counter);
+            dailyCounters.set(dayKey, counter + 1);
+        }
         
         const techIndex = allTechnicians.findIndex(t => t.id === visit.technician?.id);
         const borderColor = techColors[techIndex % techColors.length] || '#ced4da';
@@ -88,7 +93,6 @@ export function usePlannerData({ week, selectedTechnicians, selectedZones, sideb
         if (visit.status === 'COMPLETED') { backgroundColor = '#e6fcf5'; } 
         else if (isBefore(visitDate, startOfToday())) { backgroundColor = '#fff5f5'; }
         
-        // ✅ Lógica de detección de superposición
         let isOverlapping = false;
         if (visit.technician) {
             const techData = allTechnicians.find(t => t.id === visit.technician!.id);
@@ -112,7 +116,7 @@ export function usePlannerData({ week, selectedTechnicians, selectedZones, sideb
                 technicianId: visit.technician?.id || null,
                 technicianName: visit.technician?.name || 'Sin Asignar', 
                 status: visit.status,
-                isOverlappingAbsence: isOverlapping, // ✅ Se añade el flag
+                isOverlappingAbsence: isOverlapping,
             }
         };
       });

@@ -1,10 +1,10 @@
 // filename: packages/client/src/features/admin/pages/planner/PlannerPage.tsx
-// version: 9.0.9 (REFINED: Implement context-aware calendar title)
-// description: Se refina el título del calendario para que sea contextual. Muestra el rango de la semana en la vista semanal y la fecha del día en la vista de equipo.
+// version: 9.4.3 (FIX: Resolve infinite render loop)
+// description: Se corrige un bug que causaba un bucle de renderizado infinito. Se elimina el `useEffect` que llamaba a `gotoDate` y se refina la gestión del estado de la fecha para romper el ciclo.
 
 import { useState, useMemo, useRef } from 'react';
 import {
-  Container, Title, Loader, Alert, Group, Button, Paper, Badge, Grid, Text
+  Container, Title, Loader, Alert, Group, Button, Grid, Text, Badge
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 
@@ -15,22 +15,22 @@ import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import esLocale from '@fullcalendar/core/locales/es'; 
 import type { EventDropArg } from '@fullcalendar/core';
 
-import { startOfWeek, addDays, subDays, format, getISOWeek } from 'date-fns';
+import { startOfWeek, addDays, subDays, format, getISOWeek, startOfToday } from 'date-fns';
 import apiClient from '../../../../api/apiClient';
 import './planner-styles.css';
 import { ControlPanel } from './components/ControlPanel';
 import { PendingWorkSidebar } from './components/PendingWorkSidebar';
-import { useDndStore } from '../../../../stores/dnd.store';
 import { BatchActionsToolbar } from './components/BatchActionsToolbar';
 import { usePlannerData } from './hooks/usePlannerData';
 import { CreateSpecialVisitModal } from './components/CreateSpecialVisitModal';
-import { BatchReassignModal } from './components/BatchReassignModal';
-import { BatchRescheduleModal } from './components/BatchRescheduleModal';
+import { ReprogramModal } from './components/ReprogramModal';
 import { EventCard } from './components/EventCard';
 
 export function PlannerPage() {
   const calendarRef = useRef<FullCalendar>(null);
+  // ✅ 1. Se restaura el estado 'week' y se mantiene 'activeDate'
   const [week, setWeek] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [activeDate, setActiveDate] = useState(startOfToday());
   
   const [selectedTechnicians, setSelectedTechnicians] = useState<string[]>([]);
   const [selectedZones, setSelectedZones] = useState<string[]>([]);
@@ -39,14 +39,12 @@ export function PlannerPage() {
   const [sidebarVersion, setSidebarVersion] = useState(0);
 
   const [specialVisitModalOpened, { open: openSpecialVisitModal, close: closeSpecialVisitModal }] = useDisclosure(false);
-  const [reassignModalOpened, { open: openReassignModal, close: closeReassignModal }] = useDisclosure(false);
-  const [rescheduleModalOpened, { open: openRescheduleModal, close: closeRescheduleModal }] = useDisclosure(false);
-  
-  const { draggingVisit, setDraggingVisit } = useDndStore();
+  const [reprogramModalOpened, { open: openReprogramModal, close: closeReprogramModal }] = useDisclosure(false);
   
   const [isSelectionModeActive, setSelectionModeActive] = useState(false);
   const [selectedVisitIds, setSelectedVisitIds] = useState(new Set<string>());
 
+  // ✅ 2. El hook ahora solo depende de 'week' para cargar los datos semanales
   const { 
     events, 
     resources, 
@@ -56,10 +54,17 @@ export function PlannerPage() {
     loading, 
     error,
     refetch,
-  } = usePlannerData({ week, selectedTechnicians, selectedZones, sidebarVersion });
+  } = usePlannerData({ 
+    week, 
+    selectedTechnicians, 
+    selectedZones, 
+    sidebarVersion 
+  });
 
   const technicianOptions = useMemo(() => resources.map(t => ({ value: t.id, label: t.title })), [resources]);
   const zoneOptions = useMemo(() => zones.map(z => ({ value: z.id, label: z.name })), [zones]);
+
+  // ✅ 3. Se elimina el `useEffect` que causaba el bucle de renderizado
   
   const handleToggleSelectionMode = (isActive: boolean) => {
     setSelectionModeActive(isActive);
@@ -69,8 +74,6 @@ export function PlannerPage() {
   };
 
   const handleVisitSelection = (visitId: string) => {
-    if (!isSelectionModeActive) return;
-
     setSelectedVisitIds(prevSet => {
       const newSet = new Set(prevSet);
       if (newSet.has(visitId)) {
@@ -87,15 +90,44 @@ export function PlannerPage() {
   };
 
   const handleBatchSuccess = () => {
-    closeReassignModal();
-    closeRescheduleModal();
+    closeReprogramModal();
     setSelectedVisitIds(new Set());
-    setSelectionModeActive(false);
+    if (isSelectionModeActive) {
+      setSelectionModeActive(false);
+    }
     refetch(); 
     setSidebarVersion(v => v + 1);
   };
+  
+  const handleDayClick = (arg: any) => {
+    setActiveDate(arg.date);
+    setViewMode('resourceTimelineDay');
+  };
 
-  const handleEventDrop = (info: EventDropArg) => {
+  const handleViewModeChange = (newMode: string) => {
+    if (newMode === 'resourceTimelineDay' && viewMode !== 'resourceTimelineDay') {
+        setActiveDate(startOfToday());
+    }
+    setViewMode(newMode);
+  };
+
+  const handlePrev = () => {
+    if (viewMode === 'dayGridWeek') {
+        setWeek(prev => subDays(prev, 7));
+    } else {
+        setActiveDate(prev => subDays(prev, 1));
+    }
+  };
+
+  const handleNext = () => {
+    if (viewMode === 'dayGridWeek') {
+        setWeek(prev => addDays(prev, 7));
+    } else {
+        setActiveDate(prev => addDays(prev, 1));
+    }
+  };
+
+  const handleEventDrop = async (info: EventDropArg) => {
     if (isSelectionModeActive) {
       info.revert();
       return;
@@ -103,53 +135,20 @@ export function PlannerPage() {
     const { event, newResource } = info;
     const newDate = event.start;
     if (!newDate) return;
-    const newTechnicianId = newResource ? newResource.id : event.extendedProps.technicianId;
-    apiClient.patch(`/visits/${event.id}/reschedule`, {
-      timestamp: newDate.toISOString(),
-      technicianId: newTechnicianId,
-    }).catch(() => {
-      alert('Error al reprogramar la visita. Recargando...');
-      info.revert();
-    });
-  };
-  
-  const handleNativeDrop = async (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    if (!draggingVisit) return;
-
-    const target = e.target as HTMLElement;
-    const cell = target.closest('[data-date]') as HTMLElement | null;
-
-    if (!cell) {
-        setDraggingVisit(null);
-        return; 
-    }
-
-    const dateStr = cell.getAttribute('data-date');
-    if (!dateStr) {
-        setDraggingVisit(null);
-        return; 
-    }
-
-    const resourceId = cell.getAttribute('data-resource-id') || null;
-    const newDate = new Date(dateStr);
     
-    const visitToReschedule = draggingVisit;
-    setDraggingVisit(null);
+    const newTechnicianId = newResource ? newResource.id : event.extendedProps.technicianId;
 
     try {
-      await apiClient.patch(`/visits/${visitToReschedule.id}/reschedule`, {
+      await apiClient.patch(`/visits/${event.id}/reschedule`, {
         timestamp: newDate.toISOString(),
-        technicianId: resourceId,
+        technicianId: newTechnicianId,
       });
+      await refetch();
       setSidebarVersion(v => v + 1);
     } catch (err) {
-      alert('Error al reasignar la visita.');
+      alert('Error al reprogramar la visita.');
+      info.revert(); 
     }
-  };
-  
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
   };
   
   if (loading) return <Container p="xl" style={{display: 'flex', justifyContent: 'center'}}><Loader size="xl" /></Container>;
@@ -168,30 +167,26 @@ export function PlannerPage() {
         technicianOptions={technicianOptions}
       />
       
-      <BatchReassignModal
-        opened={reassignModalOpened}
-        onClose={closeReassignModal}
+      <ReprogramModal 
+        opened={reprogramModalOpened}
+        onClose={closeReprogramModal}
         onSuccess={handleBatchSuccess}
         selectedVisitIds={selectedVisitIds}
         allEvents={events}
         technicianOptions={technicianOptions}
       />
-
-      <BatchRescheduleModal
-        opened={rescheduleModalOpened}
-        onClose={closeRescheduleModal}
-        onSuccess={handleBatchSuccess}
-        selectedVisitIds={selectedVisitIds}
-        allEvents={events}
-      />
-
+      
       <Group justify="space-between" align="center" my="lg">
         <Title order={2}>Planning Hub</Title>
         <Group>
           <Button onClick={openSpecialVisitModal} variant="light">Crear Orden Especial</Button>
           <Button.Group>
-            <Button variant="default" onClick={() => setWeek(subDays(week, 7))}>{'< Semana Anterior'}</Button>
-            <Button variant="default" onClick={() => setWeek(addDays(week, 7))}>{'Semana Siguiente >'}</Button>
+            <Button variant="default" onClick={handlePrev}>
+                {viewMode === 'dayGridWeek' ? '< Semana Anterior' : '< Día Anterior'}
+            </Button>
+            <Button variant="default" onClick={handleNext}>
+                {viewMode === 'dayGridWeek' ? 'Semana Siguiente >' : 'Día Siguiente >'}
+            </Button>
           </Button.Group>
         </Group>
       </Group>
@@ -204,7 +199,7 @@ export function PlannerPage() {
         onTechnicianChange={setSelectedTechnicians}
         onZoneChange={setSelectedZones}
         viewMode={viewMode}
-        onViewModeChange={setViewMode}
+        onViewModeChange={handleViewModeChange}
         isSelectionModeActive={isSelectionModeActive}
         onSelectionModeChange={handleToggleSelectionMode}
       />
@@ -213,90 +208,83 @@ export function PlannerPage() {
           <Grid.Col span={{ base: 12, lg: 3 }}>
               <PendingWorkSidebar 
                 refreshKey={sidebarVersion} 
-                isSelectionModeActive={isSelectionModeActive}
                 selectedVisitIds={selectedVisitIds}
                 onSelectVisit={handleVisitSelection}
               />
           </Grid.Col>
           <Grid.Col span={{ base: 12, lg: 9 }}>
-              <Paper 
-                withBorder p="md" shadow="sm"
-                onDrop={handleNativeDrop}
-                onDragOver={handleDragOver}
-                style={draggingVisit ? { border: '2px dashed var(--mantine-color-blue-5)', backgroundColor: 'var(--mantine-color-blue-0)' } : {}}
-              >
-                  <FullCalendar
-                      key={`${getISOWeek(week)}-${viewMode}`} 
-                      ref={calendarRef}
-                      plugins={[dayGridPlugin, interactionPlugin, resourceTimelinePlugin]}
-                      schedulerLicenseKey="GPL-My-Project-Is-Open-Source"
-                      initialView={viewMode}
-                      initialDate={week}
-                      locales={[esLocale]}
-                      locale="es"
-                      firstDay={1}
-                      // ✅ Configuración del título contextual
-                      headerToolbar={{
-                        left: '',
-                        center: 'title',
-                        right: ''
-                      }}
-                      titleFormat={ // Formato del título principal
-                        viewMode === 'dayGridWeek' 
-                          ? { year: 'numeric', month: 'short', day: 'numeric' }
-                          : { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
-                      }
-                      events={events}
-                      resources={resources}
-                      resourceLabelContent={(arg) => {
-                        if (viewMode !== 'resourceTimelineDay') {
-                          return <Text fw={500}>{arg.resource.title}</Text>;
-                        }
-                        
-                        const currentDate = arg.view.currentStart;
-                        const dateStr = format(currentDate, 'yyyy-MM-dd');
-                        const dayKey = `${arg.resource.id}-${dateStr}`;
+              <FullCalendar
+                  // ✅ Se usa una combinación de la semana (para semana) y el día (para equipo)
+                  key={viewMode === 'dayGridWeek' ? getISOWeek(week) : format(activeDate, 'yyyy-MM-dd')}
+                  ref={calendarRef}
+                  plugins={[dayGridPlugin, interactionPlugin, resourceTimelinePlugin]}
+                  schedulerLicenseKey="GPL-My-Project-Is-Open-Source"
+                  initialView={viewMode}
+                  // ✅ La fecha inicial ahora depende de la vista
+                  initialDate={viewMode === 'dayGridWeek' ? week : activeDate}
+                  locales={[esLocale]}
+                  locale="es"
+                  firstDay={1}
+                  headerToolbar={{
+                    left: '',
+                    center: 'title',
+                    right: ''
+                  }}
+                  dateClick={handleDayClick}
+                  titleFormat={ 
+                    viewMode === 'dayGridWeek' 
+                      ? { year: 'numeric', month: 'short', day: 'numeric' }
+                      : { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
+                  }
+                  events={events}
+                  resources={resources}
+                  resourceLabelContent={(arg) => {
+                    if (viewMode !== 'resourceTimelineDay') {
+                      return <Text fw={500}>{arg.resource.title}</Text>;
+                    }
+                    
+                    const currentDate = arg.view.currentStart;
+                    const dateStr = format(currentDate, 'yyyy-MM-dd');
+                    const dayKey = `${arg.resource.id}-${dateStr}`;
 
-                        const workload = workloadMap.get(dayKey);
-                        const visitCount = workload ? workload.visitCount : 0;
-                        const hourCount = visitCount;
+                    const workload = workloadMap.get(dayKey);
+                    const visitCount = workload ? workload.visitCount : 0;
+                    const hourCount = visitCount;
 
-                        return (
-                          <Group justify="space-between" w="100%" wrap="nowrap">
-                            <Text fw={500} truncate>{arg.resource.title}</Text>
-                            {visitCount > 0 && (
-                              <Badge color="gray" variant="light" size="sm">
-                                {visitCount} / {hourCount}h
-                              </Badge>
-                            )}
-                          </Group>
-                        );
-                      }}
-                      slotMinTime="08:00:00"
-                      slotMaxTime="19:00:00"
-                      slotDuration="01:00:00"
-                      editable={!isSelectionModeActive} 
-                      droppable={false} 
-                      eventDrop={handleEventDrop}
-                      eventContent={(arg) => (
-                        <EventCard 
-                          eventArg={arg}
-                          isSelectionModeActive={isSelectionModeActive}
-                          isSelected={selectedVisitIds.has(arg.event.id)}
-                          onSelect={handleVisitSelection}
-                        />
-                      )}
-                      height="auto"
-                  />
-              </Paper>
+                    return (
+                      <Group justify="space-between" w="100%" wrap="nowrap">
+                        <Text fw={500} truncate>{arg.resource.title}</Text>
+                        {visitCount > 0 && (
+                          <Badge color="gray" variant="light" size="sm">
+                            {visitCount} / {hourCount}h
+                          </Badge>
+                        )}
+                      </Group>
+                    );
+                  }}
+                  slotMinTime="08:00:00"
+                  slotMaxTime="19:00:00"
+                  slotDuration="01:00:00"
+                  editable={!isSelectionModeActive} 
+                  droppable={false} 
+                  eventDrop={handleEventDrop}
+                  eventContent={(arg) => (
+                    <EventCard 
+                      eventArg={arg}
+                      isSelectionModeActive={isSelectionModeActive}
+                      isSelected={selectedVisitIds.has(arg.event.id)}
+                      onSelect={handleVisitSelection}
+                    />
+                  )}
+                  height="auto"
+              />
           </Grid.Col>
       </Grid>
       
       <BatchActionsToolbar 
         selectedCount={selectedVisitIds.size} 
         onClearSelection={handleClearSelection} 
-        onReassignClick={openReassignModal}
-        onRescheduleClick={openRescheduleModal}
+        onReprogramClick={openReprogramModal}
       />
     </Container>
   );

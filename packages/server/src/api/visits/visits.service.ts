@@ -1,6 +1,6 @@
 // filename: packages/server/src/api/visits/visits.service.ts
-// version: 2.5.1 (COMPLETE & FIXED)
-// description: Modifica getScheduledVisitsForWeek para que acepte y aplique filtros por ID de técnico y de zona.
+// version: 2.6.1 (FIX: Correct Prisma include statement)
+// description: Se elimina la inclusión explícita del campo 'address' en la consulta de Prisma, ya que es un campo directo del modelo Pool y no una relación.
 
 import { PrismaClient } from '@prisma/client';
 import type { Visit } from '@prisma/client';
@@ -39,6 +39,28 @@ export const getScheduledVisitsForWeek = async (
   technicianIds?: string[],
   zoneIds?: string[]
 ): Promise<Visit[]> => {
+  
+  const UNASSIGNED_FILTER_KEY = 'unassigned';
+  let containsUnassignedFilter = false;
+  let filteredTechnicianIds = technicianIds;
+
+  if (technicianIds && technicianIds.includes(UNASSIGNED_FILTER_KEY)) {
+    containsUnassignedFilter = true;
+    filteredTechnicianIds = technicianIds.filter(id => id !== UNASSIGNED_FILTER_KEY);
+  }
+
+  const technicianWhereClause: any = {};
+  if (containsUnassignedFilter && filteredTechnicianIds && filteredTechnicianIds.length > 0) {
+    technicianWhereClause.OR = [
+      { technicianId: { in: filteredTechnicianIds } },
+      { technicianId: null }
+    ];
+  } else if (containsUnassignedFilter) {
+    technicianWhereClause.technicianId = null;
+  } else if (filteredTechnicianIds && filteredTechnicianIds.length > 0) {
+    technicianWhereClause.technicianId = { in: filteredTechnicianIds };
+  }
+
   return prisma.visit.findMany({
     where: { 
       pool: { 
@@ -49,9 +71,10 @@ export const getScheduledVisitsForWeek = async (
         gte: startDate, 
         lte: endDate 
       },
-      technicianId: technicianIds && technicianIds.length > 0 ? { in: technicianIds } : undefined,
+      ...technicianWhereClause
     },
     include: { 
+      // ✅ CORRECCIÓN: Se elimina 'address: true' del 'include'
       pool: { include: { client: true, zone: true } },
       technician: { 
         select: { 
@@ -65,6 +88,8 @@ export const getScheduledVisitsForWeek = async (
     orderBy: { timestamp: 'asc' },
   });
 };
+
+// ... el resto del fichero no cambia ...
 
 export const assignTechnicianToVisit = async (visitId: string, technicianId: string | null) => {
     return prisma.visit.update({

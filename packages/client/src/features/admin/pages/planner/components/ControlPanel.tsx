@@ -1,6 +1,6 @@
 // filename: packages/client/src/features/admin/pages/planner/components/ControlPanel.tsx
-// version: 2.0.0 (FEAT: Add selection mode switch)
-// description: Se añade el interruptor (Switch) para activar/desactivar el "Modo Selección" en el Planning Hub.
+// version: 2.1.0 (FEAT: Add 'Unassigned' option to technician filter)
+// description: Se añade una opción virtual "Sin Asignar" al filtro de técnicos para permitir al usuario buscar y gestionar visitas que no tienen ningún técnico asignado.
 
 import { Grid, MultiSelect, SegmentedControl, Group, Switch } from '@mantine/core';
 
@@ -10,7 +10,6 @@ interface SelectOption {
   label: string;
 }
 
-// ✅ 1. Actualizar la interfaz de props para incluir los nuevos controles
 interface ControlPanelProps {
   technicianOptions: SelectOption[];
   zoneOptions: SelectOption[];
@@ -20,10 +19,15 @@ interface ControlPanelProps {
   onZoneChange: (selected: string[]) => void;
   viewMode: string;
   onViewModeChange: (value: string) => void;
-  // Nuevas props para el modo selección
   isSelectionModeActive: boolean;
   onSelectionModeChange: (isActive: boolean) => void;
 }
+
+// ✅ 1. Definir la opción virtual para el filtro
+const UNASSIGNED_OPTION: SelectOption = {
+  value: 'unassigned', // Esta clave será reconocida por el backend
+  label: '🔴 Sin Asignar',
+};
 
 // --- Componente ---
 export function ControlPanel({
@@ -35,8 +39,8 @@ export function ControlPanel({
   onZoneChange,
   viewMode,
   onViewModeChange,
-  isSelectionModeActive, // <-- Nueva prop recibida
-  onSelectionModeChange, // <-- Nueva prop recibida
+  isSelectionModeActive,
+  onSelectionModeChange,
 }: ControlPanelProps) {
   return (
     <Grid align="flex-end" mb="xl" justify="space-between">
@@ -46,7 +50,8 @@ export function ControlPanel({
           <MultiSelect
             label="Filtrar por Técnicos"
             placeholder="Todos los técnicos"
-            data={technicianOptions}
+            // ✅ 2. Añadir la opción "Sin Asignar" al principio de la lista
+            data={[UNASSIGNED_OPTION, ...technicianOptions]}
             value={selectedTechnicians}
             onChange={onTechnicianChange}
             searchable
@@ -67,7 +72,6 @@ export function ControlPanel({
       {/* Grupo de Vistas y Acciones */}
       <Grid.Col span={{ base: 12, md: 'auto' }}>
         <Group>
-          {/* ✅ 2. Añadir el nuevo Switch para el "Modo Selección" */}
           <Switch
             label="Modo Selección"
             checked={isSelectionModeActive}
