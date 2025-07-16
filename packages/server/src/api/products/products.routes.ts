@@ -1,6 +1,6 @@
 // filename: packages/server/src/api/products/products.routes.ts
-// version: 2.0.1 (FIX: Allow TECHNICIAN to read product catalog)
-// description: Se ajustan los permisos para permitir que el rol TECHNICIAN (y por extensión, un MANAGER actuando como tal) pueda leer la lista de productos. Esto es necesario para rellenar los partes de trabajo.
+// version: 2.0.2 (FIX: Allow MANAGER to read product catalog)
+// description: Se añade el rol MANAGER a la lista de autorización para leer el catálogo de productos. Esto es necesario para que puedan ver los detalles de los consumos en los partes de trabajo.
 
 import { Router } from 'express';
 import {
@@ -19,8 +19,8 @@ productsRouter.use(protect);
 
 // Definimos las rutas para el recurso /api/products
 productsRouter.route('/')
-  // ✅ CORRECCIÓN: Se permite a ADMIN y TECHNICIAN leer la lista de productos.
-  .get(authorize('ADMIN', 'TECHNICIAN'), getProductsHandler)
+  // ✅ CORRECCIÓN: Se añade el rol 'MANAGER' a la autorización de lectura.
+  .get(authorize('ADMIN', 'TECHNICIAN', 'MANAGER'), getProductsHandler)
   // La creación sigue siendo solo para ADMIN.
   .post(authorize('ADMIN'), createProductHandler);
 

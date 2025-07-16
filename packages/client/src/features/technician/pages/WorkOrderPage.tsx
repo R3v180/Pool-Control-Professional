@@ -1,5 +1,6 @@
 // filename: packages/client/src/features/technician/pages/WorkOrderPage.tsx
-// version: 2.0.2 (REFACTOR: Remove redundant incident management modals)
+// version: 2.0.4 (FIX: Correct Grid layout structure)
+// description: Se corrige un error de renderizado causado por un componente Grid.Col mal anidado. Se reestructura el JSX para asegurar que todas las columnas estén dentro de su contenedor Grid padre.
 
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
@@ -35,6 +36,8 @@ import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
 import apiClient from '../../../api/apiClient';
 import axios from 'axios';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 // --- Tipos ---
 type IncidentPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
@@ -58,6 +61,8 @@ interface Product { id: string; name: string; unit: string; }
 interface Consumption { quantity: number; product: Product; }
 interface VisitDetails {
   id: string; status: 'PENDING' | 'COMPLETED' | 'CANCELLED'; notes: string | null; hasIncident: boolean;
+  timestamp: string;
+  technician: { name: string } | null;
   completedTasks: string[]; results: VisitResult[]; notifications: Notification[]; consumptions: Consumption[];
   pool: {
     name: string; address: string; client: { name: string };
@@ -90,10 +95,27 @@ const ReadOnlyWorkOrder = ({ visit }: { visit: VisitDetails }) => {
 
       <Container>
           <Breadcrumbs><Link to="/">Dashboard</Link><Text>{visit.pool.name}</Text></Breadcrumbs>
-          <Grid align="center" justify="space-between" my="lg"><Grid.Col span="auto"><Title order={2}>Resumen de Visita: {visit.pool.name}</Title></Grid.Col><Grid.Col span="content"><Badge color="green" size="lg">COMPLETADA</Badge></Grid.Col></Grid>
-          <Text c="dimmed">{visit.pool.client.name} - {visit.pool.address}</Text>
+          {/* ✅ CORRECCIÓN DE LA ESTRUCTURA DEL GRID */}
+          <Grid align="center" justify="space-between" my="lg">
+            <Grid.Col span="auto">
+              <Title order={2}>Resumen de Visita: {visit.pool.name}</Title>
+              <Text c="dimmed">{visit.pool.client.name} - {visit.pool.address}</Text>
+            </Grid.Col>
+            <Grid.Col span="content">
+              <Badge color="green" size="lg">COMPLETADA</Badge>
+            </Grid.Col>
+            
+            <Grid.Col span={12} mt="xs">
+                <Paper withBorder p="xs" radius="md" bg="gray.0">
+                    <Text size="sm">
+                        Realizado por <strong>{visit.technician?.name || 'No especificado'}</strong> el 
+                        {' '}<strong>{format(new Date(visit.timestamp), 'eeee, d MMMM yyyy \'a las\' HH:mm', { locale: es })}h</strong>
+                    </Text>
+                </Paper>
+            </Grid.Col>
+          </Grid>
 
-          <Paper withBorder p="md" mt="xl">
+          <Paper withBorder p="md" mt="md" w="100%">
               <Stack>
                   {visit.results.length > 0 && (<div><Title order={4} mb="sm">Resultados de Mediciones</Title>{visit.results.map(r => <Text key={r.parameterName}><strong>{r.parameterName}:</strong> {r.value} {r.parameterUnit || ''}</Text>)}</div>)}
                   {visit.completedTasks.length > 0 && (<div><Title order={4} mt="lg" mb="sm">Tareas Realizadas</Title>{visit.completedTasks.map(t => <Text key={t}>✅ {t}</Text>)}</div>)}
@@ -142,7 +164,7 @@ const ReadOnlyWorkOrder = ({ visit }: { visit: VisitDetails }) => {
                   </div>
               </Stack>
           </Paper>
-        </Container>
+      </Container>
     </>
   );
 };
@@ -265,7 +287,7 @@ const EditableWorkOrder = ({ visit, products, onSubmit }: { visit: VisitDetails;
 export function WorkOrderPage() {
   const { visitId } = useParams<{ visitId: string }>();
   const navigate = useNavigate();
-  const [visit, setVisit] = useState<VisitDetails | null>(null); // <-- LÍNEA CORREGIDA
+  const [visit, setVisit] = useState<VisitDetails | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

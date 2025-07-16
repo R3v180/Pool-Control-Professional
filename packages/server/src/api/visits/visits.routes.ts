@@ -1,5 +1,6 @@
 // filename: packages/server/src/api/visits/visits.routes.ts
-// Version: 2.2.0 (FEAT: Add route for visit rescheduling)
+// version: 2.2.1 (FIX: Allow MANAGER to view visit details)
+// description: Se corrige un bug de permisos permitiendo que el rol de MANAGER también pueda acceder a los detalles de una visita.
 
 import { Router } from 'express';
 import { 
@@ -9,7 +10,7 @@ import {
   getVisitDetailsHandler,
   submitWorkOrderHandler,
   createSpecialVisitHandler,
-  rescheduleVisitHandler, // ✅ NUEVA IMPORTACIÓN
+  rescheduleVisitHandler,
 } from './visits.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
 import { authorize } from '../../middleware/authorize.middleware.js';
@@ -26,11 +27,10 @@ visitsRouter.post('/special', authorize('ADMIN'), createSpecialVisitHandler);
 visitsRouter.get('/my-route', authorize('TECHNICIAN'), getMyRouteHandler);
 
 // --- Rutas para una visita específica por ID ---
-// ✅ NUEVA RUTA PARA REPROGRAMAR
 visitsRouter.patch('/:id/reschedule', authorize('ADMIN'), rescheduleVisitHandler);
-
 visitsRouter.post('/:id/complete', authorize('TECHNICIAN'), submitWorkOrderHandler);
-visitsRouter.get('/:id', authorize('ADMIN', 'TECHNICIAN'), getVisitDetailsHandler);
 
+// ✅ CORRECCIÓN: Se añade el rol 'MANAGER' a la autorización.
+visitsRouter.get('/:id', authorize('ADMIN', 'TECHNICIAN', 'MANAGER'), getVisitDetailsHandler);
 
 export default visitsRouter;
